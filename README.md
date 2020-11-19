@@ -23,7 +23,7 @@ The repo is organized into four essential compartments -
 <li><a href="https://github.com/drvenki" rel="nofollow">Venkatesh Chellappa</a></li>
 <li><a href="https://github.com/rebber" rel="nofollow">Rebecka Bergström</a></li>
 <li><a href="https://github.com/imsarath" rel="nofollow">Sarath Kumar Murugan</a></li>
-<li><a href="https://github.com/karman-ki" rel="nofollow">Karthick Maniram</a>)</li>    
+<li><a href="https://github.com/karman-ki" rel="nofollow">Karthick Maniram</a></li>    
 </ul>
 
 <h2>Pipeline</h2>
