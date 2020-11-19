@@ -1,9 +1,9 @@
 # autoseq-snakemake
-snakemake version of autoseq pipeline
+Autoseq framework upgraded with snakemake, docker, python3+ and cloud-compatibility.
 
 <h1>Autoseq framework</h1>
 
-<b>Autoseq</b> is a custom-pipeline with additional support modules aimed primarily for the analysis of data from high-throughput sequencing of liquid biopsies. However the pipeline performs equally well with data from tissues with slight change in recommended settings. The pipeline is continuously developed and supported at Johan Lindberg's Cancer Genomics lab at Karolinska Institutet, Stockholm, Sweden. 
+<b>Autoseq</b> consists of a custom-pipeline with additional support modules aimed primarily for the analysis of data from high-throughput sequencing of liquid biopsies. However the pipeline performs equally well with data from tissues with slight change in recommended settings. The pipeline is continuously developed and supported at Johan Lindberg's Cancer Genomics lab at Karolinska Institutet, Stockholm, Sweden. 
 
 This is the latest port of the pipeline to snakemake framework with improvements in containerization, workflow management and upgrades in individual steps like variant calling, alignment and downstream processing of variants. Previous versions of autoseq pipeline have now been discontinued and can be found here (https://github.com/ClinSeq/autoseq). 
 
@@ -91,12 +91,18 @@ git push
 <h2>Usage</h2>
 <b>Command-line interface</b>
 
-
-
 <p>When running from command line or a terminal, the pipeline can be invoked as follows</p>
 <pre><code>snakemake --profile_name slurm
 </code></pre>
 
+<b>Andromeda Graphical User interface</b>
+
+<i> Note: Requires separate installation of the Andromeda App (api and front-end), configuration of database settings and deployment of the app to authorised local or cloud location. See more on that <a href="https://github.com/ClinSeq/andromeda.git" rel="nofollow">here</a>. </i>
+
+Andromeda is a light-weight app under development at Johan Lindberg's lab at Karolinska Institutet. This app is based on reactJS web-framework that integrates the autoseq-snakemake back-end with supporting databases and a dynamic front-end. Andromeda also shakes hand with other in-house apps like the Curator (for genomic manual curation) and Genomic Leaderboard (for sample logistics and provenance). 
+
+<p>When running from Andromeda, the pipeline can be invoked after logging into the app using 2-FA</p>
+<pre>Watch <a href="https://github.com/ClinSeq/andromeda.git" rel="nofollow">Andromeda UI Demo</a> video.</pre>
     
 
 <h2>Settings</h2>
