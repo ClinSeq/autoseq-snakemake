@@ -1,7 +1,7 @@
 # autoseq-snakemake
 snakemake version of autoseq pipeline
 
-Autoseq framework
+<b>Autoseq framework</b>
 
 This is a custom-pipeline with additional support modules aimed primarlity for the analysis of data from high-throughput sequencing of liquid biopsies. However the pipeline performs equally well with data from tissues with slight change in recommended settings. The pipeline is continuously developed and supported at Johan Lindberg's Cancer Genomics lab at Karolinska Institutet, Stockholm, Sweden. 
 
