@@ -23,22 +23,22 @@ The data points in results files are suitable for manual curation in IGV after w
 
 <h2>Settings</h2>
 Autoseq pipeline requires the input to be given in a .json format which contains the sample names following a strict naming convention. 
+
 <p>The <code>sample.json</code> file has the format</p>
-<code>
-{
-    "sdid": "NA12877",
-    "panel": {
-        "T": "NA12877-T-03098849-TD1-TT1",
-        "N": "NA12877-N-03098121-TD1-TT1",
-        "CFDNA": ["NA12877-CFDNA-03098850-TD1-TT1", "NA12877-CFDNA-03098850-TD2-TT1"]
+<div class="highlight highlight-source-json"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>sdid<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>NA12877<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>panel<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>T<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>NA12877-T-03098849-TD1-TT1<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>N<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>NA12877-N-03098121-TD1-TT1<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>CFDNA<span class="pl-pds">"</span></span>: [<span class="pl-s"><span class="pl-pds">"</span>NA12877-CFDNA-03098850-TD1-TT1<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>NA12877-CFDNA-03098850-TD2-TT1<span class="pl-pds">"</span></span>]
     },
-    "wgs": {
-        "T": "NA12877-T-03098849-TD1-WGS",
-        "N": "NA12877-N-03098121-TD1-WGS",
-        "CFDNA": ["NA12877-CFDNA-03098850-TD1-WGS"]
+    <span class="pl-s"><span class="pl-pds">"</span>wgs<span class="pl-pds">"</span></span>: {
+        <span class="pl-s"><span class="pl-pds">"</span>T<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>NA12877-T-03098849-TD1-WGS<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>N<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>NA12877-N-03098121-TD1-WGS<span class="pl-pds">"</span></span>,
+        <span class="pl-s"><span class="pl-pds">"</span>CFDNA<span class="pl-pds">"</span></span>: [<span class="pl-s"><span class="pl-pds">"</span>NA12877-CFDNA-03098850-TD1-WGS<span class="pl-pds">"</span></span>]
     }
 }
-</code>
+</pre></div>
 
 
 
