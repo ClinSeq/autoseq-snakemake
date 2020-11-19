@@ -31,6 +31,10 @@ NGS-data analysis pipeline written in python for very deep targeted resequencing
 Contains the essential steps (QC, trimming, alignment, realignment, variant calling, prioritization, reporting). Variants from raw VCF file are annotated using VeP! and run through a set of semantic filters to eliminate irrelevant, invalid and non-significant calls. These filters (frequency, functional significance, relevance to type of disease, etc.) have been implemented after elaborate testing with different settings for both data and the callers. 
 The data points in results files are suitable for manual curation in IGV after which they could be exported as a text file or HTML report or a PDF report.
 
+<p align="center">
+    <img src="docs/img/autoseq_pipeline.png" />
+</p>
+
 <h2>Installation</h2>
 
 <h2>Usage</h2>
