@@ -36,8 +36,6 @@ The data points in results files are suitable for manual curation in IGV after w
 </p>
 
 <h2>Installation</h2>
-
-<h2>Usage</h2>
 <h4><a id="user-content-step-1-obtain-a-copy-of-this-workflow" class="anchor" aria-hidden="true" href="#step-1-obtain-a-copy-of-this-workflow"><svg class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M7.775 3.275a.75.75 0 001.06 1.06l1.25-1.25a2 2 0 112.83 2.83l-2.5 2.5a2 2 0 01-2.83 0 .75.75 0 00-1.06 1.06 3.5 3.5 0 004.95 0l2.5-2.5a3.5 3.5 0 00-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 010-2.83l2.5-2.5a2 2 0 012.83 0 .75.75 0 001.06-1.06 3.5 3.5 0 00-4.95 0l-2.5 2.5a3.5 3.5 0 004.95 4.95l1.25-1.25a.75.75 0 00-1.06-1.06l-1.25 1.25a2 2 0 01-2.83 0z"></path></svg></a>Step 1: Obtain a copy of this workflow</h4>
 <ol>
 <li>Create a new github repository using this workflow <a href="https://help.github.com/en/articles/creating-a-repository-from-a-template">as a template</a>.</li>
@@ -90,6 +88,7 @@ git push
 <li>Carefully check whether you need to update the config files: <code>git diff HEAD upstream/master config.yaml</code>. If so, do it manually, and only where necessary, since you would otherwise likely overwrite your settings and samples nomenclature.</li>
 </ol>
 
+<h2>Usage</h2>
 <b>Command-line interface</b>
 
 
