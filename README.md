@@ -9,12 +9,12 @@ This is the latest port of the pipeline to snakemake framework with improvements
 
 <h2>Structure</h2>
 The repo is organized into four essential compartments -
-
-<code>rules</code> - <code>all snakemake rule files for various steps and processes in the pipeline</code>
-<code>config and settings</code> - <code>configuration (*.yml) files for the pipeline and workflow settings</code>
-<code>env</code> - <code>all necessary conda and linux environments</code> 
-<code>scripts</code> - <code>supporting scripts and utilities for additional functionalities for the pipeline</code>
-
+<ul>
+<li><code>rules</code> - <code>all snakemake rule files for various steps and processes in the pipeline</code></li>
+<li><code>config and settings</code> - <code>configuration (*.yml) files for the pipeline and workflow settings</code></li>
+<li><code>env</code> - <code>all necessary conda and linux environments</code></li>
+<li><code>scripts</code> - <code>supporting scripts and utilities for additional functionalities for the pipeline</code></li>
+</ul>
 
 
 
