@@ -1,4 +1,5 @@
-import os 
+import os
+import uuid 
 
 
 rule skewer_trim_pe:
@@ -6,6 +7,8 @@ rule skewer_trim_pe:
         libdir + "/{sample}/"
     output:
         directory(outdir + "/fastqs/skewer/{sample}/")
+    params:
+        scratch = params['scratch']
     threads: 8
     log:
         outdir + "logs/skewer/skewer_{sample}.log"
@@ -16,7 +19,7 @@ rule skewer_trim_pe:
         pairs = [(fq1_abs[k], fq2_abs[k]) for k in range(len(fq1_abs))]
         
         for fq1, fq2 in pairs:
-            tmpdir = os.path.join(params.scratch, "skewer-{uuid}".format(str(uuid.uuid4())))
+            tmpdir = os.path.join(params.scratch, "skewer-{}".format(str(uuid.uuid4())))
             prefix = "{}/skewer".format(tmpdir)
 
             pre_fq1 = prefix + "-trimmed-pair1.fastq.gz"
@@ -55,3 +58,28 @@ rule cat_fastq:
 
 rule bwa_mem_alignment:
     input:
+        fq1 = outdir + "/fastqs/{sample}_concatenated_1.fastq.gz",
+        fq2 = outdir + "/fastqs/{sample}_concatenated_2.fastq.gz",
+        bwa_index = reference['bwaIndex']
+    output:
+        bamfile = outdir + "/bams/{sample}.bam",
+        dup_metrics = outdir + "/bams/{sample}_dupmetrics_samblaster.txt"
+    params:
+        readgroup = lambda wildcards: get_readgroup(wildcards),
+        remove_duplicates = params['samblaster']['rm_dup'],
+        tmpprefix = os.path.join(params['scratch'], 
+                                "samtools-{}".format(str(uuid.uuid4())))
+    threads: params['bwa']['threads']
+    log:
+        bwalog = outdir + "/logs/bwa_{sample}.log",
+        samblasterlog = outdir + "/logs/samblaster_{sample}.log"
+    shell:
+        """
+        bwa mem -M -v 1 -R  {params.readgroup} -t  {threads}  
+            {input.bwa_index}  {input.fq1} {input.fq2}  2> {log.bwalog} 
+            | samblaster -M --addMateTags  --removeDups {params.remove_duplicates}
+              --metricsFile {output.dup_metrics}  2> {log.samblasterlog}  
+            | samtools view -Sb -u - | samtools sort  -T {params.tmpprefix} -@ {threads}
+             -o  {output.bamfile}  -  && samtools index {output.bamfile}
+        """
+

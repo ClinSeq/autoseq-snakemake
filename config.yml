@@ -1,6 +1,14 @@
 
 samples: tests/test_liqbio_sample.json
 
-reference:
+reference: /home/sarath/GIT/autoseq-genome/autoseq-genome.json
 
 params:
+    scratch: /tmp/scratch
+    bwa:
+        threads:
+    samblaster:
+        rm_dup: true
+        threads:
+    
+    

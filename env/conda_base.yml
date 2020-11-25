@@ -1,0 +1,10 @@
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - python=3.8
+  - skewer=0.2.2
+  - bwa=0.7.17
+  - samblaster=0.1.26
+  - samtools=1.11
+  - picard=2.23

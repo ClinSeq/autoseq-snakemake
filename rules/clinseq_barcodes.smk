@@ -1,4 +1,4 @@
-import collections, logging, os, re
+import collections, os, re
 
 # Fields defining a unique library capture item. Note: A library capture item can
 # include an item where no capture was performed; i.e. capture_kit_id indicates
@@ -41,13 +41,13 @@ def data_available_for_clinseq_barcode(libdir, clinseq_barcode):
 
     filedir = os.path.join(libdir, clinseq_barcode)
     if not os.path.exists(filedir):
-        logging.warn("Dir {} does not exists for {}. Not using library.".format(filedir, clinseq_barcode))
+        print("Dir {} does not exists for {}. Not using library.".format(filedir, clinseq_barcode))
         return False
     if find_fastqs(clinseq_barcode, libdir) == (None, None):
-        logging.warn("No fastq files found for {} in dir {}".format(clinseq_barcode, filedir))
+        print("No fastq files found for {} in dir {}".format(clinseq_barcode, filedir))
         return False
 
-    logging.debug("Library {} has data. Using it.".format(clinseq_barcode))
+    print("Library {} has data. Using it.".format(clinseq_barcode))
     return True
 
 
