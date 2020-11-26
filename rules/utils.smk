@@ -67,20 +67,50 @@ def get_readgroup(wildcards):
     return readgroup
 
 
-def load_ref(ref):
+def get_targets(wildcards, reference):
     """
-    Processes the input genomic reference data JSON file, converting relative file paths
-    to absolute paths where required.
-
-    :param ref: Input reference file configuration JSON file.
-    :return: Modified reference file dictionary with relative->absolute file path conversions performed.
+    return capture id
     """
+    unique_capture = extract_unique_capture(wildcards.sample)
+    targets = get_capture_name(unique_capture.capture_kit_id)
+    
+    return reference['targets'][targets]['targets-bed-slopped20']
 
-    basepath = os.path.dirname(ref)
-    with open(ref, 'r') as fh:
-        refjson = json.load(fh)
-        refjson_abs = make_paths_absolute(refjson, basepath)
-        return refjson_abs
+
+def get_capture_name(capture_kit_code):
+    """
+    Convert a two-letter capture kit code to the corresponding capture kit name.
+
+    :param capture_kit_code: The two-letter capture kit code.
+    :return: The capture-kit name.
+    """
+    
+    # FIXME: Move this information to a config JSON file.
+    capture_kit_loopkup = {"CS": "clinseq_v3_targets",
+                            "CZ": "clinseq_v4",
+                            "EX": "EXOMEV3",
+                            "EO": "EXOMEV1",
+                            "RF": "fusion_v1",
+                            "CC": "core_design",
+                            "CD": "discovery_coho",
+                            "CB": "big_design",
+                            "AL": "alascca_targets",
+                            "TT": "test-regions",
+                            "CP": "progression",
+                            "CM": "monitor",
+                            "PC": "probio_comprehensive",
+                            "PB": "probio_biomarker_signature",
+                            "PA": "pancancer",
+                            "C2": "probio_comprehensive2",
+                            "C3": "probio_comprehensive3",
+                            "PN": "pancancer2"
+                            }
+
+    if capture_kit_code == 'WG':
+        return 'lowpass_wgs'
+
+    else:
+        return capture_kit_loopkup[capture_kit_code]
 
 
 def make_paths_absolute(input_dict, base_path):
@@ -130,5 +160,4 @@ def convert_to_absolute_path(possible_relative_path, base_path):
         pass
 
     return converted_value
-
-    
+ 

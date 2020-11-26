@@ -1,7 +1,7 @@
 
 samples: tests/test_liqbio_sample.json
 
-reference: /home/sarath/GIT/autoseq-genome/autoseq-genome.json
+reference: autoseq-genome/autoseq-genome.json
 
 params:
     scratch: /tmp/scratch
@@ -10,5 +10,10 @@ params:
     samblaster:
         rm_dup: true
         threads:
-    
+    gatk3:
+        jarfile: 
+        realigner_target:
+            java_options: "--Xmx8G -XX:ParallelGCThreads=10"
+            extra: " -allowPotentiallyMisencodedQuals --maxIntervalSize 20000 "
+            threads: 
     

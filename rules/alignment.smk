@@ -83,3 +83,35 @@ rule bwa_mem_alignment:
              -o  {output.bamfile}  -  && samtools index {output.bamfile}
         """
 
+
+rule gatk3_realignertaregetcreator:
+    input:
+        bam = outdir + "/bams/{sample}.bam",
+        reference_genome = reference['reference_genome'],
+        target_region = lambda wildcards: get_targets(wildcards, reference),
+        known_1kg = reference["1KG"],
+        known_mills_gs = reference["Mills_and_1KG_gold_standard"],
+    output:
+        target_intervals = outdir + "/bams/{sample}.intervals"
+    params:
+        java_options = params['gatk3']['realigner_target']['java_options'],
+        jarfile = params['gatk3']['jarfile'],
+        extra = params['gatk3']['realigner_target']['extra'],
+        tmpdir = os.path.join(params['scratch'], 
+                                "realignerTC-{}".format(str(uuid.uuid4())))
+    threads: params['gatk3']['realigner_target']['threads']
+    log:
+        outdir + "/logs/gatk_realigner_targetcreator_{sample}.log"
+    shell:
+        """
+        java {params.java_options} -Djava.io.tmpdir={params.tmpdir} -jar {params.jarfile} 
+            -T RealignerTargetCreator 
+            -R {input.reference_genome}  
+            -known {input.known_1kg} 
+            {params.extra}
+            -L {input.target_region} 
+            -known {input.known_mills_gs}
+            -I {input.bam} 
+            -o {output.target_intervals}
+        """
+
