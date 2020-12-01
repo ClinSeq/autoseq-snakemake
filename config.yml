@@ -1,7 +1,7 @@
 
 samples: tests/test_liqbio_sample.json
 
-reference: autoseq-genome/autoseq-genome.json
+reference: /home/sarath/GIT/autoseq-genome/autoseq-genome.json
 
 params:
     scratch: /tmp/scratch
@@ -9,11 +9,22 @@ params:
         threads:
     samblaster:
         rm_dup: true
-        threads:
+        threads: 8
     gatk3:
-        jarfile: 
+        jarfile: scripts/GenomeAnalysisTK-3.5.jar
         realigner_target:
             java_options: "--Xmx8G -XX:ParallelGCThreads=10"
             extra: " -allowPotentiallyMisencodedQuals --maxIntervalSize 20000 "
-            threads: 
+            threads: 8
+        indel_realigner:
+            java_options:
+            extra: 
+            threads: 8
+    picard:
+        markdup:
+            rmdups: "true"
+            java_options: " -Xmx5g -XX:ParallelGCThreads=8 "
+            extra:
+            threads:
+
     

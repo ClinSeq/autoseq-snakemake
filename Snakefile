@@ -27,7 +27,7 @@ wildcard_constraints:
 
 rule all:
     input: 
-        expand(outdir + "/bams/{sample}.intervals", sample=all_clinseq_barcodes)
+        expand(outdir + "/bams/{sample}-nodups.bam", sample=all_clinseq_barcodes)
                                     
 
 include: "rules/alignment.smk"

@@ -84,7 +84,7 @@ rule bwa_mem_alignment:
         """
 
 
-rule gatk3_realignertaregetcreator:
+rule gatk3_targetcreator:
     input:
         bam = outdir + "/bams/{sample}.bam",
         reference_genome = reference['reference_genome'],
@@ -115,3 +115,62 @@ rule gatk3_realignertaregetcreator:
             -o {output.target_intervals}
         """
 
+
+rule gatk3_indelrealigner:
+    input:
+        bam = outdir + "/bams/{sample}.bam",
+        reference_genome = reference['reference_genome'],
+        target_region = lambda wildcards: get_targets(wildcards, reference),
+        known_1kg = reference["1KG"],
+        known_mills_gs = reference["Mills_and_1KG_gold_standard"],
+        target_intervals = outdir + "/bams/{sample}.intervals"
+    output:
+        bam = outdir + "/bams/{sample}-realigned.bam",
+    params:
+        jarfile = params['gatk3']['jarfile'],
+        java_options = params['gatk3']['indel_realigner']['java_options'],
+        extra = params['gatk3']['indel_realigner']['extra'],
+        tmpdir = os.path.join(params['scratch'], 
+                                "indelrealigner-{}".format(str(uuid.uuid4())))
+    threads: params['gatk3']['indel_realigner']['threads']
+    log:
+        outdir + "/logs/gatk_indel_realigner_{sample}.log"
+    shell:
+        """
+        java {params.java_options} -Djava.io.tmpdir={params.tmpdir} -jar {params.jarfile} 
+            -T IndelRealigner  
+            -R {input.reference_genome} 
+            -targetIntervals {input.target_intervals} 
+            -known {input.known_1kg} 
+            -known {input.known_mills_gs} 
+            {params.extra}
+            -I {input.bam} 
+            -o {output.bam}
+        """
+
+
+rule picard_markdups:
+    input:
+        bam = outdir + "/bams/{sample}-realigned.bam"
+    output:
+        bam = outdir + "/bams/{sample}-nodups.bam",
+        metrics = outdir + "/bams/{sample}-picard-markdup.metrics.txt"
+    params:
+        rmdups = params['picard']['markdup']['rmdups'],
+        java_options = params['picard']['markdup']['java_options'],
+        extra = params['picard']['markdup']['extra'],
+        tmpdir = os.path.join(params['scratch'], 
+                                "picard-markdups-{}".format(str(uuid.uuid4())))
+    threads: params['picard']['markdup']['threads']
+    log: outdir + "/logs/picard_markdups_{sample}.log"
+    shell:
+        """
+        picard {params.java_options} -Djava.io.tmpdir={params.tmpdir} 
+                MarkDuplicates 
+                INPUT={input.bam} 
+                METRICS_FILE={output.metrics} 
+                {params.extra}
+                OUTPUT=/dev/stdout REMOVE_DUPLICATES={params.rmdups} 
+                | samtools sort -@ {threads} -T {params.tmpdir} -o {output.bam} 
+                && samtools index {output.bam}
+        """
