@@ -39,5 +39,15 @@ params:
             java_options: " -Xmx10g -XX:+AggressiveOpts -XX:ParallelGCThreads=8 "
             extra: " --min-reads 1 1 0 --min-input-base-quality 30 "
             threads: 8
-
+        filterconsensus:
+            java_options: " -Xmx10g -XX:+AggressiveOpts -XX:ParallelGCThreads=8 "
+            error_rate: " --max-read-error-rate 1 --max-base-error-rate 0 "
+            base_quality: " --min-base-quality 30 "
+            extra: " --min-reads 1 1 0 --reverse-per-base-tags true --require-single-strand-agreement true  "
+            threads: 
+        clipbam:
+            java_options: " -Xmx10g -XX:+AggressiveOpts -XX:ParallelGCThreads=8 "
+            extra: 
+            threads: 8
+        
     

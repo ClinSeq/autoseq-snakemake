@@ -229,3 +229,56 @@ rule gatk3_indelrealigner_umi_2:
             -I {input.bam} 
             -o {output.bam}
         """
+
+
+rule fgbio_filterconsensus:
+    input:
+        bam = outdir + "/bams/{sample}_realigned-2.bam",
+        reference_genome = reference['reference_genome']
+    output:
+        bam = outdir + "/bams/{sample}_consensus_filtered.bam"
+    params:
+        java_options = params['fgbio']['filterconsensus']['java_options'],
+        error_rate = params['fgbio']['filterconsensus']['error_rate'],
+        base_quality = params['fgbio']['filterconsensus']['base_quality'],
+        extra = params['fgbio']['filterconsensus']['extra'],
+        tmpdir = os.path.join(params['scratch'], 
+                                "fgbio-filterconsensus-{}".format(str(uuid.uuid4())))
+    threads: params['fgbio']['filterconsensus']['threads']
+    log: 
+        outdir + "/logs/fgbio_filter_consensus_{sample}.log"
+    shell:
+        """
+        fgbio {params.java_options} --tmp-dir {params.tmpdir} FilterConsensusReads  
+            -i {input.bam}  
+            -o {output.bam} 
+            --ref {input.reference_genome} 
+            {params.extra}
+            {params.error_rate}
+            {params.base_quality}
+        """
+
+
+rule fgbio_clipbam:
+    input:
+        bam = outdir + "/bams/{sample}_consensus_filtered.bam",
+        reference_genome = reference['reference_genome']
+    output:
+        bam = outdir + "/bams/{sample}_clipoverlap.bam",
+        metrics_txt = outdir + "/bams/{sample}_clipoverlap_metrix.txt"
+    params:
+        java_options = params['fgbio']['clipbam']['java_options'],
+        tmpdir = os.path.join(params['scratch'], 
+                                "fgbio-clipbam-{}".format(str(uuid.uuid4())))
+    threads: params['fgbio']['clipbam']['threads']
+    log:
+        outdir + "/logs/fgbio_clipbam_{sample}.log"
+    shell:
+        """
+        fgbio {params.java_options} --tmp-dir {params.tmpdir} ClipBam 
+            -i  {input.bam}  
+            -o {output.bam}  
+            -m  {output.metrics_txt} 
+            --ref {input.reference_genome} 
+            --clip-overlapping-reads true
+        """

@@ -125,7 +125,7 @@ rule gatk3_indelrealigner:
         known_mills_gs = reference["Mills_and_1KG_gold_standard"],
         target_intervals = outdir + "/bams/{sample}.intervals"
     output:
-        bam = outdir + "/bams/{sample}-realigned.bam",
+        bam = outdir + "/bams/{sample}_realigned.bam",
     params:
         jarfile = params['gatk3']['jarfile'],
         java_options = params['gatk3']['indel_realigner']['java_options'],
@@ -151,9 +151,9 @@ rule gatk3_indelrealigner:
 
 rule picard_markdups:
     input:
-        bam = outdir + "/bams/{sample}-realigned.bam"
+        bam = outdir + "/bams/{sample}_realigned.bam"
     output:
-        bam = outdir + "/bams/{sample}-nodups.bam",
+        bam = outdir + "/bams/{sample}_nodups.bam",
         metrics = outdir + "/bams/{sample}-picard-markdup.metrics.txt"
     params:
         rmdups = params['picard']['markdup']['rmdups'],
