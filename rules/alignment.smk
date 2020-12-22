@@ -46,7 +46,7 @@ rule cat_fastq:
         fq1 = outdir + "/fastqs/{sample}_concatenated_1.fastq.gz",
         fq2 = outdir + "/fastqs/{sample}_concatenated_2.fastq.gz"
     run:
-        libirary = outdir + "/fastqs/skewer/
+        libirary = outdir + "/fastqs/skewer/"
         fq1_files, fq2_files = find_fastqs(wildcards.sample, libirary)
         fq1_flist = " ".join(fq1_files)
         fq2_flist = " ".join(fq2_files)
