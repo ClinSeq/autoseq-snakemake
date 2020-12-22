@@ -1,0 +1,5 @@
+name: gatk_3
+channels:
+  - bioconda
+dependencies:
+  - gatk=3.8

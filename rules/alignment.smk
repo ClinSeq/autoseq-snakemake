@@ -25,8 +25,8 @@ rule skewer_trim_pe:
             pre_fq1 = prefix + "-trimmed-pair1.fastq.gz"
             pre_fq2 = prefix + "-trimmed-pair2.fastq.gz"
 
-            out_fq1 = os.path.join(output, os.path.basename(fq1))
-            out_fq2 = os.path.join(output, os.path.basename(fq2))
+            out_fq1 = os.path.join(output[0], os.path.basename(fq1))
+            out_fq2 = os.path.join(output[0], os.path.basename(fq2))
 
             shell(
                 " mkdir {tmpdir} && "
@@ -46,7 +46,8 @@ rule cat_fastq:
         fq1 = outdir + "/fastqs/{sample}_concatenated_1.fastq.gz",
         fq2 = outdir + "/fastqs/{sample}_concatenated_2.fastq.gz"
     run:
-        fq1_files, fq2_files = find_fastqs(wildcards.sample, input)
+        libirary = outdir + "/fastqs/skewer/
+        fq1_files, fq2_files = find_fastqs(wildcards.sample, libirary)
         fq1_flist = " ".join(fq1_files)
         fq2_flist = " ".join(fq2_files)
 
@@ -62,8 +63,7 @@ rule bwa_mem_alignment:
         fq2 = outdir + "/fastqs/{sample}_concatenated_2.fastq.gz",
         bwa_index = reference['bwaIndex']
     output:
-        bamfile = outdir + "/bams/{sample}.bam",
-        dup_metrics = outdir + "/bams/{sample}_dupmetrics_samblaster.txt"
+        bamfile = outdir + "/bams/{sample}.bam"
     params:
         readgroup = lambda wildcards: get_readgroup(wildcards),
         remove_duplicates = params['samblaster']['rm_dup'],
@@ -74,14 +74,11 @@ rule bwa_mem_alignment:
         bwalog = outdir + "/logs/bwa_{sample}.log",
         samblasterlog = outdir + "/logs/samblaster_{sample}.log"
     shell:
-        """
-        bwa mem -M -v 1 -R  {params.readgroup} -t  {threads}  
-            {input.bwa_index}  {input.fq1} {input.fq2}  2> {log.bwalog} 
-            | samblaster -M --addMateTags  --removeDups {params.remove_duplicates}
-              --metricsFile {output.dup_metrics}  2> {log.samblasterlog}  
-            | samtools view -Sb -u - | samtools sort  -T {params.tmpprefix} -@ {threads}
-             -o  {output.bamfile}  -  && samtools index {output.bamfile}
-        """
+        "bwa mem -M -v 1 -R  {params.readgroup} -t  {threads}"  
+            " {input.bwa_index}  {input.fq1} {input.fq2}  2> {log.bwalog} "
+            " | samblaster -M --addMateTags  {params.remove_duplicates} 2> {log.samblasterlog} "
+            " | samtools view -Sb -u - | samtools sort  -T {params.tmpprefix} -@ {threads} "
+            " -o  {output.bamfile}  -  && samtools index {output.bamfile} "
 
 
 rule gatk3_targetcreator:
@@ -103,17 +100,16 @@ rule gatk3_targetcreator:
     log:
         outdir + "/logs/gatk_realigner_targetcreator_{sample}.log"
     shell:
-        """
-        java {params.java_options} -Djava.io.tmpdir={params.tmpdir} -jar {params.jarfile} 
-            -T RealignerTargetCreator 
-            -R {input.reference_genome}  
-            -known {input.known_1kg} 
-            {params.extra}
-            -L {input.target_region} 
-            -known {input.known_mills_gs}
-            -I {input.bam} 
-            -o {output.target_intervals}
-        """
+        "source activate gatk_3 && "
+        "gatk3 {params.java_options} -Djava.io.tmpdir={params.tmpdir} "
+            " -T RealignerTargetCreator "
+            " -R {input.reference_genome} "
+            " -known {input.known_1kg} "
+            " {params.extra} "
+            " -L {input.target_region} "
+            " -known {input.known_mills_gs} "
+            " -I {input.bam} "
+            " -o {output.target_intervals} 2> {log} "
 
 
 rule gatk3_indelrealigner:
@@ -136,17 +132,16 @@ rule gatk3_indelrealigner:
     log:
         outdir + "/logs/gatk_indel_realigner_{sample}.log"
     shell:
-        """
-        java {params.java_options} -Djava.io.tmpdir={params.tmpdir} -jar {params.jarfile} 
-            -T IndelRealigner  
-            -R {input.reference_genome} 
-            -targetIntervals {input.target_intervals} 
-            -known {input.known_1kg} 
-            -known {input.known_mills_gs} 
-            {params.extra}
-            -I {input.bam} 
-            -o {output.bam}
-        """
+        "source activate gatk_3 && "
+        "gatk3 {params.java_options} -Djava.io.tmpdir={params.tmpdir} "
+            " -T IndelRealigner  "
+            " -R {input.reference_genome} "
+            " -targetIntervals {input.target_intervals} "
+            " -known {input.known_1kg} "
+            " -known {input.known_mills_gs} "
+            " {params.extra}"
+            " -I {input.bam} "
+            " -o {output.bam} 2> {log} "
 
 
 rule picard_markdups:
@@ -164,13 +159,11 @@ rule picard_markdups:
     threads: params['picard']['markdup']['threads']
     log: outdir + "/logs/picard_markdups_{sample}.log"
     shell:
-        """
-        picard {params.java_options} -Djava.io.tmpdir={params.tmpdir} 
-                MarkDuplicates 
-                INPUT={input.bam} 
-                METRICS_FILE={output.metrics} 
-                {params.extra}
-                OUTPUT=/dev/stdout REMOVE_DUPLICATES={params.rmdups} 
-                | samtools sort -@ {threads} -T {params.tmpdir} -o {output.bam} 
-                && samtools index {output.bam}
-        """
+        "picard {params.java_options} -Djava.io.tmpdir={params.tmpdir} "
+                " MarkDuplicates "
+                " INPUT={input.bam} " 
+                " METRICS_FILE={output.metrics} "
+                " {params.extra} "
+                " OUTPUT=/dev/stdout REMOVE_DUPLICATES={params.rmdups} "
+                " | samtools sort -@ {threads} -T {params.tmpdir} -o {output.bam} "
+                " && samtools index {output.bam} 2> {log}"

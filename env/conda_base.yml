@@ -10,3 +10,4 @@ dependencies:
   - samtools=1.11
   - picard=2.23
   - fgbio=1.3.0
+  - fastqc
