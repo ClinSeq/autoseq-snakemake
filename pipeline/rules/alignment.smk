@@ -11,7 +11,7 @@ rule skewer_trim_pe:
         scratch = params['scratch']
     threads: 8
     log:
-        outdir + "logs/skewer/skewer_{sample}.log"
+        outdir + "/logs/skewer/skewer_{sample}.log"
     run:
         fq1_files, fq2_files = find_fastqs(wildcards.sample, libdir)
         fq1_abs = [normpath(x) for x in fq1_files]
@@ -30,6 +30,7 @@ rule skewer_trim_pe:
 
             shell(
                 " mkdir {tmpdir} && "
+                " mkdir {output} && "
                 " skewer -z -t {threads} --quiet "
                 " -o {prefix} "
                 " {fq1} {fq2} && "
@@ -52,8 +53,8 @@ rule cat_fastq:
         fq2_flist = " ".join(fq2_files)
 
         shell(
-            " cat {fq1_list} > {output.fq1} && "
-            " cat {fq2_list} > {output.fq2} "
+            " cat {fq1_flist} > {output.fq1} && "
+            " cat {fq2_flist} > {output.fq2} "
         )
 
 

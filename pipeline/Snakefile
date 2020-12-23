@@ -1,8 +1,7 @@
 import json
 
-include: "rules/utils.smk"
-include: "rules/clinseq_barcodes.smk"
-configfile: "config.yml"
+include: "rules/utils.py"
+include: "rules/clinseq_barcodes.py"
 
 samples = json.load(open(config['samples']))
 params = config['params']
@@ -23,6 +22,8 @@ outdir = os.path.join(config['outdir'], sampledata['sdid'])
 wildcard_constraints:
     sample = "|".join(all_clinseq_barcodes)
 
+
+shell.prefix("set -eo pipefail;")
 
 rule all:
     input: 
