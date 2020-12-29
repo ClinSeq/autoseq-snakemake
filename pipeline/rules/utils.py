@@ -4,8 +4,9 @@ from pipeline.rules.clinseq_barcodes import parse_prep_id, compose_sample_str, \
 
 
 class Pipeline:
-    def __init__(self, snakefile, config, workdir, dryrun, profile="shell"):
+    def __init__(self, snakefile, config, workdir, dryrun, profile, cores='4'):
         self.snakefile = snakefile
+        self.cores = cores
         self.configfile = config
         self.workdir = workdir
         self.profile = profile
@@ -13,17 +14,24 @@ class Pipeline:
     
     def build_cmd(self):
         dryrun = ''
+        profile_cmd = ''
 
         if self.dryrun:
             dryrun = "-n"
+
+        if self.profile:
+            profile_cmd = "--profile {} ".format(self.profile)
         
         cmd = ("snakemake --snakefile {} "
+               " --cores {} "
                " --directory {} "
                " --configfile {} "
-               " {} ").format(self.snakefile,
+               " {} {} ").format(self.snakefile,
+                              self.cores,
                               self.workdir,
                               self.configfile,
-                              dryrun)
+                              dryrun,
+                              profile_cmd)
         return cmd
 
 

@@ -15,7 +15,7 @@ rule fgbio_fastqtobam:
         tmpdir = os.path.join(params['scratch'], 
                     "fgbio_fastqtobam-{}".format(str(uuid.uuid4())))
     threads: params['fgbio']['fastqtobam']['threads']
-    log: outdir + "logs/fgbio/fastqtobam_{sample}.log"
+    log: outdir + "/logs/fgbio/fastqtobam_{sample}.log"
     shell:
         "fgbio {params.java_options} --tmp-dir {params.tmpdir} FastqToBam "
             " -i {input.fq1}  {input.fq2} " 
@@ -38,7 +38,7 @@ rule bwa_umialignment:
         tmpdir = os.path.join(params['scratch'], 
                     "bwa-umialignment-{}".format(str(uuid.uuid4())))
     threads: params['bwa']['threads']
-    log: outdir + "logs/fgbio/bwa_umialignment_{sample}.log"
+    log: outdir + "/logs/fgbio/bwa_umialignment_{sample}.log"
     shell:
         "picard SamToFastq I={input.bam} F=/dev/stdout INTERLEAVE=true TMP_DIR={params.tmpdir} "
             " | bwa mem -p -t {threads} {input.reference_genome} /dev/stdin " 
@@ -171,7 +171,7 @@ rule bwa_umialignment_2:
         tmpdir = os.path.join(params['scratch'], 
                     "bwa-umialignment-{}".format(str(uuid.uuid4())))
     threads: params['bwa']['threads']
-    log: outdir + "logs/fgbio/bwa_umialignment_{sample}.log"
+    log: outdir + "/logs/fgbio/bwa_umialignment_{sample}.log"
     shell:
         "picard SamToFastq I={input.bam} F=/dev/stdout INTERLEAVE=true TMP_DIR={params.tmpdir} "
             " | bwa mem -p -t {threads} {input.reference_genome} /dev/stdin " 

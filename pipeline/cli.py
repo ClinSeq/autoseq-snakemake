@@ -42,9 +42,10 @@ def config(context, barcodes_file, outdir):
 @click.option("--configfile", help="configuration file for params")
 @click.option("--scratch", default="/tmp", help="path to /tmp/scratch")
 @click.option("--dryrun/--run", default=False)
+@click.option("--profile", help="job schedulers eg. SLURM")
 @click.option("--cores", help="max number of cores")
 @click.pass_context
-def launch(context, ref, samples, outdir, libdir, configfile, scratch, dryrun, cores):
+def launch(context, ref, samples, outdir, libdir, configfile, scratch, dryrun, profile, cores):
     # samples
     sample_json = json.load(open(samples))
 
@@ -79,7 +80,7 @@ def launch(context, ref, samples, outdir, libdir, configfile, scratch, dryrun, c
     snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Snakefile')
 
     # building snakemake pipeline 
-    liqbio = Pipeline(snakefile, out_configpath, outdir, dryrun=dryrun)
+    liqbio = Pipeline(snakefile, out_configpath, outdir, dryrun, profile, cores)
     cmd = liqbio.build_cmd()
 
     try:
