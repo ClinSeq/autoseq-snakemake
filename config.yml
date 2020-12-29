@@ -34,6 +34,15 @@ params:
             threads: 8
         merge_bam:
             java_options: " -Xmx10g "
+        collectinsertsize:
+            java_options: " -XX:ParallelGCThreads=8 "
+            threads: 8
+        collectoxog:
+            java_options: " -XX:ParallelGCThreads=8  -Xmx2g"
+            threads: 8
+        collechsmetrics:
+            java_options: " -XX:ParallelGCThreads=8 "
+            threads:
     fgbio:
         fastqtobam:
             java_options: " -Xmx10g -XX:+AggressiveOpts -XX:ParallelGCThreads=8 "

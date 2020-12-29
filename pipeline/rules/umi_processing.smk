@@ -81,7 +81,7 @@ rule gatk3_targetcreator_umi_1:
             " -known {input.known_mills_gs} "
             " -I {input.bam} "
             " -o {output.target_intervals} 2> {log} && "
-        "source activate gatk_3"
+        "source deactivate "
 
 
 rule gatk3_indelrealigner_umi_1:

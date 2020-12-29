@@ -21,8 +21,8 @@ def cli(context):
 @click.option("--outdir", help="output directory")
 @click.argument('barcodes-file', type=str)
 @click.pass_context
-def config(context, barcodes, outdir):
-    clinseq_barcodes = extract_clinseq_barcodes(barcodes)
+def config(context, barcodes_file, outdir):
+    clinseq_barcodes = extract_clinseq_barcodes(barcodes_file)
     validate_clinseq_barcodes(clinseq_barcodes)
 
     sample_dict = convert_barcodes_to_sampledict(clinseq_barcodes)
