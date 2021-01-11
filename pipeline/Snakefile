@@ -1,7 +1,7 @@
 import json
 
-include: "rules/utils.py"
-include: "rules/clinseq_barcodes.py"
+include: "utils/utils.py"
+include: "utils/clinseq_barcodes.py"
 
 samples = json.load(open(config['samples']))
 params = config['params']
@@ -30,6 +30,10 @@ rule all:
         expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes),
         expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=all_clinseq_barcodes),
         #expand(outdir + "/qc/fastqc/{sample}/", sample=all_clinseq_barcodes)
+    output:
+        outdir + "/analysis_finished"
+    shell:
+        "date +'%Y-%m-%d T%T %:z' > {output}"
                                     
 
 include: "rules/alignment.smk"

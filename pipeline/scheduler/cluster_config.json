@@ -1,0 +1,9 @@
+{
+    "__default__": {
+        "job-name": "smk.{rule}",
+        "time": "24:00:00",
+        "output": "logs/cluster/{rule}.out",
+        "error": "logs/cluster/{rule}.err",
+        "partition": "core"
+    }
+}

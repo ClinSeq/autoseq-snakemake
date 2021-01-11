@@ -8,7 +8,8 @@ setup(name='autoseq',
       install_requires=[
           "snakemake",
           "click",
-          "pyyaml"
+          "pyyaml",
+          "pandas"
       ],
       entry_points={
           'console_scripts': [

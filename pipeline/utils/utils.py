@@ -1,7 +1,23 @@
 import os, re
-from pipeline.rules.clinseq_barcodes import parse_prep_id, compose_sample_str, \
+from pipeline.utils.clinseq_barcodes import parse_prep_id, compose_sample_str, \
     extract_unique_capture
 
+
+def get_scheduler(scheduler, filetype):
+    tool_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    if scheduler == 'slurm' and filetype == 'pyscript':
+        submit_fp = "scheduler/slurm_submit.py"
+    
+    if scheduler == 'slurm' and filetype == 'config':
+        submit_fp = "scheduler/cluster_config.json"
+
+    script  = os.path.join(tool_dir, submit_fp)
+
+    if not os.path.exists(script):
+        raise FileNotFoundError(script)
+    
+    return script
 
 class Pipeline:
     def __init__(self, snakefile, config, workdir, dryrun, profile, cores='4'):
@@ -15,23 +31,31 @@ class Pipeline:
     def build_cmd(self):
         dryrun = ''
         profile_cmd = ''
+        slurm_cmd = ''
 
         if self.dryrun:
             dryrun = "-n"
 
-        if self.profile:
-            profile_cmd = "--profile {} ".format(self.profile)
+        if self.profile == 'slurm':
+            slurm_submit = get_scheduler(self.profile, 'pyscript')
+            cluster_config = get_scheduler(self.profile, 'config')
+            slurm_cmd = " --notemp --immediate-submit -j 500 "
+            slurm_cmd += " --cluster-config {} ".format(cluster_config)
+            slurm_cmd += (" --cluster '{} "
+                          " {{dependencies}} '".format(slurm_submit))
+
         
         cmd = ("snakemake --snakefile {} "
                " --cores {} "
                " --directory {} "
                " --configfile {} "
-               " {} {} ").format(self.snakefile,
+               " {} {} {} ").format(self.snakefile,
                               self.cores,
                               self.workdir,
                               self.configfile,
                               dryrun,
-                              profile_cmd)
+                              profile_cmd,
+                              slurm_cmd)
         return cmd
 
 

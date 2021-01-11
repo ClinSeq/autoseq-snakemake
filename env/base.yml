@@ -1,4 +1,4 @@
-name: autoseq-base
+name: base
 channels:
   - bioconda
   - conda-forge

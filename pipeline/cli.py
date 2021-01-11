@@ -5,8 +5,8 @@ import click
 import subprocess
 
 
-from pipeline.rules.utils import make_paths_absolute, Pipeline
-from pipeline.rules.clinseq_barcodes import data_available_for_clinseq_barcode, \
+from pipeline.utils.utils import make_paths_absolute, Pipeline
+from pipeline.utils.clinseq_barcodes import data_available_for_clinseq_barcode, \
     extract_clinseq_barcodes, validate_clinseq_barcodes, convert_barcodes_to_sampledict, \
     check_sampledata, normpath
 
@@ -31,6 +31,7 @@ def config(context, barcodes_file, outdir):
         fn = "{}/{}.json".format(outdir, sdid)
         with open(fn, 'w') as f:
             json.dump(sample_dict[sdid], f, sort_keys=True, indent=4)
+            click.echo(f"Autoseq samples config file created - {fn}")
 
 
 @cli.command()
@@ -82,7 +83,8 @@ def launch(context, ref, samples, outdir, libdir, configfile, scratch, dryrun, p
     # building snakemake pipeline 
     liqbio = Pipeline(snakefile, out_configpath, outdir, dryrun, profile, cores)
     cmd = liqbio.build_cmd()
-
+    
+    #print(cmd)
     try:
         subprocess.run(cmd, shell=True)
     except Exception as err:
