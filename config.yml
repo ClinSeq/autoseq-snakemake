@@ -40,9 +40,9 @@ params:
         collectoxog:
             java_options: " -XX:ParallelGCThreads=8  -Xmx2g"
             threads: 8
-        collechsmetrics:
+        collecthsmetrics:
             java_options: " -XX:ParallelGCThreads=8 "
-            threads:
+            threads: 8
     fgbio:
         fastqtobam:
             java_options: " -Xmx10g -XX:+AggressiveOpts -XX:ParallelGCThreads=8 "

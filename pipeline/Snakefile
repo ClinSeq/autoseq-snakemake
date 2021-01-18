@@ -10,6 +10,7 @@ refjson = json.load(open(config['reference']))
 # loading reference files
 basepath = os.path.dirname(config['reference'])
 reference = make_paths_absolute(refjson, basepath)
+umi = True # need to change dynamic 
 
 # libdir
 libdir = config['libdir']
@@ -25,17 +26,31 @@ wildcard_constraints:
 
 shell.prefix("set -eo pipefail;")
 
+# QC outputs
+
+PICARD_QC = list()
+PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-insertsize.txt", 
+                        sample=all_clinseq_barcodes))
+PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-oxog.txt",
+                        sample=all_clinseq_barcodes))
+PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-hsmetrics.txt",
+                        sample=all_clinseq_barcodes))
+
 rule all:
     input: 
         expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes),
         expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=all_clinseq_barcodes),
-        #expand(outdir + "/qc/fastqc/{sample}/", sample=all_clinseq_barcodes)
+        expand(outdir + "/qc/fastqc/{sample}/", sample=all_clinseq_barcodes),
+        PICARD_QC
     output:
         outdir + "/analysis_finished"
     shell:
         "date +'%Y-%m-%d T%T %:z' > {output}"
                                     
 
-include: "rules/alignment.smk"
-include: "rules/umi_processing.smk"
-#include: "rules/qc.smk"
+include: "rules/pre_processing.smk"
+if umi:
+    include: "rules/umi_processing.smk"
+else:
+    include: "rules/alignment.smk"
+include: "rules/qc.smk"

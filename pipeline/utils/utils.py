@@ -45,7 +45,7 @@ class Pipeline:
                           " {{dependencies}} '".format(slurm_submit))
 
         
-        cmd = ("snakemake --snakefile {} "
+        cmd = ("snakemake -p --snakefile {} "
                " --cores {} "
                " --directory {} "
                " --configfile {} "
@@ -59,18 +59,6 @@ class Pipeline:
         return cmd
 
 
-# def get_fastq(all_clinseq_barcodes, libdir):
-#     fq1_files = []
-#     fq2_files = []
-#     for clinseq_barcode in all_clinseq_barcodes:
-#         fq1, fq2 = find_fastqs(clinseq_barcode, libdir)
-#         fq1_files.extend(fq1)
-#         fq2_files.extend(fq2)
-    
-#     return fq1_files, fq2_files 
-
-
-
 def get_readgroup(wildcards):
     library_id = parse_prep_id(wildcards.sample)
     sample_string = compose_sample_str(extract_unique_capture(wildcards.sample))
@@ -81,14 +69,24 @@ def get_readgroup(wildcards):
     return readgroup
 
 
-def get_targets(wildcards, reference):
+def get_targets(wildcards, reference, key):
     """
     return capture id
     """
     unique_capture = extract_unique_capture(wildcards.sample)
     targets = get_capture_name(unique_capture.capture_kit_id)
     
-    return reference['targets'][targets]['targets-bed-slopped20']
+    return reference['targets'][targets][key]
+
+
+def get_target_name(wildcards):
+    """
+    return capture id
+    """
+    unique_capture = extract_unique_capture(wildcards.sample)
+    targets = get_capture_name(unique_capture.capture_kit_id)
+    
+    return targets
 
 
 def get_capture_name(capture_kit_code):

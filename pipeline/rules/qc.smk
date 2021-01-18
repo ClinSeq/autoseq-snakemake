@@ -1,6 +1,7 @@
 import os
 from functools import reduce
 
+
 rule fastqc:
     input:
         libdir + "/{sample}/"
@@ -12,7 +13,7 @@ rule fastqc:
         outdir + "/logs/fastqc/fastqc_{sample}.log"
     run:
         fq_files = reduce(lambda r1, r2: r1 + r2, 
-                          find_fastq(wildcards.sample, libdir))
+                          find_fastqs(wildcards.sample, libdir))
         
         shell("mkdir -p {output}")
         for fq in fq_files:
@@ -23,12 +24,11 @@ rule picard_collectinsertsize:
     input:
         bam = outdir + "/bams/{sample}_nodups.bam"
     output:
-        metrics = outdir + "/qc/picard/{}.picard-insertsize.txt"
+        metrics = outdir + "/qc/picard/{sample}.picard-insertsize.txt"
     params:
         java_options = params['picard']['collectinsertsize']['java_options'],
-        tmpdir = os.path.join(params['scratch'], 
-                                "picard-insertsize-{}".format(str(uuid.uuid4())))
-    threads: params['picard']['collectinsersize']['threads']
+        tmpdir = params['scratch'],
+    threads: params['picard']['collectinsertsize']['threads']
     log:
         outdir + "/logs/picard/picard_insertsize_{sample}.log"
     shell:
@@ -44,7 +44,7 @@ rule picard_collectoxog:
         bam = outdir + "/bams/{sample}_nodups.bam",
         reference_genome = reference['reference_genome']
     output:
-        metrics = outdir + "/qc/picard/{}.picard-oxog.txt"
+        metrics = outdir + "/qc/picard/{sample}.picard-oxog.txt"
     params:
         java_options = params['picard']['collectoxog']['java_options'],
         tmpdir = os.path.join(params['scratch'], 
@@ -60,22 +60,32 @@ rule picard_collectoxog:
             "O={output.metrics} "
 
 
-# rule picard_collecthsmetrics:
-#     input:
-#         bam = outdir + "/bams/{sample}_nodups.bam",
-#         reference_genome = reference['reference_genome'],
-#         target_region = 
-#     output:
-#     params:
-#     threads:
-#     log:
-#     shell:
-#         "picard {params.java_options}  -Djava.io.tmpdir={self.scratch} 
-#             "CollectHsMetrics  "
-#             "I={self.input}   "
-#             "R={self.reference_sequence} "
-#             "O={self.output_metrics} "
-#             "TI={self.target_regions}  "
-#             "BI={self.bait_regions} "
-#             "BAIT_SET_NAME={self.bait_name} "
-#             "METRIC_ACCUMULATION_LEVEL={self.accumulation_level} "
+rule picard_collecthsmetrics:
+    input:
+        bam = outdir + "/bams/{sample}_nodups.bam",
+        reference_genome = reference['reference_genome'],
+        target_region = lambda wildcards: get_targets(wildcards, reference,
+                                                      'targets-interval_list-slopped20'),
+        bait_regions = lambda wildcards: get_targets(wildcards, reference,
+                                                      'targets-interval_list-slopped20')
+    output:
+        metrics = outdir + "/qc/picard/{sample}.picard-hsmetrics.txt"
+    params:
+        bait_name = lambda wildcards: get_target_name(wildcards),
+        java_options = params['picard']['collecthsmetrics']['java_options'],
+        tmpdir = os.path.join(params['scratch'], 
+                                "picard-hsmetrics-{}".format(str(uuid.uuid4())))
+    threads: params['picard']['collecthsmetrics']['threads']
+    log:
+        outdir + "/logs/picard/picard_hsmetrics_{sample}.log"
+    shell:
+        "picard {params.java_options}  -Djava.io.tmpdir={params.tmpdir} " 
+            "CollectHsMetrics  "
+            "I={input.bam}   "
+            "R={input.reference_genome} "
+            "O={output.metrics} "
+            "TI={input.target_region}  "
+            "BI={input.bait_regions} "
+            "BAIT_SET_NAME={params.bait_name} "
+            "METRIC_ACCUMULATION_LEVEL=LIBRARY "
+

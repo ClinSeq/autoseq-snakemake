@@ -11,6 +11,8 @@ from pipeline.utils.clinseq_barcodes import data_available_for_clinseq_barcode, 
     check_sampledata, normpath
 
 
+# def cmd_prompt():
+
 @click.group()
 @click.pass_context
 def cli(context):
