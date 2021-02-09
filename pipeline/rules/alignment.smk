@@ -38,7 +38,6 @@ rule gatk3_targetcreator:
         target_intervals = outdir + "/bams/{sample}.intervals"
     params:
         java_options = params['gatk3']['realigner_target']['java_options'],
-        jarfile = params['gatk3']['jarfile'],
         extra = params['gatk3']['realigner_target']['extra'],
         tmpdir = os.path.join(params['scratch'], 
                                 "realignerTC-{}".format(str(uuid.uuid4())))
@@ -70,7 +69,6 @@ rule gatk3_indelrealigner:
     output:
         bam = outdir + "/bams/{sample}_realigned.bam",
     params:
-        jarfile = params['gatk3']['jarfile'],
         java_options = params['gatk3']['indel_realigner']['java_options'],
         extra = params['gatk3']['indel_realigner']['extra'],
         tmpdir = os.path.join(params['scratch'], 

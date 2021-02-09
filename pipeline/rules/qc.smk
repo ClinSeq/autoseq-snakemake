@@ -89,3 +89,49 @@ rule picard_collecthsmetrics:
             "BAIT_SET_NAME={params.bait_name} "
             "METRIC_ACCUMULATION_LEVEL=LIBRARY "
 
+
+rule create_popvcf:
+    input:
+        popvcf = reference["swegene_common"],
+        normal_target = reference['targets'][get_capture_name(NORMAL_CAPTURE.capture_kit_id)]['targets-bed-slopped20'],
+        cancer_target = reference['targets'][get_capture_name(CANCER_CAPTURE.capture_kit_id)]['targets-bed-slopped20']
+    output:
+        outdir + "/contamination/pop_vcf_{}-{}.vcf".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    params:
+        tmpdir = params['scratch']
+    threads: params['create_popvcf']['threads']
+    log:
+        outdir + "/logs/contamination/pop_vcf_{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    shell:
+        "create_contest_vcfs.py {input.normal_target} "
+            " {input.cancer_target} "
+            " {input.popvcf}  "
+            " --tmpdir {params.tmpdir}  "
+            " --output-filename {output} "
+
+
+rule gatk3_contest_cancer:
+    input:
+        reference_genome = reference['reference_genome'],
+        normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
+        cancer_bam = capture_to_results[CANCER_CAPTURE].bamfile,
+        popvcf = outdir + "/contamination/pop_vcf_{}-{}.vcf".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    output:
+        "{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR)
+    params:
+        tmpdir = params['scratch'],
+        min_genotype_ratio = params['contest_cancer']['min_genotype_ratio']
+    threads: params['contest_cancer']['threads']
+    log:
+        outdir + "/logs/contamination/contest-{}.log".format(CANCER_CAPTURE_STR)
+    shell:
+        "source activate gatk_3 && "
+        "gatk3 -Xmx15g -Djava.io.tmpdir={params.tmpdir} -T ContEst  "
+            "-R {input.reference_genome}  "
+            "-I:eval {input.cancer_bam}  "
+            "-I:genotype {input.normal_bam} "
+            "--popfile {input.popvcf}  "
+            "--min_genotype_ratio {params.min_genotype_ratio}  "
+            " -o {output} "
+
+

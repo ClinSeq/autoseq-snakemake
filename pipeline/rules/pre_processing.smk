@@ -30,7 +30,7 @@ rule skewer_trim_pe:
 
             shell(
                 " mkdir {tmpdir} && "
-                " mkdir {output} && "
+                " mkdir -p {output} && "
                 " skewer -z -t {threads} --quiet "
                 " -o {prefix} "
                 " {fq1} {fq2} && "

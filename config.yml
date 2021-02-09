@@ -17,7 +17,6 @@ params:
     fastqc:
         threads: 8
     gatk3:
-        jarfile: scripts/GenomeAnalysisTK-3.5.jar
         realigner_target:
             java_options: "-Xmx8G -XX:ParallelGCThreads=10"
             extra: " -allowPotentiallyMisencodedQuals --maxIntervalSize 20000 "
@@ -64,5 +63,10 @@ params:
             java_options: " -Xmx10g -XX:+AggressiveOpts -XX:ParallelGCThreads=8 "
             extra: 
             threads: 8
-        
+    create_popvcf:
+        threads: 8
+    contest_cancer:
+        min_genotype_ratio: 0.95
+        threads: 8
+    
     

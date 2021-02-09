@@ -64,7 +64,6 @@ rule gatk3_targetcreator_umi_1:
         target_intervals = outdir + "/bams/{sample}_umi.intervals"
     params:
         java_options = params['gatk3']['realigner_target']['java_options'],
-        jarfile = params['gatk3']['jarfile'],
         extra = params['gatk3']['realigner_target']['extra'],
         tmpdir = os.path.join(params['scratch'], 
                                 "realignerTC-{}".format(str(uuid.uuid4())))
@@ -97,7 +96,6 @@ rule gatk3_indelrealigner_umi_1:
     output:
         bam = outdir + "/bams/{sample}_realigned-1.bam"
     params:
-        jarfile = params['gatk3']['jarfile'],
         java_options = params['gatk3']['indel_realigner']['java_options'],
         extra = params['gatk3']['indel_realigner']['extra'],
         tmpdir = os.path.join(params['scratch'], 
@@ -199,7 +197,6 @@ rule gatk3_targetcreator_umi_2:
         target_intervals = outdir + "/bams/{sample}_consensus.intervals"
     params:
         java_options = params['gatk3']['realigner_target']['java_options'],
-        jarfile = params['gatk3']['jarfile'],
         extra = params['gatk3']['realigner_target']['extra'],
         tmpdir = os.path.join(params['scratch'], 
                                 "realignerTC-{}".format(str(uuid.uuid4())))
@@ -231,7 +228,6 @@ rule gatk3_indelrealigner_umi_2:
     output:
         bam = outdir + "/bams/{sample}_realigned-2.bam"
     params:
-        jarfile = params['gatk3']['jarfile'],
         java_options = params['gatk3']['indel_realigner']['java_options'],
         extra = params['gatk3']['indel_realigner']['extra'],
         tmpdir = os.path.join(params['scratch'], 

@@ -1,4 +1,5 @@
 import json
+import collections
 
 include: "utils/utils.py"
 include: "utils/clinseq_barcodes.py"
@@ -26,8 +27,20 @@ wildcard_constraints:
 
 shell.prefix("set -eo pipefail;")
 
-# QC outputs
 
+# NORMAL, CANCER SAMPLES
+NORMAL_CAPTURE = [extract_unique_capture(sample) for sample in all_clinseq_barcodes if '-N-' in sample][0]
+CANCER_CAPTURE = [extract_unique_capture(sample) for sample in all_clinseq_barcodes if '-CFDNA-' in sample][0]
+NORMAL_CAPTURE_STR = compose_lib_capture_str(NORMAL_CAPTURE)
+CANCER_CAPTURE_STR = compose_lib_capture_str(CANCER_CAPTURE)
+
+# set bam files to unique capture
+BAM_FILES = expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes)
+capture_to_results = collections.defaultdict(SinglePanelResults)
+capture_to_results[NORMAL_CAPTURE].bamfile = get_capture_bam(NORMAL_CAPTURE, BAM_FILES)
+capture_to_results[CANCER_CAPTURE].bamfile = get_capture_bam(CANCER_CAPTURE, BAM_FILES)
+
+# QC outputs
 PICARD_QC = list()
 PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-insertsize.txt", 
                         sample=all_clinseq_barcodes))
@@ -36,12 +49,15 @@ PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-oxog.txt",
 PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-hsmetrics.txt",
                         sample=all_clinseq_barcodes))
 
+CONTEST = list()
+CONTEST.append(outdir + "/contamination/pop_vcf_{}-{}.vcf".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+CONTEST.append("{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR))
+
 rule all:
     input: 
-        expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes),
         expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=all_clinseq_barcodes),
         expand(outdir + "/qc/fastqc/{sample}/", sample=all_clinseq_barcodes),
-        PICARD_QC
+        BAM_FILES, PICARD_QC, CONTEST
     output:
         outdir + "/analysis_finished"
     shell:

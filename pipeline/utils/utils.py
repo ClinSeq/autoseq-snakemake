@@ -19,6 +19,7 @@ def get_scheduler(scheduler, filetype):
     
     return script
 
+
 class Pipeline:
     def __init__(self, snakefile, config, workdir, dryrun, profile, cores='4'):
         self.snakefile = snakefile
@@ -57,6 +58,36 @@ class Pipeline:
                               profile_cmd,
                               slurm_cmd)
         return cmd
+
+
+class SinglePanelResults():
+    def __init__(self):
+        self.bamfile = None
+        # CNV kit outputs:
+        self.cnr = None
+        self.cns = None
+        self.seg = None
+
+        # Coverage QC call:
+        self.cov_qc_call = None
+
+        # Structural variants, organised as a dictionary with event type as key,
+        # and their effects:
+        self.svs = {}
+        self.sv_effects = None
+
+        # FIXME: Msings should never be run for normal samples => OO progr. fail. Refactor.
+        # Msings output:
+        self.msings_output = None
+
+
+def get_capture_bam(unique_capture, bamfiles):
+    sample_str = compose_sample_str(unique_capture)
+
+    for bam in bamfiles:
+        filename = os.path.basename(bam)
+        if sample_str in filename:
+            return bam
 
 
 def get_readgroup(wildcards):
