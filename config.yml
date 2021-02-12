@@ -17,6 +17,7 @@ params:
     fastqc:
         threads: 8
     gatk3:
+        threads: 8
         realigner_target:
             java_options: "-Xmx8G -XX:ParallelGCThreads=10"
             extra: " -allowPotentiallyMisencodedQuals --maxIntervalSize 20000 "
@@ -68,5 +69,20 @@ params:
     contest_cancer:
         min_genotype_ratio: 0.95
         threads: 8
-    
+    contam_caveat:
+        threads: 8
+    cnvkit:
+        threads: 8
+    cnvkit-fix:
+        threads: 8
+    cnstoseg:
+        threads: 8
+    cnvkit_tracks:
+        threads: 8
+    gatk4:
+        threads: 8
+        haplotypecaller:
+            java_options: " -Xmx10g "
+    strelka:
+        threads: 8
     

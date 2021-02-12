@@ -36,9 +36,12 @@ CANCER_CAPTURE_STR = compose_lib_capture_str(CANCER_CAPTURE)
 
 # set bam files to unique capture
 BAM_FILES = expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes)
+UMIBAM_FILES = expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=all_clinseq_barcodes)
 capture_to_results = collections.defaultdict(SinglePanelResults)
 capture_to_results[NORMAL_CAPTURE].bamfile = get_capture_bam(NORMAL_CAPTURE, BAM_FILES)
 capture_to_results[CANCER_CAPTURE].bamfile = get_capture_bam(CANCER_CAPTURE, BAM_FILES)
+capture_to_results[NORMAL_CAPTURE].umibam = get_capture_bam(NORMAL_CAPTURE, UMIBAM_FILES)
+capture_to_results[CANCER_CAPTURE].umibam = get_capture_bam(CANCER_CAPTURE, UMIBAM_FILES)
 
 # QC outputs
 PICARD_QC = list()
@@ -52,12 +55,28 @@ PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-hsmetrics.txt",
 CONTEST = list()
 CONTEST.append(outdir + "/contamination/pop_vcf_{}-{}.vcf".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 CONTEST.append("{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR))
+CONTEST.append("{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR))
+
+# CNV - calling
+CNV_OUTPUT = list()
+CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cns", sample=all_clinseq_barcodes))
+CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cnr", sample=all_clinseq_barcodes))
+CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.seg", sample=all_clinseq_barcodes))
+CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_profile.bedGraph", sample=all_clinseq_barcodes))
+CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_segments.bedGraph", sample=all_clinseq_barcodes))
+
+
+# variants - output
+VARIANTS = list()
+# germline variants
+VARIANTS.append("{}/variants/{}-all.germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR))
+
 
 rule all:
     input: 
         expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=all_clinseq_barcodes),
         expand(outdir + "/qc/fastqc/{sample}/", sample=all_clinseq_barcodes),
-        BAM_FILES, PICARD_QC, CONTEST
+        BAM_FILES, PICARD_QC, CONTEST, CNV_OUTPUT, VARIANTS
     output:
         outdir + "/analysis_finished"
     shell:
@@ -70,3 +89,5 @@ if umi:
 else:
     include: "rules/alignment.smk"
 include: "rules/qc.smk"
+include: "rules/cnvcalling.smk"
+include: "rules/germline.smk"

@@ -135,3 +135,14 @@ rule gatk3_contest_cancer:
             " -o {output} "
 
 
+rule contam_caveat:
+    input:
+        "{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR)
+    output:
+        "{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR)
+    threads: params['contam_caveat']['threads']
+    log:
+        "{}/contamination/{}-contam-caveat.log".format(outdir, CANCER_CAPTURE_STR)
+    shell:
+        "contest_to_contam_caveat.py  "
+        " {input}  > {output}"

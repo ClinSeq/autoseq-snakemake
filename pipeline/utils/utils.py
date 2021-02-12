@@ -63,6 +63,8 @@ class Pipeline:
 class SinglePanelResults():
     def __init__(self):
         self.bamfile = None
+        self.umibam = None
+        
         # CNV kit outputs:
         self.cnr = None
         self.cns = None
@@ -90,6 +92,24 @@ def get_capture_bam(unique_capture, bamfiles):
             return bam
 
 
+def get_cnvkitref(wildcards, reference):
+
+    unique_capture = extract_unique_capture(wildcards.sample)
+    capture_name = get_capture_name(unique_capture.capture_kit_id)
+    library_name = get_prep_kit_name(unique_capture.library_kit_id)
+    sample_type = unique_capture.sample_type
+
+    cnvkit_ref = None
+    if 'cnvkit-ref' in reference['targets'][capture_name]:
+        cnvkit_ref = list(list(reference['targets'][capture_name]['cnvkit-ref'].values())[0].values())[0]
+    
+    try:
+        cnvkit_ref = reference['targets'][capture_name]['cnvkit-ref'][library_name][sample_type]
+    except KeyError:
+        pass
+
+    return cnvkit_ref
+
 def get_readgroup(wildcards):
     library_id = parse_prep_id(wildcards.sample)
     sample_string = compose_sample_str(extract_unique_capture(wildcards.sample))
@@ -102,7 +122,7 @@ def get_readgroup(wildcards):
 
 def get_targets(wildcards, reference, key):
     """
-    return capture id
+    return bed file corresponds to capture id
     """
     unique_capture = extract_unique_capture(wildcards.sample)
     targets = get_capture_name(unique_capture.capture_kit_id)
@@ -154,6 +174,27 @@ def get_capture_name(capture_kit_code):
 
     else:
         return capture_kit_loopkup[capture_kit_code]
+
+
+def get_prep_kit_name(prep_kit_code):
+    """
+    Convert a two-letter library kit code to the corresponding library kit name.
+
+    :param prep_kit_code: Two-letter library prep code. 
+    :return: The library prep kit name.
+    """
+
+    # FIXME: Move this information to a config JSON file.
+    prep_kit_lookup = {"BN": "BIOO_NEXTFLEX",
+                        "KH": "KAPA_HYPERPREP",
+                        "TD": "THRUPLEX_DNASEQ",
+                        "TP": "THRUPLEX_PLASMASEQ",
+                        "TF": "THRUPLEX_FD",
+                        "TS": "TRUSEQ_RNA",
+                        "NN": "NEBNEXT_RNA",
+                        "VI": "VILO_RNA"}
+
+    return prep_kit_lookup[prep_kit_code]
 
 
 def make_paths_absolute(input_dict, base_path):
