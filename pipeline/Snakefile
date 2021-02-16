@@ -22,8 +22,8 @@ sampledata, all_clinseq_barcodes = check_sampledata(libdir, samples)
 outdir = config['outdir']
 
 wildcard_constraints:
-    sample = "|".join(all_clinseq_barcodes)
-
+    sample = "|".join(all_clinseq_barcodes),
+    events = "|".join(["DEL", "DUP", "INV", "TRA"])
 
 shell.prefix("set -eo pipefail;")
 
@@ -70,7 +70,8 @@ CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_segments.bedGraph", sample=all_
 VARIANTS = list()
 # germline variants
 VARIANTS.append("{}/variants/{}-all.germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR))
-
+VARIANTS.append("{}/variants/{}-{}-all.somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
+VARIANTS.append(expand(outdir + "/svs/{sample}-{events}.gtf", sample=all_clinseq_barcodes, events=["DEL", "DUP", "INV", "TRA"]))
 
 rule all:
     input: 
@@ -91,3 +92,5 @@ else:
 include: "rules/qc.smk"
 include: "rules/cnvcalling.smk"
 include: "rules/germline.smk"
+include: "rules/somatic.smk"
+include: "rules/structuralvariants.smk"
