@@ -110,6 +110,11 @@ def get_cnvkitref(wildcards, reference):
 
     return cnvkit_ref
 
+
+# def set_capture_svs(unique_capture):
+
+
+
 def get_readgroup(wildcards):
     library_id = parse_prep_id(wildcards.sample)
     sample_string = compose_sample_str(extract_unique_capture(wildcards.sample))
