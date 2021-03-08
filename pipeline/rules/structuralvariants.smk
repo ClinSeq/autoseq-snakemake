@@ -22,23 +22,108 @@ rule svcaller_run:
         "source deactivate"
 
 
+rule sveffect_predict:
+    input:
+        unpack(lambda wildcards: get_capture_svs(wildcards, outdir)),
+        ts_regions = reference["ts_regions"],
+        ar_regions = reference["ar_regions"],
+        fusion_regions = reference["fusion_regions"]
+    output:
+        combined_bed = outdir + "/svs/{sample}_combined.bed",
+        effects_json = outdir + "/svs/{sample}_effects.json"
+    threads: params['svcaller']['threads']
+    log:
+        outdir + "/logs/svs/sveffect-{sample}.log"
+    shell:
+        "source activate svcallerenv  && "
+        "sveffect make-bed --del-gtf {input.DEL} "
+        " --dup-gtf {input.DUP} "
+        " --inv-gtf {input.INV} " 
+        " --tra-gtf {input.TRA} "
+        " {output.combined_bed} &&  "
+        "sveffect predict --ts-regions {input.ts_regions} "
+        " --ar-regions {input.ar_regions} "
+        " --fusion-regions {input.fusion_regions} "
+        " --effects-filename {output.effects_json} {output.combined_bed} && "
+        "source deactivate"
 
-# rule sveffect_predict:
-#     input:
-#         gtf = outdir + "/svs/{sample}-{events}.gtf",
-#     output:
-#     params:
-#     threads:
-#     log:
-#     shell:
-#         "source activate svcallerenv  && "
-#         "sveffect make-bed --del-gtf {DEL.gtf} "
-#         " --dup-gtf {DUP.gtf} "
-#         " --inv-gtf {INV.gtf} " 
-#         " --tra-gtf {TRA.gtf} "
-#         " {combined.bed} &&  "
-#         "sveffect predict --ts-regions {autoseq-genome/intervals/ts_regions.bed} "
-#         " --ar-regions {autoseq-genome/intervals/ar_regions.bed} "
-#         " --fusion-regions {autoseq-genome/intervals/fusion_regions.bed} "
-#         " --effects-filename {effects.json} {combined.bed} && "
-#         "source deactivate"
+
+rule svaba_svcalling:
+    input:
+        normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
+        tumor_bam = capture_to_results[CANCER_CAPTURE].bamfile,
+        reference = reference["bwaIndex"]
+    output:
+        somatic = "{}/svs/svaba/{}-{}.svaba.somatic.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        germline = "{}/svs/svaba/{}-{}.svaba.germline.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    params:
+        prefix = "{}/svs/svaba/{}-{}".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        tmpdir = params['scratch']
+    threads: params['svaba']['threads']
+    log:
+        outdir + "/logs/svs/svaba-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    shell:
+        "svaba run -t {input.tumor_bam} "
+        " -n {input.normal_bam} "
+        " -G {input.reference} "
+        " -p {threads} -a {params.prefix} "
+        " && samtools sort -T {params.tmpdir} "
+        " {params.prefix}.contigs.bam "
+        " -o {params.prefix}.contigs.sort.bam && "
+        "samtools index {params.prefix}.contigs.sort.bam"
+
+
+rule lumpy_svcalling:
+    input:
+        normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
+        tumor_bam = capture_to_results[CANCER_CAPTURE].bamfile
+    output:
+        normal_discordants_bam = "{}/svs/lumpy/{}-discordants.bam".format(outdir, NORMAL_CAPTURE_STR),
+        tumor_discordants_bam = "{}/svs/lumpy/{}-discordants.bam".format(outdir, CANCER_CAPTURE_STR),
+        normal_splitters_bam = "{}/svs/lumpy/{}-splitters.bam".format(outdir, NORMAL_CAPTURE_STR),
+        tumor_splitters_bam = "{}/svs/lumpy/{}-splitters.bam".format(outdir, CANCER_CAPTURE_STR),
+        vcf = "{}/svs/lumpy/{}-{}-lumpy.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    params:
+        tmpdir = params['scratch']
+    threads: params['lumpy']['threads']
+    log:
+        outdir + "/logs/svs/lumpy-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    shell:
+        "samtools view -@ {threads} -b -F 1294 {input.normal_bam}  "
+        "  > {output.normal_discordants_bam}  && "
+        "samtools view -@ {threads} -b -F 1294 {input.tumor_bam}  "
+        "  > {output.tumor_discordants_bam} &&  "
+        "samtools view -@ {threads} -h {input.normal_bam} "
+        " | extractSplitReads_BwaMem -i stdin | "
+        " samtools view -@ {threads} -Sb -  > {output.normal_splitters_bam} && "
+        "samtools view -@ {threads} -h {input.tumor_bam} "
+        " | extractSplitReads_BwaMem -i stdin | "
+        " samtools view -@ {threads} -Sb -  > {output.tumor_splitters_bam}  && "
+        "lumpyexpress -T {params.tmpdir} -B {input.tumor_bam},{input.normal_bam} "
+        " -S {output.tumor_splitters_bam},{output.normal_splitters_bam}  " 
+        " -D {output.tumor_discordants_bam},{output.normal_discordants_bam} "
+        " -o {output.vcf} && "
+        "samtools index {output.normal_discordants_bam} && "
+        "samtools index {output.normal_splitters_bam} && "
+        "samtools index {output.tumor_discordants_bam} && "
+        "samtools index {output.tumor_splitters_bam} "
+
+
+rule gridss_svcalling:
+    input:
+        normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
+        tumor_bam = capture_to_results[CANCER_CAPTURE].bamfile,
+        reference = reference["bwaIndex"]
+    output:
+        workdir = directory("{}/svs/gridss/".format(outdir)),
+        assembly_bam = "{}/svs/gridss/{}-{}-assembly.bam".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        vcf = "{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    threads: params['gridss']['threads']
+    log:
+        outdir + "/logs/svs/gridss-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    shell:
+        "gridss.sh --reference {input.reference} "
+        " --assembly {output.assembly_bam} "
+        " --threads {threads} --steps  ALL "
+        " --workingdir {output.workdir} "
+        " --output {output.vcf} {input.normal_bam} {input.tumor_bam}"

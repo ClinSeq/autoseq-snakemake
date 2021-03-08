@@ -201,10 +201,11 @@ rule somaticseq_merge:
         " --vardict-vcf {input.vardict} " 
         " --strelka-snv {input.strelka_snvs} "
         " --strelka-indel {input.strelka_indels} && "
-        " source deactivate && "
+        " source deactivate && source activate gatk_3 && "
         " gatk3 --java-options '-Djava.io.tmpdir={params.tmpdir}' -T CombineVariants "
         " -R {input.reference} --variant {output.consensus_snv} " 
         " --variant {output.consensus_indel} " 
-        " --assumeIdenticalSamples  | bgzip > {output.all_somatic} "
+        " --assumeIdenticalSamples  | bgzip > {output.all_somatic} && "
+        " source deactivate && "
         " && tabix -p vcf {output.all_somatic} "
     

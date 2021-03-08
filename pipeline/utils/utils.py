@@ -111,8 +111,13 @@ def get_cnvkitref(wildcards, reference):
     return cnvkit_ref
 
 
-# def set_capture_svs(unique_capture):
+def get_capture_svs(wildcards, outdir):
+    events = ["DEL", "DUP", "INV", "TRA"]
+    gtfs = dict()
+    for event in events:
+        gtfs[event] = outdir + "/svs/{}-{}.gtf".format(wildcards.sample, event)
 
+    return gtfs
 
 
 def get_readgroup(wildcards):

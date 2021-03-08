@@ -99,3 +99,9 @@ params:
         threads: 8
     svcaller:
         threads: 8
+    svaba:
+        threads: 8
+    lumpy:
+        threads: 8
+    gridss:
+        threads: 8

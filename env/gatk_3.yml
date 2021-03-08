@@ -3,3 +3,5 @@ channels:
   - bioconda
 dependencies:
   - gatk=3.8
+  - python=2.7
+  - strelka=2.9.10

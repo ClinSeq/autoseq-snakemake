@@ -68,10 +68,15 @@ CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_segments.bedGraph", sample=all_
 
 # variants - output
 VARIANTS = list()
-# germline variants
 VARIANTS.append("{}/variants/{}-all.germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR))
 VARIANTS.append("{}/variants/{}-{}-all.somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
 VARIANTS.append(expand(outdir + "/svs/{sample}-{events}.gtf", sample=all_clinseq_barcodes, events=["DEL", "DUP", "INV", "TRA"]))
+VARIANTS.append(expand(outdir + "/svs/{sample}_effects.json", sample=all_clinseq_barcodes))
+VARIANTS.append("{}/svs/svaba/{}-{}.svaba.somatic.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+VARIANTS.append("{}/svs/svaba/{}-{}.svaba.germline.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+VARIANTS.append("{}/svs/lumpy/{}-{}-lumpy.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+VARIANTS.append("{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+
 
 rule all:
     input: 
