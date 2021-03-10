@@ -9,7 +9,7 @@ rule vardict_somatic:
         reference_dict = reference["reference_dict"],
         normal_bam = capture_to_results[NORMAL_CAPTURE].umibam,
         cancer_bam = capture_to_results[CANCER_CAPTURE].umibam,
-        target_bed = reference['targets'][capture_name]['targets-bed-slopped20-gz']
+        target_bed = reference['targets'][capture_name]['targets-bed-slopped20']
     output:
         "{}/variants/vardict/{}-{}.vardict-somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     params:
@@ -17,20 +17,21 @@ rule vardict_somatic:
         tumorid = compose_sample_str(CANCER_CAPTURE),
         min_alt_frac = params['vardict']['min_alt_frac'],
         min_num_reads = params['vardict']['min_num_reads'],
-        target_bed = reference["targets"][capture_name]["blacklist-bed"]
+        blacklist_bed = reference["targets"][capture_name]["blacklist-bed"]
     threads: params['vardict']['threads']
     log:
         "{}/logs/variants/{}-{}.vardict-somatic.vcf.gz.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     run:
         freq_filter = (" bcftools filter -e 'STATUS !~ \".*Somatic\"' 2> /dev/null "
-                       "| %s -c 'from pipeline.utils.bcbio import depth_freq_filter_input_stream; import sys; print depth_freq_filter_input_stream(sys.stdin, %s, \"%s\")' " %
+                       "| %s -c 'from pipeline.utils.bcbio import depth_freq_filter_input_stream; import sys; print(depth_freq_filter_input_stream(sys.stdin, %s, \"%s\"))' " %
                        (sys.executable, 0, 'bwa'))
 
         somatic_filter = (" sed 's/\\.*Somatic\\\"/Somatic/' "  # changes \".*Somatic\" to Somatic
                           "| sed 's/REJECT,Description=\".*\">/REJECT,Description=\"Not Somatic via VarDict\">/' "
-                          "| %s -c 'from pipeline.utils.bcbio import call_somatic; import sys; print call_somatic(sys.stdin.read())' " % sys.executable)
+                          "| %s -c 'from pipeline.utils.bcbio import call_somatic; import sys; print(call_somatic(sys.stdin.read()))' " % sys.executable)
         
         blacklist_filter = ""
+        min_num_reads = ""
 
         if params.blacklist_bed:
             blacklist_filter = " | intersectBed -a . -b {} | ".format(params.blacklist_bed)
@@ -48,15 +49,15 @@ rule vardict_somatic:
               " | var2vcf_paired.pl -P 0.05 -m 4.25 -M " + "-f {} ".format(params.min_alt_frac) + \
               " -N \"{}|{}\" ".format(params.tumorid, params.normalid) + \
               " | " + freq_filter + " | " + somatic_filter + " | " + \
-              " awk -F$'\t' -v OFS='\t' '{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) } {print}' " + \
-              " | awk -F$'\t' -v OFS='\t' '$1!~/^#/ && $4 == $5 \{next\} \{print\}' " + \
+              " awk -F$'\\t' -v OFS='\\t' '{{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) }} {{print}}' " + \
+              " | awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {{next}} {{print}}' " + \
               " | vcfstreamsort -w 1000 " + \
               " | vt decompose -s - |vt normalize  -r {} - ".format(input.reference) + \
               " | bcftools view --apply-filters .,PASS " + \
               " | vcfsorter.pl {} /dev/stdin ".format(input.reference_dict) + \
               " {} ".format(blacklist_filter) + \
               " | bgzip > {output} && tabix -p vcf {output}".format(output=output)
-        
+    
         shell(cmd)
 
 
@@ -77,6 +78,7 @@ rule strelka_somatic:
     log:
         "{}/logs/variants/{}-{}-strelka-somatic.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:
+        "source activate gatk_3 && "
         "configureStrelkaSomaticWorkflow.py --targeted "
         " --normalBam {input.normal_bam} "
         " --tumorBam {input.tumor_bam} "
@@ -181,8 +183,8 @@ rule somaticseq_merge:
         tumor_bam = capture_to_results[CANCER_CAPTURE].umibam
     output:
         rundir = directory("{}/variants/{}-{}-somaticseq".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)),
-        consensus_snv = "{}/variants/{}-{}-somatic-seq/Consensus.sSNV.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-        consensus_indel = "{}/variants/{}-{}-somatic-seq/Consensus.sINDEL.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        consensus_snv = "{}/variants/{}-{}-somaticseq/Consensus.sSNV.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        consensus_indel = "{}/variants/{}-{}-somaticseq/Consensus.sINDEL.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
         all_somatic = "{}/variants/{}-{}-all.somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     params:
         tmpdir = params['scratch']
@@ -201,11 +203,11 @@ rule somaticseq_merge:
         " --vardict-vcf {input.vardict} " 
         " --strelka-snv {input.strelka_snvs} "
         " --strelka-indel {input.strelka_indels} && "
-        " source deactivate && source activate gatk_3 && "
-        " gatk3 --java-options '-Djava.io.tmpdir={params.tmpdir}' -T CombineVariants "
+        " source activate gatk_3 && "
+        " gatk3 -T CombineVariants "
         " -R {input.reference} --variant {output.consensus_snv} " 
         " --variant {output.consensus_indel} " 
         " --assumeIdenticalSamples  | bgzip > {output.all_somatic} && "
         " source deactivate && "
-        " && tabix -p vcf {output.all_somatic} "
+        " tabix -p vcf {output.all_somatic} "
     

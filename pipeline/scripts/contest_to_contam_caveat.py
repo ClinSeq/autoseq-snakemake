@@ -21,9 +21,9 @@ def extract_qc_call(contest_output_file, max_contam):
 
 def write_qc_json(output_file, qc_call):
     output = '''{
-"CALL": "%s"
-}''' % (qc_call)
-    print >> output_file, output
+                "CALL": "%s"
+            }''' % (qc_call)
+    print(output, file=output_file)
 
 
 @click.command()

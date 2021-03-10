@@ -13,7 +13,7 @@ setup(name='autoseq',
       ],
       entry_points={
           'console_scripts': [
-              'autoseq = pipeline.cli:cli',
+              'autoseq = pipeline.cli:console_autoseq',
           ]
       }
     )

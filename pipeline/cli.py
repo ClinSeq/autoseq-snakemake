@@ -1,17 +1,34 @@
 import os
 import json
 import yaml
+from rich.console import Console
 import click
 import subprocess
 
 
+import pipeline
 from pipeline.utils.utils import make_paths_absolute, Pipeline
 from pipeline.utils.clinseq_barcodes import data_available_for_clinseq_barcode, \
     extract_clinseq_barcodes, validate_clinseq_barcodes, convert_barcodes_to_sampledict, \
     check_sampledata, normpath
 
 
-# def cmd_prompt():
+def console_autoseq():
+
+    console = Console()
+    console.print("[magenta]     _         _       ____             ")
+    console.print("[magenta]    / \  _   _| |_ ___/ ___|  ___  __ _ ")
+    console.print("[magenta]   / _ \| | | | __/ _ \___ \ / _ \/ _` |")
+    console.print("[magenta]  / ___ \ |_| | || (_) |__) |  __/ (_| |")
+    console.print("[magenta] /_/   \_\__,_|\__\___/____/ \___|\__, |")
+    console.print("[magenta]                                     |_|")
+    console.print("                         version: {}".format(pipeline.__version__))
+    
+    console.print("\n")
+
+    # run autoseq-cli
+    cli()
+
 
 @click.group()
 @click.pass_context
@@ -93,7 +110,8 @@ def launch(context, ref, samples, outdir, libdir, configfile, scratch, dryrun, p
         click.echo(err)
 
 
-
+if __name__ == "__main__":
+    console_autoseq()
 
 
     

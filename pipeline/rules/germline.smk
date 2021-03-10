@@ -29,12 +29,13 @@ rule strelka_germline:
         reference = reference['reference_genome'],
         call_region = reference['targets'][get_capture_name(NORMAL_CAPTURE.capture_kit_id)]['targets-bed-slopped20-gz'],
     output:
-        rundir = directory("{}/variants/{}-strelka-germline"),
+        rundir = directory("{}/variants/{}-strelka-germline".format(outdir, NORMAL_CAPTURE_STR)),
         vcf = "{}/variants/{}-strelka-germline/results/variants/{}-strelka.passed.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: params["strelka"]["threads"]
     log:
         "{}/logs/variants/{}.strelka-germline.log".format(outdir, NORMAL_CAPTURE_STR)
     shell:
+        "source activate gatk_3 && "
         "configureStrelkaGermlineWorkflow.py  --bam {input.bam} "
         " --ref {input.reference} --targeted "
         " --callRegions {input.call_region} "
@@ -57,7 +58,7 @@ rule gatk3_mergevcf:
     log:
         "{}/logs/variants/{}.combine-germline.log".format(outdir, NORMAL_CAPTURE_STR)
     shell:
-        "source activate gatk_3"
+        "source activate gatk_3 && "
         "gatk3 -T CombineVariants "
         " -R {input.reference} "
         " --variant:haplotypecaller {input.haplotypecaller} "

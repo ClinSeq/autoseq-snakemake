@@ -1,4 +1,5 @@
-
+import os
+import uuid 
 
 rule svcaller_run:
     input:
@@ -84,11 +85,13 @@ rule lumpy_svcalling:
         tumor_splitters_bam = "{}/svs/lumpy/{}-splitters.bam".format(outdir, CANCER_CAPTURE_STR),
         vcf = "{}/svs/lumpy/{}-{}-lumpy.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
-        tmpdir = params['scratch']
+        tmpdir = os.path.join(params['scratch'], 
+                    "lumpy-{}".format(str(uuid.uuid4())))
     threads: params['lumpy']['threads']
     log:
         outdir + "/logs/svs/lumpy-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     shell:
+        "source activate gatk_3 && "
         "samtools view -@ {threads} -b -F 1294 {input.normal_bam}  "
         "  > {output.normal_discordants_bam}  && "
         "samtools view -@ {threads} -b -F 1294 {input.tumor_bam}  "
@@ -109,6 +112,9 @@ rule lumpy_svcalling:
         "samtools index {output.tumor_splitters_bam} "
 
 
+envvars:
+    "GRIDSS_JAR"
+
 rule gridss_svcalling:
     input:
         normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
@@ -118,11 +124,14 @@ rule gridss_svcalling:
         workdir = directory("{}/svs/gridss/".format(outdir)),
         assembly_bam = "{}/svs/gridss/{}-{}-assembly.bam".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         vcf = "{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    params:
+        gridss_jar = os.environ.get('GRIDSS_JAR')
     threads: params['gridss']['threads']
     log:
         outdir + "/logs/svs/gridss-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     shell:
         "gridss.sh --reference {input.reference} "
+        " --jar {params.gridss_jar} "
         " --assembly {output.assembly_bam} "
         " --threads {threads} --steps  ALL "
         " --workingdir {output.workdir} "

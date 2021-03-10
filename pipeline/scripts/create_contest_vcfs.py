@@ -16,7 +16,7 @@ def extract_allele_counts(vcf_fields):
 
 def write_contest_vcf(vcf_as_df, vcf_header, output_file):
     vcf_idx_reset = vcf_as_df.reset_index(drop=True)
-    print >> output_file, vcf_header.strip()
+    print(vcf_header.strip(), file=output_file)
     allele_count_tups = pd.DataFrame(list(vcf_idx_reset.apply(extract_allele_counts, axis = 1)))
     vcf_with_allele_freq = vcf_idx_reset.iloc[:,:7]
     vcf_with_allele_freq["alt_count"] = allele_count_tups[0]
@@ -31,22 +31,21 @@ def write_contest_vcf(vcf_as_df, vcf_header, output_file):
         last_elem = "AC=%d;AF=%1.3f;AN=%d;CEU={%s*=%1.3f,%s=%1.3f};set=CEU" % \
             (vcf_fields[7], vcf_fields[9], vcf_fields[8],
              vcf_fields[3], vcf_fields[9], vcf_fields[4], 1 - vcf_fields[9])
-        print >> output_file, "%s\t%d\t%s\t%s\t%s\t%1.2f\t%s\t%s" % tuple(vcf_fields[:7] + [last_elem])
+        print("%s\t%d\t%s\t%s\t%s\t%1.2f\t%s\t%s" % tuple(vcf_fields[:7] + [last_elem]), file = output_file)
 
 
 def extract_vcf_header(vcf_file):
     '''Extract the header from the vcf file. Currently, just assumes that the header is
     within the first 10000 lines of the specified file.'''
-
     header_str = ""
     line_idx = 0
     curr_line = vcf_file.readline()
     while curr_line != "" and line_idx < 10000:
-        if curr_line[0] == "#":
-            header_str += curr_line
+        if curr_line[0] == 35:
+            header_str += curr_line.decode("utf-8")
         curr_line = vcf_file.readline()
         line_idx += 1
-
+    
     return header_str
 
 
@@ -96,6 +95,7 @@ files and population allele frequency VCF file.
     # Write the VCF records to the output file, the format contest requires:
     logging.info("Writing vcf file output...")
     vcf_header = extract_header_unknown_type(population_vcf)
+    print(vcf_header)
     vcf_bed_intersect_df = vcf_bed_intersect.to_dataframe()
 
     # Filter the VCF DF to exclude unwanted SNP types:
