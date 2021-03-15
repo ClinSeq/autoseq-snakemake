@@ -105,3 +105,13 @@ params:
         threads: 8
     gridss:
         threads: 8
+    purecn:
+        threads: 8
+        maxnonclonal: " --maxnonclonal 0.2 "
+        minaf: " --minaf 0.01 "
+    vcfaddsample:
+        threads: 8
+    liqbiocna:
+        threads: 8
+    vep:
+        threads: 8

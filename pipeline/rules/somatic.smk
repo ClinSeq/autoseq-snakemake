@@ -1,4 +1,6 @@
+import os
 import sys
+import uuid
 
 capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
 somatic_vcf = dict()
@@ -210,4 +212,75 @@ rule somaticseq_merge:
         " --assumeIdenticalSamples  | bgzip > {output.all_somatic} && "
         " source deactivate && "
         " tabix -p vcf {output.all_somatic} "
-    
+
+
+rule vardict_purecn:
+    input:
+        reference = reference['reference_genome'],
+        reference_dict = reference["reference_dict"],
+        dbsnp = reference["dbSNP"],
+        normal_bam = capture_to_results[NORMAL_CAPTURE].umibam,
+        cancer_bam = capture_to_results[CANCER_CAPTURE].umibam,
+        target_bed = reference['targets'][capture_name]['targets-bed-slopped20']
+    output:
+        "{}/variants/{}-{}.vardict-somatic-purecn.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    params:
+        tmpdir = params['scratch'],
+        normalid = compose_sample_str(NORMAL_CAPTURE),
+        tumorid = compose_sample_str(CANCER_CAPTURE),
+        min_alt_frac = params['vardict']['min_alt_frac'],
+        min_num_reads = 6,
+    threads: params['vardict']['threads']
+    run:
+        tmp_vcf = "{scratch}/{uuid}.vcf.gz".format(scratch=params.tmpdir, uuid=uuid.uuid4())
+
+        # run vardict without removing non-somatic variants, and adding "SOMATIC" INFO field for somatic variants
+        vardict_cmd = "vardict-java -G {} ".format(input.reference) + \
+                      "-f {} ".format(params.min_alt_frac) + \
+                      "-N {} ".format(params.tumorid) + \
+                      "-r {} ".format(params.min_num_reads) + \
+                      " -b \"{}|{}\" ".format(input.cancer_bam, input.normal_bam) + \
+                      " -c 1 -S 2 -E 3 -g 4 -Q 10 {} ".format(input.target_bed) + \
+                      " | testsomatic.R " + \
+                      " | var2vcf_paired.pl -P 0.9 -m 4.25 " + "-f {} ".format(params.min_alt_frac) + \
+                      " -N \"{}|{}\" ".format(params.tumorid, params.normalid) + \
+                      " | awk -F$'\\t' -v OFS='\\t' '{{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) }} {{print}}' " + \
+                      " |  awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {{next}} {{print}}'" + \
+                      " | sed 's/Somatic;/Somatic;SOMATIC;/g' " + \
+                      " | sed '/^#CHROM/i ##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description=\"Somatic event\">' " + \
+                      " | vcfstreamsort -w 1000 " + \
+                      " | bcftools view --apply-filters .,PASS " + \
+                      " | vcfsorter.pl {} /dev/stdin ".format(input.reference_dict) + \
+                      " | bgzip > " + tmp_vcf + " && tabix -p vcf " + tmp_vcf
+
+        # annotate variants with dbSNP id
+        annotate_cmd = "bcftools annotate --annotation {} --columns ID ".format(input.dbsnp) + \
+                       " --output-type z --output {} ".format(output) + tmp_vcf + \
+                       " && tabix -p vcf {}".format(output)
+
+        # remove temporary vcf and tabix
+        rm_tmp_cmd = "rm " + tmp_vcf + "*"
+
+        shell(" && ".join([vardict_cmd, annotate_cmd, rm_tmp_cmd]))
+
+
+rule vcf_add_sample:
+    input:
+        germline_vcf = "{}/variants/{}-all.germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
+        tumor_bam = capture_to_results[CANCER_CAPTURE].umibam
+    output:
+        vcf = "{}/variants/{}-and-{}.germline-variants-with-somatic-afs.vcf.gz".format(
+            outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    params:
+        tumorid = CANCER_SAMPLE_STR,
+        tmpdir = os.path.join(params['scratch'], 
+                    "vcfaddsample-{}".format(str(uuid.uuid4())))
+    threads: params['vcfaddsample']['threads']
+    shell:
+        "vcf_filter.py --no-filtered  {input.germline_vcf} "
+        " sq --site-quality 5 | bgzip > {params.tmpdir}.vcf.gz && "
+        " vcf_add_sample.py --filter_hom --samplename {params.tumorid}  " 
+        " {params.tmpdir}.vcf.gz  {input.tumor_bam} "
+        " | bgzip > {output.vcf} && "
+        " tabix -p vcf {output.vcf} && " 
+        " rm {params.tmpdir}.vcf.gz "

@@ -33,6 +33,8 @@ NORMAL_CAPTURE = [extract_unique_capture(sample) for sample in all_clinseq_barco
 CANCER_CAPTURE = [extract_unique_capture(sample) for sample in all_clinseq_barcodes if '-CFDNA-' in sample][0]
 NORMAL_CAPTURE_STR = compose_lib_capture_str(NORMAL_CAPTURE)
 CANCER_CAPTURE_STR = compose_lib_capture_str(CANCER_CAPTURE)
+NORMAL_SAMPLE_STR = compose_sample_str(NORMAL_CAPTURE)
+CANCER_SAMPLE_STR = compose_sample_str(CANCER_CAPTURE)
 
 # set bam files to unique capture
 BAM_FILES = expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes)
@@ -64,18 +66,44 @@ CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cnr", sample=all_clinseq_barcod
 CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.seg", sample=all_clinseq_barcodes))
 CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_profile.bedGraph", sample=all_clinseq_barcodes))
 CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_segments.bedGraph", sample=all_clinseq_barcodes))
+CNV_OUTPUT.append("{}/variants/{}-{}-liqbio-cna.json".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+CNV_OUTPUT.append("{}/qc/{}-{}-liqbio-purity.json".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+CNV_OUTPUT.append("{}/qc/{}-{}-liqbio-cna.png".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+
+
+# set results to capture
+for sample in all_clinseq_barcodes:
+    # cnv results to sample capture 
+    if '-N-' in sample:
+        capture_to_results[NORMAL_CAPTURE].cns = outdir + "/cnv/{}.cns".format(sample)
+        capture_to_results[NORMAL_CAPTURE].cnr = outdir + "/cnv/{}.cnr".format(sample)
+        capture_to_results[NORMAL_CAPTURE].seg = outdir + "/cnv/{}.seg".format(sample)
+    
+    if '-CFDNA-' in sample:
+        capture_to_results[CANCER_CAPTURE].cns = outdir + "/cnv/{}.cns".format(sample)
+        capture_to_results[CANCER_CAPTURE].cnr = outdir + "/cnv/{}.cnr".format(sample)
+        capture_to_results[CANCER_CAPTURE].seg = outdir + "/cnv/{}.seg".format(sample)
+
+    # svs results to 
+    for event in ["DEL", "DUP", "INV", "TRA"]:
+        if '-N-' in sample:
+            capture_to_results[NORMAL_CAPTURE].svs[event] = "{}/svs/{}-{}.gtf".format(outdir, sample, event)
+        
+        if '-CFDNA-' in sample:
+            capture_to_results[CANCER_CAPTURE].svs[event] = "{}/svs/{}-{}.gtf".format(outdir, sample, event)
 
 
 # variants - output
 VARIANTS = list()
-VARIANTS.append("{}/variants/{}-all.germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR))
-VARIANTS.append("{}/variants/{}-{}-all.somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
+VARIANTS.append("{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR))
+VARIANTS.append("{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
 VARIANTS.append(expand(outdir + "/svs/{sample}-{events}.gtf", sample=all_clinseq_barcodes, events=["DEL", "DUP", "INV", "TRA"]))
 VARIANTS.append(expand(outdir + "/svs/{sample}_effects.json", sample=all_clinseq_barcodes))
 VARIANTS.append("{}/svs/svaba/{}-{}.svaba.somatic.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 VARIANTS.append("{}/svs/svaba/{}-{}.svaba.germline.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 VARIANTS.append("{}/svs/lumpy/{}-{}-lumpy.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 VARIANTS.append("{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+
 
 
 rule all:
@@ -99,3 +127,4 @@ include: "rules/cnvcalling.smk"
 include: "rules/germline.smk"
 include: "rules/somatic.smk"
 include: "rules/structuralvariants.smk"
+include: "rules/vep.smk"
