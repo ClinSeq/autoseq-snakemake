@@ -150,6 +150,17 @@ def get_target_name(wildcards):
     return targets
 
 
+def get_chromosomes(targets):
+
+    chromos = set()
+    with open(targets, 'r') as bedfile:
+        for line in bedfile.readlines():
+            chromos.add(line.split('\t')[0])
+    
+    return chromos
+            
+
+
 def get_capture_name(capture_kit_code):
     """
     Convert a two-letter capture kit code to the corresponding capture kit name.

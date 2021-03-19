@@ -21,7 +21,7 @@ def console_autoseq():
     console.print("[magenta]   / _ \| | | | __/ _ \___ \ / _ \/ _` |")
     console.print("[magenta]  / ___ \ |_| | || (_) |__) |  __/ (_| |")
     console.print("[magenta] /_/   \_\__,_|\__\___/____/ \___|\__, |")
-    console.print("[magenta]                                     |_|")
+    console.print("[magenta]                                     |_| :snake:")
     console.print("                         version: {}".format(pipeline.__version__))
     
     console.print("\n")

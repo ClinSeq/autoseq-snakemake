@@ -21,9 +21,6 @@ sampledata, all_clinseq_barcodes = check_sampledata(libdir, samples)
 
 outdir = config['outdir']
 
-wildcard_constraints:
-    sample = "|".join(all_clinseq_barcodes),
-    events = "|".join(["DEL", "DUP", "INV", "TRA"])
 
 shell.prefix("set -eo pipefail;")
 
@@ -37,8 +34,14 @@ NORMAL_SAMPLE_STR = compose_sample_str(NORMAL_CAPTURE)
 CANCER_SAMPLE_STR = compose_sample_str(CANCER_CAPTURE)
 
 # set bam files to unique capture
+capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
+targets = reference['targets'][capture_name]['targets-bed-slopped20']
+all_chromosomes = list(get_chromosomes(targets))
 BAM_FILES = expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes)
 UMIBAM_FILES = expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=all_clinseq_barcodes)
+split_bams = expand(outdir + "/bams/split_targets/bam/{sample}_{umimap}.{chr}.bam", 
+                sample = all_clinseq_barcodes, chr = all_chromosomes, umimap = ["umimapped", "umimapped-2"])
+split_bedfile = outdir + "/bams/split_targets/"
 capture_to_results = collections.defaultdict(SinglePanelResults)
 capture_to_results[NORMAL_CAPTURE].bamfile = get_capture_bam(NORMAL_CAPTURE, BAM_FILES)
 capture_to_results[CANCER_CAPTURE].bamfile = get_capture_bam(CANCER_CAPTURE, BAM_FILES)
@@ -105,12 +108,17 @@ VARIANTS.append("{}/svs/lumpy/{}-{}-lumpy.vcf".format(outdir, NORMAL_CAPTURE_STR
 VARIANTS.append("{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 
 
+wildcard_constraints:
+    sample = "|".join(all_clinseq_barcodes),
+    events = "|".join(["DEL", "DUP", "INV", "TRA"]),
+    chr = "|".join(all_chromosomes)
+
 
 rule all:
     input: 
         expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=all_clinseq_barcodes),
         expand(outdir + "/qc/fastqc/{sample}/", sample=all_clinseq_barcodes),
-        BAM_FILES, PICARD_QC, CONTEST, CNV_OUTPUT, VARIANTS
+        BAM_FILES      
     output:
         outdir + "/analysis_finished"
     shell:
@@ -118,6 +126,7 @@ rule all:
                                     
 
 include: "rules/pre_processing.smk"
+include: "rules/split_targets.smk"
 if umi:
     include: "rules/umi_processing.smk"
 else:

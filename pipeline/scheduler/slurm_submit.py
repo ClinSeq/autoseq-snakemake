@@ -49,7 +49,7 @@ sbatch_options.update(cluster_config.get(job_properties.get("rule"), {}))
 sbatch_options.update(job_properties.get("cluster", {}))
 
 if dependencies:
-    depend_cmd = ",".join(["afterok:%s" % jobid for jobid in dependencies])
+    depend_cmd = ",".join(["afterok:%s" % jobid for jobid in set(dependencies)])
     sbatch_options.update({"dependency": depend_cmd})
 
 

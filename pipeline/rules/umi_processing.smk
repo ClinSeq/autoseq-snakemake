@@ -54,14 +54,13 @@ rule bwa_umialignment:
 
 rule gatk3_targetcreator_umi_1:
     input:
-        bam = outdir + "/bams/{sample}_umimapped.bam",
+        bam = outdir + "/bams/split_targets/bam/{sample}_umimapped.{chr}.bam",
         reference_genome = reference['reference_genome'],
-        target_region = lambda wildcards: get_targets(wildcards, reference,
-                                                      'targets-bed-slopped20'),
+        target_region = outdir + "/bams/split_targets/target.{chr}.bed",
         known_1kg = reference["1KG"],
         known_mills_gs = reference["Mills_and_1KG_gold_standard"]
     output:
-        target_intervals = outdir + "/bams/{sample}_umi.intervals"
+        target_intervals = outdir + "/bams/split_targets/{sample}_umi_{chr}.intervals"
     params:
         java_options = params['gatk3']['realigner_target']['java_options'],
         extra = params['gatk3']['realigner_target']['extra'],
@@ -69,7 +68,7 @@ rule gatk3_targetcreator_umi_1:
                                 "realignerTC-{}".format(str(uuid.uuid4())))
     threads: params['gatk3']['realigner_target']['threads']
     log:
-        outdir + "/logs/gatk_realigner_targetcreator_umi_1_{sample}.log"
+        outdir + "/logs/gatk_realigner_targetcreator_umi_1_{sample}_{chr}.log"
     shell:
         "source activate gatk_3 && "
         "gatk3 {params.java_options} -Djava.io.tmpdir={params.tmpdir} "
@@ -86,15 +85,14 @@ rule gatk3_targetcreator_umi_1:
 
 rule gatk3_indelrealigner_umi_1:
     input:
-        bam = outdir + "/bams/{sample}_umimapped.bam",
+        bam = outdir + "/bams/split_targets/bam/{sample}_umimapped.{chr}.bam",
         reference_genome = reference['reference_genome'],
-        target_region = lambda wildcards: get_targets(wildcards, reference,
-                                                      'targets-bed-slopped20'),
+        target_region = outdir + "/bams/split_targets/target.{chr}.bed",
         known_1kg = reference["1KG"],
         known_mills_gs = reference["Mills_and_1KG_gold_standard"],
-        target_intervals = outdir + "/bams/{sample}_umi.intervals"
+        target_intervals = outdir + "/bams/split_targets/{sample}_umi_{chr}.intervals"
     output:
-        bam = outdir + "/bams/{sample}_realigned-1.bam"
+        bam = outdir + "/bams/split_targets/bam/{sample}_realigned-1.{chr}.bam"
     params:
         java_options = params['gatk3']['indel_realigner']['java_options'],
         extra = params['gatk3']['indel_realigner']['extra'],
@@ -102,7 +100,7 @@ rule gatk3_indelrealigner_umi_1:
                                 "indelrealigner-{}".format(str(uuid.uuid4())))
     threads: params['gatk3']['indel_realigner']['threads']
     log:
-        outdir + "/logs/gatk_indel_realigner_umi_1_{sample}.log"
+        outdir + "/logs/gatk_indel_realigner_umi_1_{sample}_{chr}.log"
     shell:
         "source activate gatk_3 && "
         "gatk3 {params.java_options} -Djava.io.tmpdir={params.tmpdir} "
@@ -187,14 +185,13 @@ rule bwa_umialignment_2:
 
 rule gatk3_targetcreator_umi_2:
     input:
-        bam = outdir + "/bams/{sample}_umimapped-2.bam",
+        bam = outdir + "/bams/split_targets/bam/{sample}_umimapped-2.{chr}.bam",
         reference_genome = reference['reference_genome'],
-        target_region = lambda wildcards: get_targets(wildcards, reference,
-                                                      'targets-bed-slopped20'),
+        target_region = outdir + "/bams/split_targets/target.{chr}.bed",
         known_1kg = reference["1KG"],
         known_mills_gs = reference["Mills_and_1KG_gold_standard"]
     output:
-        target_intervals = outdir + "/bams/{sample}_consensus.intervals"
+        target_intervals = outdir + "/bams/split_targets/bam/{sample}_consensus_{chr}.intervals"
     params:
         java_options = params['gatk3']['realigner_target']['java_options'],
         extra = params['gatk3']['realigner_target']['extra'],
@@ -202,7 +199,7 @@ rule gatk3_targetcreator_umi_2:
                                 "realignerTC-{}".format(str(uuid.uuid4())))
     threads: params['gatk3']['realigner_target']['threads']
     log:
-        outdir + "/logs/gatk_realigner_targetcreator_umi_2_{sample}.log"
+        outdir + "/logs/gatk_realigner_targetcreator_umi_2_{sample}.{chr}.log"
     shell:
         "source activate gatk_3 && "
         "gatk3 {params.java_options} -Djava.io.tmpdir={params.tmpdir} "
@@ -218,15 +215,14 @@ rule gatk3_targetcreator_umi_2:
 
 rule gatk3_indelrealigner_umi_2:
     input:
-        bam = outdir + "/bams/{sample}_umimapped-2.bam",
+        bam = outdir + "/bams/split_targets/bam/{sample}_umimapped-2.{chr}.bam",
         reference_genome = reference['reference_genome'],
-        target_region = lambda wildcards: get_targets(wildcards, reference,
-                                                      'targets-bed-slopped20'),
+        target_region = outdir + "/bams/split_targets/target.{chr}.bed",
         known_1kg = reference["1KG"],
         known_mills_gs = reference["Mills_and_1KG_gold_standard"],
-        target_intervals = outdir + "/bams/{sample}_consensus.intervals"
+        target_intervals = outdir + "/bams/split_targets/bam/{sample}_consensus_{chr}.intervals"
     output:
-        bam = outdir + "/bams/{sample}_realigned-2.bam"
+        bam = outdir + "/bams/split_targets/bam/{sample}_realigned-2.{chr}.bam"
     params:
         java_options = params['gatk3']['indel_realigner']['java_options'],
         extra = params['gatk3']['indel_realigner']['extra'],
@@ -234,7 +230,7 @@ rule gatk3_indelrealigner_umi_2:
                                 "indelrealigner-{}".format(str(uuid.uuid4())))
     threads: params['gatk3']['indel_realigner']['threads']
     log:
-        outdir + "/logs/gatk_indel_realigner_umi_2_{sample}.log"
+        outdir + "/logs/gatk_indel_realigner_umi_2_{sample}.{chr}.log"
     shell:
         "source activate gatk_3 && "
         "gatk3 {params.java_options} -Djava.io.tmpdir={params.tmpdir} "

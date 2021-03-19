@@ -9,7 +9,8 @@ setup(name='autoseq',
           "snakemake",
           "click",
           "pyyaml",
-          "pandas"
+          "pandas",
+          "rich"
       ],
       entry_points={
           'console_scripts': [
