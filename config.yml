@@ -115,3 +115,7 @@ params:
         threads: 8
     vep:
         threads: 8
+    msisensor:
+        threads: 8
+    multiqc:
+        threads: 8

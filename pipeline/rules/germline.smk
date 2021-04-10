@@ -67,3 +67,15 @@ rule gatk3_mergevcf:
         " -priority haplotypecaller,strelka "
         " | bgzip > {output}  && "
         " tabix -p vcf {output}"
+    
+
+rule germline_generateIGVnav:
+    input:
+        vcf = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR),
+        oncokb = reference['oncokb']
+    output:
+        "{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR)
+    params:
+        vcftype = "germline"
+    shell:
+        "generateIGVnavInput.py {input.vcf} {input.oncokb} {params.vcftype} --output {output} "

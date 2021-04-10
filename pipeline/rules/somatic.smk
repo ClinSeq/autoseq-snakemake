@@ -284,3 +284,26 @@ rule vcf_add_sample:
         " | bgzip > {output.vcf} && "
         " tabix -p vcf {output.vcf} && " 
         " rm {params.tmpdir}.vcf.gz "
+
+
+rule make_allelic_fraction_track:
+    input:
+        vcf = "{}/variants/{}-and-{}.germline-variants-with-somatic-afs.vcf.gz".format(
+            outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    output:
+        "{}/variants/{}-and-{}.germline-variants-somatic-afs.bedGraph".format(
+            outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    shell:
+        "generate_allelic_fraction_bedGraph.py  --output {output}  {input.vcf} "
+
+
+rule somatic_generateIGVnav:
+    input:
+        somatic = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        oncokb = reference['oncokb']
+    output:
+        "{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    params:
+        vcftype = "somatic"
+    shell:
+        "generateIGVnavInput.py {input.somatic} {input.oncokb} {params.vcftype} --output {output} "

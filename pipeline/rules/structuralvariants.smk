@@ -49,6 +49,31 @@ rule sveffect_predict:
         "source deactivate"
 
 
+rule generateIGVnavInput_svcaller:
+    input:
+        capture_to_results[NORMAL_CAPTURE].svs.values(),
+        capture_to_results[CANCER_CAPTURE].svs.values()
+    output:
+        svcaller_normal = "{}/svs/igv/{}_svcaller.mut".format(outdir, NORMAL_CAPTURE_STR),
+        svcaller_tumor = "{}/svs/igv/{}_svcaller.mut".format(outdir, CANCER_CAPTURE_STR)
+    run:
+        input_dir = outdir + "/svs/"
+        igvout = outdir + "/svs/igv/"
+
+        somatic_cmd = "generateIGVnavInput_SV.py --input {} ".format(input_dir) + \
+                        " --sdid {} ".format(CANCER_CAPTURE_STR) + \
+                        " --tool svcaller " + \
+                        " --vcftype somatic " + \
+                        " --output {} ".format(igvout)
+
+        germline_cmd = "generateIGVnavInput_SV.py --input {} ".format(input_dir) + \
+                        " --sdid {} ".format(NORMAL_CAPTURE_STR) + \
+                        " --tool svcaller " + \
+                        " --vcftype normal " + \
+                        " --output {} ".format(igvout)
+        shell(" && ".join([somatic_cmd, germline_cmd]))
+
+
 rule svaba_svcalling:
     input:
         normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
@@ -72,6 +97,44 @@ rule svaba_svcalling:
         " {params.prefix}.contigs.bam "
         " -o {params.prefix}.contigs.sort.bam && "
         "samtools index {params.prefix}.contigs.sort.bam"
+
+
+rule svaba_annotate:
+    input:
+        somatic = "{}/svs/svaba/{}-{}.svaba.somatic.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        germline = "{}/svs/svaba/{}-{}.svaba.germline.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    output:
+        somatic = "{}/svs/svaba/{}-{}.svaba.somatic.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        germline = "{}/svs/svaba/{}-{}.svaba.germline.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    shell:
+        "annotate_svaba.py {input.somatic} > {output.somatic} && "
+        "annotate_svaba.py {input.germline} > {output.germline} "
+
+
+rule generateIGVnavInput_svaba:
+    input:
+        somatic = "{}/svs/svaba/{}-{}.svaba.somatic.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        germline = "{}/svs/svaba/{}-{}.svaba.germline.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    output:
+        somatic = "{}/svs/igv/{}-{}_somatic_svaba.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        germline = "{}/svs/igv/{}-{}_germline_svaba.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    run:
+        output_prefix = outdir + "/svs/igv/{}-{}".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+        sdid = "-".join(NORMAL_CAPTURE_STR.split("-")[1:3])
+
+        somatic_cmd = "generateIGVnavInput_SV.py --input {} ".format(input.somatic) + \
+                " --sdid {} ".format(sdid) + \
+                " --tool svaba " + \
+                " --vcftype somatic " + \
+                " --output {} ".format(output_prefix)
+        
+        germline_cmd = "generateIGVnavInput_SV.py --input {} ".format(input.germline) + \
+                " --sdid {} ".format(sdid) + \
+                " --tool svaba " + \
+                " --vcftype germline " + \
+                " --output {} ".format(output_prefix)
+
+        shell(" && ".join([somatic_cmd, germline_cmd]))
 
 
 rule lumpy_svcalling:
@@ -112,6 +175,25 @@ rule lumpy_svcalling:
         "samtools index {output.tumor_splitters_bam} "
 
 
+rule generateIGVnavInput_lumpy:
+    input:
+        vcf = "{}/svs/lumpy/{}-{}-lumpy.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    output:
+        "{}/svs/igv/{}-{}_lumpy_len500_SU24.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        "{}/svs/igv/{}-{}_lumpy_len1k_SU50.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    run:
+        output_prefix = outdir + "/svs/igv/{}-{}".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+        sdid = "-".join(NORMAL_CAPTURE_STR.split("-")[1:3])
+
+        cmd = "generateIGVnavInput_SV.py --input {} ".format(input.vcf) + \
+                " --sdid {} ".format(sdid) + \
+                " --tool lumpy " + \
+                " --vcftype somatic " + \
+                " --output {} ".format(output_prefix)
+        
+        shell(cmd)
+
+
 envvars:
     "GRIDSS_JAR"
 
@@ -136,3 +218,45 @@ rule gridss_svcalling:
         " --threads {threads} --steps  ALL "
         " --workingdir {output.workdir} "
         " --output {output.vcf} {input.normal_bam} {input.tumor_bam}"
+
+
+rule generateIGVnavInput_gridss:
+    input:
+        vcf = "{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    output:
+        "{}/svs/igv/{}-{}_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    run:
+        output_prefix = outdir + "/svs/igv/{}-{}".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+        sdid = "-".join(NORMAL_CAPTURE_STR.split("-")[1:3])
+
+        cmd = "generateIGVnavInput_SV.py --input {} ".format(input.vcf) + \
+                " --sdid {} ".format(sdid) + \
+                " --tool gridss " + \
+                " --vcftype somatic " + \
+                " --output {} ".format(output_prefix)
+        
+        shell(cmd)
+
+
+rule annotate_generateIGVnavInput:
+    input:
+        svcaller_normal = "{}/svs/igv/{}_svcaller.mut".format(outdir, NORMAL_CAPTURE_STR),
+        svcaller_tumor = "{}/svs/igv/{}_svcaller.mut".format(outdir, CANCER_CAPTURE_STR),
+        svaba_somatic = "{}/svs/igv/{}-{}_somatic_svaba.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        svaba_germline = "{}/svs/igv/{}-{}_germline_svaba.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        lumpy_len500 = "{}/svs/igv/{}-{}_lumpy_len500_SU24.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        lumpy_1k = "{}/svs/igv/{}-{}_lumpy_len1k_SU50.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        gridss_somatic = "{}/svs/igv/{}-{}_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        genes = reference["genes_bed"],
+        target_bed = reference['targets'][capture_name]['targets-bed-slopped20']
+    output:
+        "{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    run:
+        input_dir = "{}/svs/igv/".format(outdir)
+
+        cmd = "generateIGVnavInput_SV.py --input {} ".format(input_dir) + \
+                " --annotBed {} ".format(input.genes) + \
+                " --targetBed {}  ".format(input.target_bed) + \
+                " --output {} ".format(output)
+
+        shell(cmd)

@@ -298,7 +298,7 @@ rule picard_markdups:
         bam = outdir + "/bams/{sample}_realigned-1.bam"
     output:
         bam = outdir + "/bams/{sample}_nodups.bam",
-        metrics = outdir + "/bams/{sample}-picard-markdup.metrics.txt"
+        metrics = outdir + "/qc/picard/{sample}-picard-markdup.metrics.txt"
     params:
         rmdups = params['picard']['markdup']['rmdups'],
         java_options = params['picard']['markdup']['java_options'],

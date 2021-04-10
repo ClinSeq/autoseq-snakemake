@@ -70,8 +70,9 @@ rule samtools_merge_realign_1:
         outdir + "/bams/{sample}_realigned-1.bam"
     run:
         bamfiles = " ".join(input)
-        shell("samtools merge {output} {bamfiles}")
+        shell("samtools merge -c -p {output} {bamfiles}")
         shell("samtools index {output} ")
+        shell("rm {bamfiles}")
 
 
 rule samtools_merge_realign_2:
@@ -82,5 +83,6 @@ rule samtools_merge_realign_2:
         outdir + "/bams/{sample}_realigned-2.bam"
     run:
         bamfiles = " ".join(input)
-        shell("samtools merge {output} {bamfiles}")
+        shell("samtools merge -c -p {output} {bamfiles}")
         shell("samtools index {output} ")
+        shell("rm {bamfiles}")

@@ -1,4 +1,5 @@
 import os
+import uuid
 from functools import reduce
 
 
@@ -7,7 +8,6 @@ rule fastqc:
         libdir + "/{sample}/"
     output:
         directory(outdir + "/qc/fastqc/{sample}")
-    params:
     threads: params['fastqc']['threads']
     log:
         outdir + "/logs/fastqc/fastqc_{sample}.log"
@@ -135,6 +135,31 @@ rule gatk3_contest_cancer:
             " -o {output} "
 
 
+rule gatk3_contest_normal:
+    input:
+        reference_genome = reference['reference_genome'],
+        normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
+        cancer_bam = capture_to_results[CANCER_CAPTURE].bamfile,
+        popvcf = outdir + "/contamination/pop_vcf_{}-{}.vcf".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    output:
+        "{}/contamination/{}.contest.txt".format(outdir, NORMAL_CAPTURE_STR)
+    params:
+        tmpdir = params['scratch'],
+        min_genotype_ratio = params['contest_cancer']['min_genotype_ratio']
+    threads: params['contest_cancer']['threads']
+    log:
+        outdir + "/logs/contamination/contest-{}.log".format(NORMAL_CAPTURE_STR)
+    shell:
+        "source activate gatk_3 && "
+        "gatk3 -Xmx15g -Djava.io.tmpdir={params.tmpdir} -T ContEst  "
+            "-R {input.reference_genome}  "
+            "-I:eval  {input.normal_bam} "
+            "-I:genotype {input.cancer_bam} "
+            "--popfile {input.popvcf}  "
+            "--min_genotype_ratio {params.min_genotype_ratio}  "
+            " -o {output} "
+
+
 rule contam_caveat:
     input:
         "{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR)
@@ -180,3 +205,106 @@ rule purecn:
         " {output.genes_csv} "
         " {output.variants_csv} "
         " {output.loh_csv} "
+
+
+cancer_capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
+
+rule msisensor:
+    input:
+        normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
+        tumor_bam = capture_to_results[CANCER_CAPTURE].bamfile,
+        msi_sites = reference['targets'][cancer_capture_name]['msisites']
+    output:
+        "{}/msisensor-{}-{}.tsv".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    params:
+        scratch = params["scratch"]
+    threads: params["msisensor"]["threads"]
+    run:
+        output_prefix = "{scratch}/msisensor-{uuid}".format(scratch=params.scratch,
+                                                            uuid=uuid.uuid4())
+        output_table = "{}".format(output_prefix)
+        output_dis = "{}_dis".format(output_prefix)
+        output_germline = "{}_germline".format(output_prefix)
+        output_somatic = "{}_somatic".format(output_prefix)
+
+        cmd = "msisensor msi " + \
+               "-d {} ".format(input.msi_sites) + \
+               "-n {} ".format(input.normal_bam) + \
+               "-t {} ".format(input.tumor_bam) + \
+               "-o {} ".format(output_prefix) + \
+               "-b {} ".format(threads) + \
+               " && cp {} {}".format(output_prefix, output) + \
+               " && rm {} {} {} {}".format(output_table, output_dis,
+                                           output_germline, output_somatic)
+        shell(cmd)
+
+
+bam_name = os.path.basename(capture_to_results[CANCER_CAPTURE].bamfile).split('.bam')[0]
+msings_outdir = "{}/msings-{}".format(outdir, CANCER_CAPTURE_STR)
+msings_output = "{}/{}/{}.MSI_Analysis.txt".format(msings_outdir, bam_name, bam_name)
+
+rule msings:
+    input:
+        bam = capture_to_results[CANCER_CAPTURE].bamfile,
+        reference_genome = reference["reference_genome"],
+        msings_baseline = reference['targets'][cancer_capture_name]['msings-baseline'],
+        msings_bed = reference['targets'][cancer_capture_name]['msings-bed'],
+        msings_intervals = reference['targets'][cancer_capture_name]['msings-msi_intervals']
+    output:
+        msings = msings_output
+    params:
+        prefix = msings_outdir
+    shell:
+        "run_msings.sh -b {input.msings_bed} "
+        " -f {input.reference_genome} "
+        " -i {input.msings_intervals} "
+        " -n {input.msings_baseline} "
+        " -o {params.prefix}  {input.bam} "
+        
+
+rule multiqc:
+    input:
+        PICARD_QC,
+        "{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR)
+    output:
+        directory("{}/multiqc".format(outdir))
+    threads: params['multiqc']['threads']
+    run:
+        basefn = "{}-multiqc".format(CANCER_CAPTURE_STR)
+        cmd = "multiqc " + \
+               " {} ".format(outdir) + \
+               "-o {} ".format(output) + \
+               "-n {} ".format(basefn) + \
+               "-k json " + \
+               " --data-dir --zip-data-dir -v -f"
+        
+        shell(cmd)
+
+
+rule overview_plot:
+    input:
+        PICARD_QC,
+        "{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR),
+        "{}/contamination/{}.contest.txt".format(outdir, NORMAL_CAPTURE_STR),
+        "{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR),
+        msings_output
+    output:
+        "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest))
+    params:
+        samples = ":".join(samples_of_interest)
+    run:
+        from os.path import dirname
+
+        mainpath = dirname(dirname(outdir))
+
+        activate_cmd = "source activate purecn-env"
+
+        running_cmd = "QC_overview.R " + \
+                        "-s {} ".format(params.samples) + \
+                        "-d {} ".format(outdir) + \
+                        "-o {} ".format(output) + \
+                        "-m {} ".format(mainpath)
+        
+        deactivate_cmd = "conda deactivate"
+
+        shell(" && ".join([activate_cmd, running_cmd, deactivate_cmd])) 

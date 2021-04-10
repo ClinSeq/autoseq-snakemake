@@ -21,21 +21,27 @@ def get_scheduler(scheduler, filetype):
 
 
 class Pipeline:
-    def __init__(self, snakefile, config, workdir, dryrun, profile, cores='4'):
+    def __init__(self, snakefile, config, workdir, dryrun, 
+                profile, smk_option, cores='4'):
         self.snakefile = snakefile
         self.cores = cores
         self.configfile = config
         self.workdir = workdir
         self.profile = profile
         self.dryrun = dryrun
+        self.smk_option = smk_option
     
     def build_cmd(self):
         dryrun = ''
         profile_cmd = ''
         slurm_cmd = ''
+        smk_opt = ''
 
         if self.dryrun:
             dryrun = "-n"
+
+        if self.smk_option:
+            smk_opt = self.smk_option
 
         if self.profile == 'slurm':
             slurm_submit = get_scheduler(self.profile, 'pyscript')
@@ -50,13 +56,14 @@ class Pipeline:
                " --cores {} "
                " --directory {} "
                " --configfile {} "
-               " {} {} {} ").format(self.snakefile,
+               " {} {} {} {} ").format(self.snakefile,
                               self.cores,
                               self.workdir,
                               self.configfile,
                               dryrun,
                               profile_cmd,
-                              slurm_cmd)
+                              slurm_cmd,
+                              smk_opt)
         return cmd
 
 
@@ -118,6 +125,12 @@ def get_capture_svs(wildcards, outdir):
         gtfs[event] = outdir + "/svs/{}-{}.gtf".format(wildcards.sample, event)
 
     return gtfs
+
+
+def get_svcaller_mut(wildcards, outdir):
+    sample_str = compose_sample_str(extract_unique_capture(wildcards.sample))
+    
+    return "{}/svs/igv/{}_svcaller.mut".format(outdir, sample_str)
 
 
 def get_readgroup(wildcards):

@@ -49,6 +49,8 @@ capture_to_results[NORMAL_CAPTURE].umibam = get_capture_bam(NORMAL_CAPTURE, UMIB
 capture_to_results[CANCER_CAPTURE].umibam = get_capture_bam(CANCER_CAPTURE, UMIBAM_FILES)
 
 # QC outputs
+samples_of_interest = [compose_lib_capture_str(unique_capture) for unique_capture in
+                               [NORMAL_CAPTURE, CANCER_CAPTURE]]
 PICARD_QC = list()
 PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-insertsize.txt", 
                         sample=all_clinseq_barcodes))
@@ -102,10 +104,17 @@ VARIANTS.append("{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPT
 VARIANTS.append("{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
 VARIANTS.append(expand(outdir + "/svs/{sample}-{events}.gtf", sample=all_clinseq_barcodes, events=["DEL", "DUP", "INV", "TRA"]))
 VARIANTS.append(expand(outdir + "/svs/{sample}_effects.json", sample=all_clinseq_barcodes))
-VARIANTS.append("{}/svs/svaba/{}-{}.svaba.somatic.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
-VARIANTS.append("{}/svs/svaba/{}-{}.svaba.germline.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+VARIANTS.append("{}/svs/svaba/{}-{}.svaba.somatic.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+VARIANTS.append("{}/svs/svaba/{}-{}.svaba.germline.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 VARIANTS.append("{}/svs/lumpy/{}-{}-lumpy.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 VARIANTS.append("{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+VARIANTS.append("{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+
+
+IGV = list()
+IGV.append("{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
+IGV.append("{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR))
+IGV.append("{}/variants/{}-and-{}.germline-variants-somatic-afs.bedGraph".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 
 
 wildcard_constraints:
@@ -116,9 +125,11 @@ wildcard_constraints:
 
 rule all:
     input: 
-        expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=all_clinseq_barcodes),
         expand(outdir + "/qc/fastqc/{sample}/", sample=all_clinseq_barcodes),
-        BAM_FILES      
+        UMIBAM_FILES, BAM_FILES, VARIANTS, CONTEST,
+        CNV_OUTPUT, IGV, PICARD_QC,
+        "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest)),
+        directory("{}/multiqc".format(outdir))
     output:
         outdir + "/analysis_finished"
     shell:
