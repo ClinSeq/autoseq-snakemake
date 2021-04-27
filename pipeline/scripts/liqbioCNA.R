@@ -30,7 +30,8 @@ args <- rbind(
   c("plot_png", NA, 1, "character", "plot .png file name"),
   c("plot_png_normal", NA, 1, "character", "normal CNV plot .png file name"),
   c("cna_json", NA, 1, "character", "CNA output json file name"),
-  c("purity_json", NA, 1, "character", "purity output json file name")
+  c("purity_json", NA, 1, "character", "purity output json file name"),
+  c("gene_track", NA, 1, "character", "gene_track csv file name")
 )
 
 

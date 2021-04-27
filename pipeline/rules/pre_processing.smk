@@ -9,7 +9,7 @@ rule skewer_trim_pe:
         directory(outdir + "/fastqs/skewer/{sample}/")
     params:
         scratch = params['scratch']
-    threads: 8
+    threads: 4
     log:
         outdir + "/logs/skewer/skewer_{sample}.log"
     run:

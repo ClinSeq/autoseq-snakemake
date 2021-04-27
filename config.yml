@@ -15,17 +15,17 @@ params:
         rm_dup: " --removeDups "
         threads: 8
     fastqc:
-        threads: 8
+        threads: 1
     gatk3:
         threads: 8
         realigner_target:
-            java_options: "-Xmx8G -XX:ParallelGCThreads=10"
+            java_options: "-Xmx4G -XX:ParallelGCThreads=4"
             extra: " -allowPotentiallyMisencodedQuals --maxIntervalSize 20000 "
-            threads: 8
+            threads: 4
         indel_realigner:
-            java_options: "-Xmx8G -XX:ParallelGCThreads=10"
+            java_options: "-Xmx8G -XX:ParallelGCThreads=4"
             extra: " -allowPotentiallyMisencodedQuals --maxReadsForRealignment 5000000 --maxReadsInMemory 1000000 "
-            threads: 8
+            threads: 4
     picard:
         markdup:
             rmdups: "true"
@@ -65,20 +65,20 @@ params:
             extra: 
             threads: 8
     create_popvcf:
-        threads: 8
+        threads: 1
     contest_cancer:
         min_genotype_ratio: 0.95
-        threads: 8
+        threads: 1
     contam_caveat:
-        threads: 8
+        threads: 1
     cnvkit:
         threads: 8
     cnvkit-fix:
         threads: 8
     cnstoseg:
-        threads: 8
+        threads: 1
     cnvkit_tracks:
-        threads: 8
+        threads: 1
     gatk4:
         threads: 8
         haplotypecaller:
@@ -98,7 +98,7 @@ params:
     somaticseq:
         threads: 8
     svcaller:
-        threads: 8
+        threads: 1
     svaba:
         threads: 8
     lumpy:
@@ -106,16 +106,16 @@ params:
     gridss:
         threads: 8
     purecn:
-        threads: 8
+        threads: 1
         maxnonclonal: " --maxnonclonal 0.2 "
         minaf: " --minaf 0.01 "
     vcfaddsample:
-        threads: 8
+        threads: 1
     liqbiocna:
-        threads: 8
+        threads: 1
     vep:
         threads: 8
     msisensor:
         threads: 8
     multiqc:
-        threads: 8
+        threads: 1

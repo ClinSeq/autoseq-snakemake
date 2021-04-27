@@ -81,7 +81,8 @@ rule liqbiocna_plot:
         purecn_csv = "{}/purecn/{}.csv".format(outdir, CANCER_CAPTURE_STR),
         purecn_genes_csv = "{}/purecn/{}_genes.csv".format(outdir, CANCER_CAPTURE_STR),
         purecn_variants_csv = "{}/purecn/{}_variants.csv".format(outdir, CANCER_CAPTURE_STR),
-        purecn_loh_csv = "{}/purecn/{}_loh.csv".format(outdir, CANCER_CAPTURE_STR)
+        purecn_loh_csv = "{}/purecn/{}_loh.csv".format(outdir, CANCER_CAPTURE_STR),
+        gene_track = reference['gene_track']
     output:
         liqbiocna_png = "{}/qc/{}-{}-liqbio-cna.png".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         normal_liqbiocna = "{}/qc/{}-liqbio-cna.png".format(outdir, NORMAL_CAPTURE_STR),
@@ -117,7 +118,8 @@ rule liqbiocna_plot:
                     "  --plot_png {} ".format(output.liqbiocna_png) + \
                     "  --plot_png_normal {} ".format(output.normal_liqbiocna) + \
                     "  --cna_json {} ".format(output.cna_json) + \
-                    "  --purity_json {} ".format(output.purity_json) 
+                    "  --purity_json {} ".format(output.purity_json) + \
+                    "  --gene_track {} ".format(input.gene_track)
         
         deactivate_cmd = "source deactivate"
 

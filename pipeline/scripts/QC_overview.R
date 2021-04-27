@@ -90,14 +90,13 @@ for (f in insertsize_files) {
 ContEst = data.frame()
 for (f in contest_files) {
   fname = strsplit(basename(f), split = "\\.")[[1]][1]
-  clinseq_barcodes = strsplit(f, split = "/")[[1]][6]
+  clinseq_barcodes = rev(strsplit(f, split = "/")[[1]])[3]
   samples = unlist(strsplit(clinseq_barcodes, split = "_"))
   if(grepl('-N-', fname, fixed=TRUE)){
     SAMP = samples[1]
   } else {
     SAMP = samples[2]
   }
-  print(SAMP)
   DIR = dirname(dirname(dirname(f)))
   ContEst = rbind(ContEst, cbind(SAMP, DIR, read.table(f, nrow = 1, sep = "\t", header = TRUE, stringsAsFactors = FALSE), 
                                  stringsAsFactors = FALSE))

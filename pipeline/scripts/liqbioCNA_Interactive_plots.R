@@ -31,7 +31,8 @@ args <- rbind(
   c("plot_png", NA, 1, "character", "plot .png file name"),
   c("plot_png_normal", NA, 1, "character", "normal CNV plot .png file name"),
   c("cna_json", NA, 1, "character", "CNA output json file name"),
-  c("purity_json", NA, 1, "character", "purity output json file name")
+  c("purity_json", NA, 1, "character", "purity output json file name"),
+  c("gene_track", NA, 1, "character", "gene_track csv file name")
 )
 
 
@@ -104,7 +105,7 @@ genes$cumstart <- genes$start + chrsizes$cumstart[match(genes$chromosome,chrsize
 genes$cumend <- genes$end + chrsizes$cumstart[match(genes$chromosome,chrsizes$chr)]
 
 ##############Read Gene Track######################
-data2 <- read.table("/nfs/PROBIO/autoseq-genome/gene_track_output.csv", sep=",", na.strings=".", stringsAsFactors=FALSE, quote="", fill=FALSE , comment.char="#", header=TRUE)
+data2 <- read.table(opts$gene_track, sep=",", na.strings=".", stringsAsFactors=FALSE, quote="", fill=FALSE , comment.char="#", header=TRUE)
 data2$cumstart <- data2$Start + chrsizes$cumstart[match(data2$Chromosome,chrsizes$chr)]
 data2$cumend <- data2$End + chrsizes$cumstart[match(data2$Chromosome,chrsizes$chr)]
 
