@@ -79,8 +79,7 @@ rule gatk3_targetcreator_umi_1:
             " -L {input.target_region} "
             " -known {input.known_mills_gs} "
             " -I {input.bam} "
-            " -o {output.target_intervals} 2> {log} && "
-        "source deactivate "
+            " -o {output.target_intervals} 2> {log} "
 
 
 rule gatk3_indelrealigner_umi_1:
@@ -111,8 +110,7 @@ rule gatk3_indelrealigner_umi_1:
             " -known {input.known_mills_gs} "
             " {params.extra}"
             " -I {input.bam} "
-            " -o {output.bam} 2> {log} && "
-        "source deactivate "
+            " -o {output.bam} 2> {log} "
 
 
 rule fgbio_groupreadsbyumi:
@@ -316,3 +314,26 @@ rule picard_markdups:
                 " OUTPUT=/dev/stdout REMOVE_DUPLICATES={params.rmdups} "
                 " | samtools sort -@ {threads} -T {params.tmpdir} -o {output.bam} "
                 " && samtools index {output.bam} 2> {log}"
+
+
+rule rm_interbamfiles:
+    input:
+        expand(outdir + "/bams/{sample}_unmapped.bam", sample=all_clinseq_barcodes),
+        expand(outdir + "/bams/{sample}_umimapped.bam", sample=all_clinseq_barcodes),
+        expand(outdir + "/bams/{sample}_realigned-1.bam", sample=all_clinseq_barcodes),
+        expand(outdir + "/bams/{sample}_groupedbyumi.bam", sample=all_clinseq_barcodes),
+        expand(outdir + "/bams/{sample}_consensus.bam", sample=all_clinseq_barcodes),
+        expand(outdir + "/bams/{sample}_umimapped-2.bam", sample=all_clinseq_barcodes),
+        expand(outdir + "/bams/{sample}_realigned-2.bam", sample=all_clinseq_barcodes),
+        expand(outdir + "/bams/{sample}_consensus_filtered.bam", sample=all_clinseq_barcodes),
+        expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=all_clinseq_barcodes),
+        expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes)
+    output:
+        outdir + "/bams/intermediate_bamfiles.removed"
+    run:
+        del_bam = [bam for bam in input if 'clipoverlap' not in bam and 'nodups' not in bam]
+        bamfiles = " ".join(del_bam)
+        shell("rm {bamfiles} ")
+        shell("touch {output} ")
+        
+        

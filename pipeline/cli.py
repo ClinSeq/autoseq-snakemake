@@ -4,7 +4,7 @@ import yaml
 from rich.console import Console
 import click
 import subprocess
-
+import logging
 
 import pipeline
 from pipeline.utils.utils import make_paths_absolute, Pipeline
@@ -12,10 +12,10 @@ from pipeline.utils.clinseq_barcodes import data_available_for_clinseq_barcode, 
     extract_clinseq_barcodes, validate_clinseq_barcodes, convert_barcodes_to_sampledict, \
     check_sampledata, normpath
 
+console = Console()
 
 def console_autoseq():
 
-    console = Console()
     console.print("[magenta]     _         _       ____             ")
     console.print("[magenta]    / \  _   _| |_ ___/ ___|  ___  __ _ ")
     console.print("[magenta]   / _ \| | | | __/ _ \___ \ / _ \/ _` |")
@@ -33,6 +33,9 @@ def console_autoseq():
 @click.group()
 @click.pass_context
 def cli(context):
+    """
+    Autoseq - pipeline 
+    """
     pass
 
 
@@ -41,6 +44,9 @@ def cli(context):
 @click.argument('barcodes-file', type=str)
 @click.pass_context
 def config(context, barcodes_file, outdir):
+    """
+    Create sample json for given clinseq barcodes
+    """
     clinseq_barcodes = extract_clinseq_barcodes(barcodes_file)
     validate_clinseq_barcodes(clinseq_barcodes)
 
@@ -61,15 +67,22 @@ def config(context, barcodes_file, outdir):
 @click.option("--libdir", help="directory to search libraries")
 @click.option("--configfile", help="configuration file for params")
 @click.option("--scratch", default="/tmp", help="path to /tmp/scratch")
-@click.option("--dryrun/--run", default=False)
-@click.option("--profile", help="job schedulers eg. SLURM")
+@click.option("--dryrun/--run", default=False, help=" --dryrun for testing snakemake workflow")
+@click.option("--umi", is_flag=True, help="To process the data with UMI- Unique Molecular Identifier")
+@click.option("--profile", default='shell', help="job schedulers eg. SLURM")
+@click.option("--use-singularity", is_flag=True, help="To use singularity")
+@click.option("--singularity", help="Path to singularity image")
 @click.option("--smk-opt", help="snakemake option")
 @click.option("--cores", help="max number of cores")
 @click.pass_context
 def launch(context, ref, samples, outdir, libdir, 
-            configfile, scratch, dryrun, profile, cores, smk_opt):
-    # samples
+            configfile, scratch, dryrun, umi, profile, use_singularity,
+            singularity, cores, smk_opt):
+    """
+    launch the respective pipeline with samples json 
+    """
     sample_json = json.load(open(samples))
+    sdid = sample_json['sdid']
 
     # check sample data
     sampledata, all_clinseq_barcodes = check_sampledata(libdir, sample_json)
@@ -83,12 +96,24 @@ def launch(context, ref, samples, outdir, libdir,
     sample_str = "_".join(all_clinseq_barcodes)
     outdir = os.path.join(outdir, sampledata['sdid'], sample_str)
 
+    if use_singularity and not singularity:
+        console.log('Singularity file path is not available, use --singularity for file path')
+        raise click.Abort()
+    
     # update config dict
     config_dict['samples'] = normpath(samples)
     config_dict['reference'] = normpath(ref)
     config_dict['outdir'] = normpath(outdir)
     config_dict['libdir'] = normpath(libdir)
-    out_configpath = os.path.join(normpath(outdir), 'config.yml')
+    config_dict['umi'] = umi
+    config_dict['singularity'] = singularity if use_singularity else ' '
+    out_configpath = os.path.join(normpath(outdir), f"config_{sample_str}.yml")
+
+    # if use_singularity true; need to bind local path to container path
+    bind_paths = set()
+    if use_singularity:
+        for path in ('samples', 'reference', 'outdir', 'libdir'):
+            bind_paths.add(os.path.dirname(config_dict[path]))
 
     # create output dir
     if not os.path.exists(outdir):
@@ -102,10 +127,19 @@ def launch(context, ref, samples, outdir, libdir,
     snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Snakefile')
 
     # building snakemake pipeline 
-    liqbio = Pipeline(snakefile, out_configpath, outdir, dryrun, profile, smk_opt, cores)
+    liqbio = Pipeline(snakefile = snakefile, 
+                      config = out_configpath, 
+                      sdid = sdid, 
+                      workdir = outdir, 
+                      dryrun = dryrun, 
+                      profile = profile, 
+                      smk_option = smk_opt,
+                      use_singularity = use_singularity,
+                      bind_paths = bind_paths,
+                      cores = cores)
     cmd = liqbio.build_cmd()
     
-    #print(cmd)
+    # print(cmd)
     try:
         subprocess.run(cmd, shell=True)
     except Exception as err:

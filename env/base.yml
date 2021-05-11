@@ -20,7 +20,10 @@ dependencies:
   - varscan=2.4.4
   - svaba=1.1.0
   - vawk=0.0.2
+  - multiqc
+  - bioconductor-dnacopy
   - pip:
     - pysam
     - pyvcf
     - cnvkit==0.9.8
+    - multiqc==1.10

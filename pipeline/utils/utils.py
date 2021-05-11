@@ -21,22 +21,26 @@ def get_scheduler(scheduler, filetype):
 
 
 class Pipeline:
-    def __init__(self, snakefile, config, workdir, dryrun, 
-                profile, smk_option, cores='4'):
+    def __init__(self, snakefile, config, sdid, workdir, dryrun, 
+                profile, smk_option, use_singularity, bind_paths, cores='4'):
         self.snakefile = snakefile
         self.cores = cores
         self.configfile = config
+        self.sdid = sdid
         self.workdir = workdir
         self.profile = profile
         self.dryrun = dryrun
         self.smk_option = smk_option
+        self.use_singularity = use_singularity
+        self.bind_paths = bind_paths
     
     def build_cmd(self):
         dryrun = ''
         profile_cmd = ''
         slurm_cmd = ''
         smk_opt = ''
-
+        singularity_cmd = ''
+        
         if self.dryrun:
             dryrun = "-n"
 
@@ -47,21 +51,25 @@ class Pipeline:
             slurm_submit = get_scheduler(self.profile, 'pyscript')
             cluster_config = get_scheduler(self.profile, 'config')
             slurm_cmd = " --notemp --immediate-submit -j 500 "
+            slurm_cmd += " --jobname smk.{{rulename}}.{}.{{jobid}}.sh ".format(self.sdid)
             slurm_cmd += " --cluster-config {} ".format(cluster_config)
             slurm_cmd += (" --cluster '{} "
                           " {{dependencies}} '".format(slurm_submit))
 
+        if self.use_singularity:
+            singularity_cmd = " --use-singularity "
         
         cmd = ("snakemake -p --snakefile {} "
                " --cores {} "
                " --directory {} "
                " --configfile {} "
-               " {} {} {} {} ").format(self.snakefile,
+               " {} {} {} {} {} ").format(self.snakefile,
                               self.cores,
                               self.workdir,
                               self.configfile,
                               dryrun,
                               profile_cmd,
+                              singularity_cmd,
                               slurm_cmd,
                               smk_opt)
         return cmd

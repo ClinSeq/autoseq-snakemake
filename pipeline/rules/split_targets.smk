@@ -72,7 +72,7 @@ rule samtools_merge_realign_1:
         bamfiles = " ".join(input)
         shell("samtools merge -c -p {output} {bamfiles}")
         shell("samtools index {output} ")
-        shell("rm {bamfiles}")
+        shell("rm {bamfiles}")        
 
 
 rule samtools_merge_realign_2:

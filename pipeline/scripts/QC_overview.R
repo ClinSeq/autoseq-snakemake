@@ -125,7 +125,7 @@ for (d in unique(InsertSize_histogram$DIR)) {
   }
 }
 
-print(ContEst)
+
 # add normalized counts for insert size histogram
 InsertSize_histogram$count_norm = NA
 for (d in unique(InsertSize_histogram$DIR)) {
@@ -137,15 +137,28 @@ for (d in unique(InsertSize_histogram$DIR)) {
 }
 
 
+process_samp <- function(sample) {
+    pre = unlist(strsplit(sample, split = "-"))
+    tmp = paste(pre[1:5], collapse="-")
+    libkit = substr(pre[6], 1, 2)
+    capture = substr(pre[7], 1, 2)
+    return(paste(c(tmp, libkit, capture), collapse="-"))
+}
+
+
 # merge the QC tables 
 qc_merge = merge(merge(merge(merge(HsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")),
                  msings, by = c("SAMP", "DIR"), all.x = TRUE)
 
 # add sample type and capture kit
+qc_merge$SAMP = sapply(qc_merge$SAMP, process_samp)
 qc_merge$sample_type = sapply(strsplit(qc_merge$SAMP, split = "-"), "[", 4)
 qc_merge$capture = sapply(strsplit(qc_merge$SAMP, split = "-"), "[", 7)
+qc_merge$capture = substr(qc_merge$capture, 1, 2)
 InsertSize_histogram$sample_type = sapply(strsplit(InsertSize_histogram$SAMP, split = "-"), "[", 4)
 InsertSize_histogram$capture = sapply(strsplit(InsertSize_histogram$SAMP, split = "-"), "[", 7)
+InsertSize_histogram$capture = substr(InsertSize_histogram$capture, 1, 2)
+InsertSize_histogram$SAMP = sapply(InsertSize_histogram$SAMP, process_samp)
 
 # label the samples of interest (soi) and analysis directory of interest (doi)
 samples = strsplit(sample_string, split = ":")[[1]]

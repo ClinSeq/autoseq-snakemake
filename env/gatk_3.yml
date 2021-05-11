@@ -4,5 +4,4 @@ channels:
 dependencies:
   - gatk=3.5
   - python=2.7
-  - strelka=2.9.10
   - lumpy-sv=0.2.14a

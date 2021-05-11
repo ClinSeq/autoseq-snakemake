@@ -11,7 +11,7 @@ refjson = json.load(open(config['reference']))
 # loading reference files
 basepath = os.path.dirname(config['reference'])
 reference = make_paths_absolute(refjson, basepath)
-umi = True # need to change dynamic 
+umi = config['umi']
 
 # libdir
 libdir = config['libdir']
@@ -21,9 +21,7 @@ sampledata, all_clinseq_barcodes = check_sampledata(libdir, samples)
 
 outdir = config['outdir']
 
-
 shell.prefix("set -eo pipefail;")
-
 
 # NORMAL, CANCER SAMPLES
 NORMAL_CAPTURE = [extract_unique_capture(sample) for sample in all_clinseq_barcodes if '-N-' in sample][0]
@@ -33,10 +31,11 @@ CANCER_CAPTURE_STR = compose_lib_capture_str(CANCER_CAPTURE)
 NORMAL_SAMPLE_STR = compose_sample_str(NORMAL_CAPTURE)
 CANCER_SAMPLE_STR = compose_sample_str(CANCER_CAPTURE)
 
-# set bam files to unique capture
+# Extract chromosome from target capture bed
 capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
 targets = reference['targets'][capture_name]['targets-bed-slopped20']
 all_chromosomes = list(get_chromosomes(targets))
+
 BAM_FILES = expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes)
 UMIBAM_FILES = expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=all_clinseq_barcodes)
 split_bams = expand(outdir + "/bams/split_targets/bam/{sample}_{umimap}.{chr}.bam", 
@@ -118,21 +117,27 @@ IGV.append("{}/variants/{}-and-{}.germline-variants-somatic-afs.bedGraph".format
 
 
 wildcard_constraints:
+    sdid = samples['sdid'],
     sample = "|".join(all_clinseq_barcodes),
     events = "|".join(["DEL", "DUP", "INV", "TRA"]),
     chr = "|".join(all_chromosomes)
 
+container: config['singularity']
 
 rule all:
     input: 
         expand(outdir + "/qc/fastqc/{sample}/", sample=all_clinseq_barcodes),
         UMIBAM_FILES, BAM_FILES, VARIANTS, CONTEST,
         CNV_OUTPUT, IGV, PICARD_QC,
+        outdir + "/bams/intermediate_bamfiles.removed",
         "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest)),
         directory("{}/multiqc".format(outdir))
+    params:
+        bamdir = outdir + "/bams/split_targets/bam/*.bam"
     output:
         outdir + "/analysis_finished"
     shell:
+        "rm {params.bamdir} && "
         "date +'%Y-%m-%d T%T %:z' > {output}"
                                     
 
