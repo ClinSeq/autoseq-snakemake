@@ -30,23 +30,15 @@ RUN conda env create -f /env/liqbiocna-env.yml && \
     conda install boost && \
     conda install -c bioconda bioconductor-rhdf5lib && \
     R --quiet -e 'install.packages("BiocManager", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' \
-    -e 'BiocManager::install("VariantAnnotation")' 
-
-RUN ln -s /opt/conda/lib/libreadline.so.7 /opt/conda/lib/libreadline.so.6 && \
-    ln -s /opt/conda/lib/libncurses.so.6 /opt/conda/lib/libncurses.so.5
-
-RUN conda env create --name flanken -f /env/liqbiocna-env.yml && \
-    conda activate flanken && \
-    conda install boost && \
-    conda install -c bioconda bioconductor-rhdf5lib && \
-    R --quiet -e 'install.packages("BiocManager", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' \
-    -e 'BiocManager::install("VariantAnnotation")'  \
+    -e 'BiocManager::install("VariantAnnotation")' \
     -e 'install.packages("getopt", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' \
     -e 'install.packages("gridExtra", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' \
     -e 'install.packages("RJSONIO", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' \
     -e 'install.packages("ggplot2", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' \
     -e 'install.packages("plotly", repos = "http://ftp.acc.umu.se/mirror/CRAN/")'
 
+RUN ln -s /opt/conda/lib/libreadline.so.7 /opt/conda/lib/libreadline.so.6 && \
+    ln -s /opt/conda/lib/libncurses.so.6 /opt/conda/lib/libncurses.so.5
 
 COPY tools/svcallerenv.yml /env/
 
@@ -70,12 +62,14 @@ RUN apt-get update && \
 COPY . /autoseq-snakemake/
 COPY tools/strelka /tools/strelka
 COPY tools/somaticseq /tools/somaticseq
+COPY tools/vcf2maf /tools/vcf2maf
 
 RUN pip install /autoseq-snakemake/
 
-RUN ln -s /opt/conda/envs/gatk_3/lib/libcrypto.so.1.1 /opt/conda/envs/gatk_3/lib/libcrypto.so.1.0.0
+RUN ln -s /opt/conda/envs/gatk_3/lib/libcrypto.so.1.1 /opt/conda/envs/gatk_3/lib/libcrypto.so.1.0.0 && \
+    ln -s /opt/conda/lib/libcrypto.so.1.1 /opt/conda/lib/libcrypto.so.1.0.0
 
 ENV MSINGSENV=/tools/msings/msings-env
 ENV GRISS_JAR=/autoseq-snakemake/pipeline/scripts/gridss-2.10.2-gridss-jar-with-dependencies.jar
-ENV PATH=$PATH:/autoseq-snakemake/pipeline/scripts/:/tools/strelka/bin:/tools/somaticseq/somaticseq
+ENV PATH=$PATH:/autoseq-snakemake/pipeline/scripts/:/tools/strelka/bin:/tools/somaticseq/somaticseq:/tools/vcf2maf
 CMD [ "/bin/bash", "-c" ]

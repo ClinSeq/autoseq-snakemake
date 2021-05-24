@@ -58,7 +58,14 @@ class Pipeline:
 
         if self.use_singularity:
             singularity_cmd = " --use-singularity "
-        
+            singularity_cmd += " --singularity-args ' "
+
+            for path in self.bind_paths:
+                singularity_cmd += f" --bind {path}:{path} "
+            
+            singularity_cmd += "'"
+
+
         cmd = ("snakemake -p --snakefile {} "
                " --cores {} "
                " --directory {} "

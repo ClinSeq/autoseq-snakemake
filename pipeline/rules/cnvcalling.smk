@@ -89,43 +89,63 @@ rule liqbiocna_plot:
         cna_json = "{}/variants/{}-{}-liqbio-cna.json".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         purity_json = "{}/qc/{}-{}-liqbio-purity.json".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
-        normal = capture_to_results[NORMAL_CAPTURE].svs,
-        tumor = capture_to_results[CANCER_CAPTURE].svs
+        normal_del = capture_to_results[NORMAL_CAPTURE].svs['DEL'],
+        normal_dup = capture_to_results[NORMAL_CAPTURE].svs['DUP'],
+        normal_inv = capture_to_results[NORMAL_CAPTURE].svs['INV'],
+        normal_tra = capture_to_results[NORMAL_CAPTURE].svs['TRA'],
+        tumor_del = capture_to_results[CANCER_CAPTURE].svs['DEL'],
+        tumor_dup = capture_to_results[CANCER_CAPTURE].svs['DUP'],
+        tumor_inv = capture_to_results[CANCER_CAPTURE].svs['INV'],
+        tumor_tra = capture_to_results[CANCER_CAPTURE].svs['TRA'],
     threads: params['liqbiocna']['threads']
-    run:
-        activate_liqbiocna = "source activate liqbiocna-env " 
-        activate_flanken = "source activate flanken"
-
-        running_cmd = "  --tumor_cnr {} ".format(input.tumor_cnr) + \
-                    "  --tumor_cns {} ".format(input.tumor_cns) + \
-                    "  --normal_cnr {} ".format(input.normal_cnr) + \
-                    "  --normal_cns {} ".format(input.normal_cns)  + \
-                    "  --het_snps_vcf {} ".format(input.vcf_add_sample) + \
-                    "  --purecn_csv {} ".format(input.purecn_csv) + \
-                    "  --purecn_genes_csv {} ".format(input.purecn_genes_csv) + \
-                    "  --purecn_loh_csv {} ".format(input.purecn_loh_csv) + \
-                    "  --purecn_variants_csv {} ".format(input.purecn_variants_csv) + \
-                    "  --svcaller_T_DEL {} ".format(params.tumor['DEL']) + \
-                    "  --svcaller_T_DUP {} ".format(params.tumor['DUP']) + \
-                    "  --svcaller_T_INV {} ".format(params.tumor['INV']) + \
-                    "  --svcaller_T_TRA {} ".format(params.tumor['TRA']) + \
-                    "  --svcaller_N_DEL {} ".format(params.normal['DEL']) + \
-                    "  --svcaller_N_DUP {} ".format(params.normal['DUP']) + \
-                    "  --svcaller_N_INV {} ".format(params.normal['INV']) + \
-                    "  --svcaller_N_TRA {} ".format(params.normal['TRA']) + \
-                    "  --germline_mut_vcf {} ".format(input.germline_vcf) + \
-                    "  --somatic_mut_vcf {} ".format(input.somatic_vcf) + \
-                    "  --plot_png {} ".format(output.liqbiocna_png) + \
-                    "  --plot_png_normal {} ".format(output.normal_liqbiocna) + \
-                    "  --cna_json {} ".format(output.cna_json) + \
-                    "  --purity_json {} ".format(output.purity_json) + \
-                    "  --gene_track {} ".format(input.gene_track)
-        
-        deactivate_cmd = "source deactivate"
-
-        run_static_plot = "liqbioCNA.R" + running_cmd
-        run_interactive_plot = "liqbioCNA_Interactive_plots.R" + running_cmd
-
-        cmd = " && ".join([activate_liqbiocna, run_static_plot, deactivate_cmd, activate_flanken, run_interactive_plot, deactivate_cmd])
-
-        shell(cmd)
+    shell:
+        "source activate liqbiocna-env && " 
+        "liqbioCNA.R  --tumor_cnr {input.tumor_cnr} "
+                    "  --tumor_cns {input.tumor_cns} "
+                    "  --normal_cnr {input.normal_cnr} "
+                    "  --normal_cns {input.normal_cns} "
+                    "  --het_snps_vcf {input.vcf_add_sample} "
+                    "  --purecn_csv {input.purecn_csv} "
+                    "  --purecn_genes_csv {input.purecn_genes_csv} "
+                    "  --purecn_loh_csv {input.purecn_loh_csv} "
+                    "  --purecn_variants_csv {input.purecn_variants_csv} "
+                    "  --svcaller_T_DEL {params.tumor_del} "
+                    "  --svcaller_T_DUP {params.tumor_dup} "
+                    "  --svcaller_T_INV {params.tumor_inv} "
+                    "  --svcaller_T_TRA {params.tumor_tra} "
+                    "  --svcaller_N_DEL {params.normal_del} "
+                    "  --svcaller_N_DUP {params.normal_dup} "
+                    "  --svcaller_N_INV {params.normal_inv} "
+                    "  --svcaller_N_TRA {params.normal_tra} "
+                    "  --germline_mut_vcf {input.germline_vcf} "
+                    "  --somatic_mut_vcf {input.somatic_vcf} "
+                    "  --plot_png {output.liqbiocna_png} "
+                    "  --plot_png_normal {output.normal_liqbiocna} "
+                    "  --cna_json {output.cna_json} "
+                    "  --purity_json {output.purity_json} "
+                    "  --gene_track {input.gene_track}  && "
+        "liqbioCNA_Interactive_plots.R  --tumor_cnr {input.tumor_cnr} "
+                    "  --tumor_cns {input.tumor_cns} "
+                    "  --normal_cnr {input.normal_cnr} "
+                    "  --normal_cns {input.normal_cns} "
+                    "  --het_snps_vcf {input.vcf_add_sample} "
+                    "  --purecn_csv {input.purecn_csv} "
+                    "  --purecn_genes_csv {input.purecn_genes_csv} "
+                    "  --purecn_loh_csv {input.purecn_loh_csv} "
+                    "  --purecn_variants_csv {input.purecn_variants_csv} "
+                    "  --svcaller_T_DEL {params.tumor_del} "
+                    "  --svcaller_T_DUP {params.tumor_dup} "
+                    "  --svcaller_T_INV {params.tumor_inv} "
+                    "  --svcaller_T_TRA {params.tumor_tra} "
+                    "  --svcaller_N_DEL {params.normal_del} "
+                    "  --svcaller_N_DUP {params.normal_dup} "
+                    "  --svcaller_N_INV {params.normal_inv} "
+                    "  --svcaller_N_TRA {params.normal_tra} "
+                    "  --germline_mut_vcf {input.germline_vcf} "
+                    "  --somatic_mut_vcf {input.somatic_vcf} "
+                    "  --plot_png {output.liqbiocna_png} "
+                    "  --plot_png_normal {output.normal_liqbiocna} "
+                    "  --cna_json {output.cna_json} "
+                    "  --purity_json {output.purity_json} "
+                    "  --gene_track {input.gene_track} && "
+        " source deactivate "

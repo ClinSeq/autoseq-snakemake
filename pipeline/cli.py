@@ -1,21 +1,22 @@
 import os
+import sys
 import json
 import yaml
 from rich.console import Console
+from rich.table import Column, Table
 import click
 import subprocess
-import logging
 
+from loguru import logger as Log
 import pipeline
 from pipeline.utils.utils import make_paths_absolute, Pipeline
 from pipeline.utils.clinseq_barcodes import data_available_for_clinseq_barcode, \
     extract_clinseq_barcodes, validate_clinseq_barcodes, convert_barcodes_to_sampledict, \
     check_sampledata, normpath
 
-console = Console()
 
 def console_autoseq():
-
+    console = Console()
     console.print("[magenta]     _         _       ____             ")
     console.print("[magenta]    / \  _   _| |_ ___/ ___|  ___  __ _ ")
     console.print("[magenta]   / _ \| | | | __/ _ \___ \ / _ \/ _` |")
@@ -31,12 +32,20 @@ def console_autoseq():
 
 
 @click.group()
+@click.option('--loglevel', default='INFO', help='level of logging')
+@click.option("-v", "--verbose", is_flag=True, default=False, help="Print verbose output to the console.")
 @click.pass_context
-def cli(context):
+def cli(context, loglevel, verbose):
     """
-    Autoseq - pipeline 
+    Autoseq - pipeline
+
+    Autoseq consists of a custom-pipeline with additional support modules aimed 
+    primarily for the analysis of data from high-throughput sequencing of liquid biopsies.
     """
-    pass
+    Log.remove()
+    Log.add(sys.stdout, colorize=True, 
+            format="<green>{time:YYYY-MM-DD at HH:mm:ss}</green> | {level} | <level>{message}</level>", 
+            level=loglevel)
 
 
 @cli.command()
@@ -56,8 +65,27 @@ def config(context, barcodes_file, outdir):
         fn = "{}/{}.json".format(outdir, sdid)
         with open(fn, 'w') as f:
             json.dump(sample_dict[sdid], f, sort_keys=True, indent=4)
-            click.echo(f"Autoseq samples config file created - {fn}")
+            Log.info(f"Autoseq samples config file created - {fn}")
 
+
+@cli.command()
+@click.pass_context
+def list(context):
+    """
+    List autoseq available pipelines with version
+    """
+    console = Console()
+
+    pipelines = Table(show_header=True, header_style="bold magenta")
+    pipelines.add_column("No.")
+    pipelines.add_column("Pipeline Name")
+    pipelines.add_column("Type")
+    pipelines.add_column("Last update")
+    
+    pipelines.add_row("1", "Liqbio", "Targeted Re-sequencing", "May 25 2021")
+
+    console.print(pipelines)
+    
 
 @cli.command()
 @click.option("--ref", '-r', help="json file with reference files to use", 
@@ -84,8 +112,9 @@ def launch(context, ref, samples, outdir, libdir,
     sample_json = json.load(open(samples))
     sdid = sample_json['sdid']
 
-    # check sample data
+    Log.info(f"Looking for fastq files {sdid} in {libdir}")
     sampledata, all_clinseq_barcodes = check_sampledata(libdir, sample_json)
+    Log.info(f"Libraries {all_clinseq_barcodes} have data. Using it.")
 
     if not configfile:
         tool_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -97,10 +126,9 @@ def launch(context, ref, samples, outdir, libdir,
     outdir = os.path.join(outdir, sampledata['sdid'], sample_str)
 
     if use_singularity and not singularity:
-        console.log('Singularity file path is not available, use --singularity for file path')
+        Log.error('Singularity file path is not available, use --singularity for file path')
         raise click.Abort()
     
-    # update config dict
     config_dict['samples'] = normpath(samples)
     config_dict['reference'] = normpath(ref)
     config_dict['outdir'] = normpath(outdir)
@@ -109,24 +137,20 @@ def launch(context, ref, samples, outdir, libdir,
     config_dict['singularity'] = singularity if use_singularity else ' '
     out_configpath = os.path.join(normpath(outdir), f"config_{sample_str}.yml")
 
-    # if use_singularity true; need to bind local path to container path
+    if not os.path.exists(outdir):
+        os.makedirs(outdir, exist_ok=True)
+
+    if not os.path.exists(out_configpath):
+        with open(out_configpath, 'w') as cf:
+            yaml.safe_dump(config_dict, cf, default_flow_style=False)
+    
     bind_paths = set()
     if use_singularity:
         for path in ('samples', 'reference', 'outdir', 'libdir'):
             bind_paths.add(os.path.dirname(config_dict[path]))
 
-    # create output dir
-    if not os.path.exists(outdir):
-        os.makedirs(outdir, exist_ok=True)
-    
-    # write config file inside outdir
-    if not os.path.exists(out_configpath):
-        with open(out_configpath, 'w') as cf:
-            yaml.safe_dump(config_dict, cf, default_flow_style=False)
-
     snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Snakefile')
 
-    # building snakemake pipeline 
     liqbio = Pipeline(snakefile = snakefile, 
                       config = out_configpath, 
                       sdid = sdid, 
@@ -137,20 +161,16 @@ def launch(context, ref, samples, outdir, libdir,
                       use_singularity = use_singularity,
                       bind_paths = bind_paths,
                       cores = cores)
-    cmd = liqbio.build_cmd()
     
-    # print(cmd)
+    cmd = liqbio.build_cmd()
+
+    Log.info("Launching Liqbio pipeline ...")
+    # print(cmd) 
     try:
         subprocess.run(cmd, shell=True)
     except Exception as err:
-        click.echo(err)
+        Log.error(err)
 
 
 if __name__ == "__main__":
     console_autoseq()
-
-
-    
-    
-    
-    

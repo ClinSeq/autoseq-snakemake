@@ -7,6 +7,8 @@ libdir: tests/libraries
 
 outdir: tests/
 
+steps: ALL
+
 params:
     scratch: /tmp
     bwa:

@@ -5,6 +5,7 @@ import uuid
 capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
 somatic_vcf = dict()
 
+
 rule vardict_somatic:
     input:
         reference = reference['reference_genome'],
@@ -19,49 +20,33 @@ rule vardict_somatic:
         tumorid = compose_sample_str(CANCER_CAPTURE),
         min_alt_frac = params['vardict']['min_alt_frac'],
         min_num_reads = params['vardict']['min_num_reads'],
-        blacklist_bed = reference["targets"][capture_name]["blacklist-bed"]
+        blacklist_bed = reference["targets"][capture_name]["blacklist-bed"],
+        pyexe = "/opt/conda/bin/python" if config['singularity'] else sys.executable
     threads: params['vardict']['threads']
     log:
         "{}/logs/variants/{}-{}.vardict-somatic.vcf.gz.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
-    run:
-        freq_filter = (" bcftools filter -e 'STATUS !~ \".*Somatic\"' 2> /dev/null "
-                       "| %s -c 'from pipeline.utils.bcbio import depth_freq_filter_input_stream; import sys; print(depth_freq_filter_input_stream(sys.stdin, %s, \"%s\"))' " %
-                       (sys.executable, 0, 'bwa'))
-
-        somatic_filter = (" sed 's/\\.*Somatic\\\"/Somatic/' "  # changes \".*Somatic\" to Somatic
-                          "| sed 's/REJECT,Description=\".*\">/REJECT,Description=\"Not Somatic via VarDict\">/' "
-                          "| %s -c 'from pipeline.utils.bcbio import call_somatic; import sys; print(call_somatic(sys.stdin.read()))' " % sys.executable)
+    shell:
+        "vardict-java -G {input.reference} "
+            "-f {params.min_alt_frac} "
+            "-N {params.tumorid} "
+            " -b \"{input.cancer_bam}|{input.normal_bam}\" "
+            " -c 1 -S 2 -E 3 -g 4 -Q 10  {input.target_bed} "
+            " | testsomatic.R " 
+            " | var2vcf_paired.pl -P 0.05 -m 4.25 -M -f {params.min_alt_frac} "
+            " -N \"{params.tumorid}|{params.normalid}\" "
+            " | bcftools filter -e 'STATUS !~ \".*Somatic\"' 2> /dev/null "
+            " | {params.pyexe} -c 'from pipeline.utils.bcbio import depth_freq_filter_input_stream; import sys; print(depth_freq_filter_input_stream(sys.stdin, 0, \"bwa\"))' "
+            " | sed 's/\\.*Somatic\\\"/Somatic/' " 
+            " | sed 's/REJECT,Description=\".*\">/REJECT,Description=\"Not Somatic via VarDict\">/' "
+            " | {params.pyexe} -c 'from pipeline.utils.bcbio import call_somatic; import sys; print(call_somatic(sys.stdin.read()))' "
+            " | awk -F$'\\t' -v OFS='\\t' '{{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) }} {{print}}' " 
+            " | awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {{next}} {{print}}' " 
+            " | vcfstreamsort -w 1000 " 
+            " | vt decompose -s - |vt normalize  -r {input.reference} - "
+            " | bcftools view --apply-filters .,PASS "
+            " | vcfsorter.pl {input.reference_dict} /dev/stdin "
+            " | bgzip > {output} && tabix -p vcf {output}"
         
-        blacklist_filter = ""
-        min_num_reads = ""
-
-        if params.blacklist_bed:
-            blacklist_filter = " | intersectBed -a . -b {} | ".format(params.blacklist_bed)
-        
-        if params.min_num_reads:
-            min_num_reads = "-r {} ".format(params.min_num_reads)
-
-        cmd = "vardict-java -G {} ".format(input.reference) + \
-              "-f {} ".format(params.min_alt_frac) + \
-              "-N {} ".format(params.tumorid) + \
-              " {} ".format(min_num_reads) + \
-              " -b \"{}|{}\" ".format(input.cancer_bam, input.normal_bam) + \
-              " -c 1 -S 2 -E 3 -g 4 -Q 10 " + " {} ".format(input.target_bed) + \
-              " | testsomatic.R " + \
-              " | var2vcf_paired.pl -P 0.05 -m 4.25 -M " + "-f {} ".format(params.min_alt_frac) + \
-              " -N \"{}|{}\" ".format(params.tumorid, params.normalid) + \
-              " | " + freq_filter + " | " + somatic_filter + " | " + \
-              " awk -F$'\\t' -v OFS='\\t' '{{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) }} {{print}}' " + \
-              " | awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {{next}} {{print}}' " + \
-              " | vcfstreamsort -w 1000 " + \
-              " | vt decompose -s - |vt normalize  -r {} - ".format(input.reference) + \
-              " | bcftools view --apply-filters .,PASS " + \
-              " | vcfsorter.pl {} /dev/stdin ".format(input.reference_dict) + \
-              " {} ".format(blacklist_filter) + \
-              " | bgzip > {output} && tabix -p vcf {output}".format(output=output)
-    
-        shell(cmd)
-
 
 somatic_vcf['vardict'] = "{}/variants/vardict/{}-{}.vardict-somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
 
@@ -230,38 +215,30 @@ rule vardict_purecn:
         tumorid = compose_sample_str(CANCER_CAPTURE),
         min_alt_frac = params['vardict']['min_alt_frac'],
         min_num_reads = 6,
+        tmpvcf = f"{params['scratch']}/{uuid.uuid4()}.vcf.gz"
     threads: params['vardict']['threads']
-    run:
-        tmp_vcf = "{scratch}/{uuid}.vcf.gz".format(scratch=params.tmpdir, uuid=uuid.uuid4())
-
-        # run vardict without removing non-somatic variants, and adding "SOMATIC" INFO field for somatic variants
-        vardict_cmd = "vardict-java -G {} ".format(input.reference) + \
-                      "-f {} ".format(params.min_alt_frac) + \
-                      "-N {} ".format(params.tumorid) + \
-                      "-r {} ".format(params.min_num_reads) + \
-                      " -b \"{}|{}\" ".format(input.cancer_bam, input.normal_bam) + \
-                      " -c 1 -S 2 -E 3 -g 4 -Q 10 {} ".format(input.target_bed) + \
-                      " | testsomatic.R " + \
-                      " | var2vcf_paired.pl -P 0.9 -m 4.25 " + "-f {} ".format(params.min_alt_frac) + \
-                      " -N \"{}|{}\" ".format(params.tumorid, params.normalid) + \
-                      " | awk -F$'\\t' -v OFS='\\t' '{{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) }} {{print}}' " + \
-                      " |  awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {{next}} {{print}}'" + \
-                      " | sed 's/Somatic;/Somatic;SOMATIC;/g' " + \
-                      " | sed '/^#CHROM/i ##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description=\"Somatic event\">' " + \
-                      " | vcfstreamsort -w 1000 " + \
-                      " | bcftools view --apply-filters .,PASS " + \
-                      " | vcfsorter.pl {} /dev/stdin ".format(input.reference_dict) + \
-                      " | bgzip > " + tmp_vcf + " && tabix -p vcf " + tmp_vcf
-
-        # annotate variants with dbSNP id
-        annotate_cmd = "bcftools annotate --annotation {} --columns ID ".format(input.dbsnp) + \
-                       " --output-type z --output {} ".format(output) + tmp_vcf + \
-                       " && tabix -p vcf {}".format(output)
-
-        # remove temporary vcf and tabix
-        rm_tmp_cmd = "rm " + tmp_vcf + "*"
-
-        shell(" && ".join([vardict_cmd, annotate_cmd, rm_tmp_cmd]))
+    shell:
+        "vardict-java -G {input.reference} "
+            "-f {params.min_alt_frac} "
+            "-N {params.tumorid} "
+            "-r {params.min_num_reads} "
+            " -b \"{input.cancer_bam}|{input.normal_bam}\" "
+            " -c 1 -S 2 -E 3 -g 4 -Q 10 {input.target_bed} "
+            " | testsomatic.R " 
+            " | var2vcf_paired.pl -P 0.9 -m 4.25 -f {params.min_alt_frac} "
+            " -N \"{params.tumorid}|{params.normalid}\" "
+            " | awk -F$'\\t' -v OFS='\\t' '{{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) }} {{print}}' " 
+            " |  awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {{next}} {{print}}'" 
+            " | sed 's/Somatic;/Somatic;SOMATIC;/g' " 
+            " | sed '/^#CHROM/i ##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description=\"Somatic event\">' " 
+            " | vcfstreamsort -w 1000 " 
+            " | bcftools view --apply-filters .,PASS " 
+            " | vcfsorter.pl {input.reference_dict} /dev/stdin "
+            " | bgzip > {params.tmpvcf} && tabix -p vcf {params.tmpvcf} && "
+            " bcftools annotate --annotation {input.dbsnp} --columns ID "
+            " --output-type z --output {output} {params.tmpvcf} "
+            " && tabix -p vcf {output} && "
+            "rm {params.tmpvcf} "
 
 
 rule vcf_add_sample:

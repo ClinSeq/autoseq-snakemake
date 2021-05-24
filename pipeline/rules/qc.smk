@@ -1,5 +1,6 @@
 import os
 import uuid
+from os.path import dirname
 from functools import reduce
 
 
@@ -208,6 +209,7 @@ rule purecn:
 
 
 cancer_capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
+msisensor_prefix = f"{params['scratch']}/msisensor-{uuid.uuid4()}" 
 
 rule msisensor:
     input:
@@ -217,26 +219,21 @@ rule msisensor:
     output:
         "{}/msisensor-{}-{}.tsv".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
-        scratch = params["scratch"]
+        prefix = msisensor_prefix,
+        table = "{}".format(msisensor_prefix),
+        dis = "{}_dis".format(msisensor_prefix),
+        germline = "{}_germline".format(msisensor_prefix),
+        somatic = "{}_somatic".format(msisensor_prefix)
     threads: params["msisensor"]["threads"]
-    run:
-        output_prefix = "{scratch}/msisensor-{uuid}".format(scratch=params.scratch,
-                                                            uuid=uuid.uuid4())
-        output_table = "{}".format(output_prefix)
-        output_dis = "{}_dis".format(output_prefix)
-        output_germline = "{}_germline".format(output_prefix)
-        output_somatic = "{}_somatic".format(output_prefix)
-
-        cmd = "msisensor msi " + \
-               "-d {} ".format(input.msi_sites) + \
-               "-n {} ".format(input.normal_bam) + \
-               "-t {} ".format(input.tumor_bam) + \
-               "-o {} ".format(output_prefix) + \
-               "-b {} ".format(threads) + \
-               " && cp {} {}".format(output_prefix, output) + \
-               " && rm {} {} {} {}".format(output_table, output_dis,
-                                           output_germline, output_somatic)
-        shell(cmd)
+    shell:
+        "msisensor msi " 
+            "-d {input.msi_sites} "
+            "-n {input.normal_bam} "
+            "-t {input.tumor_bam} "
+            "-o {params.prefix} "
+            "-b {threads} && "
+            " cp {params.prefix} {output} && "
+            " rm {params.table} {params.dis} {params.germline} {params.somatic}"
 
 
 bam_name = os.path.basename(capture_to_results[CANCER_CAPTURE].bamfile).split('.bam')[0]
@@ -268,17 +265,16 @@ rule multiqc:
         "{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR)
     output:
         directory("{}/multiqc".format(outdir))
+    params:
+        basefn = "{}-multiqc".format(CANCER_CAPTURE_STR),
+        outdir = outdir,
     threads: params['multiqc']['threads']
-    run:
-        basefn = "{}-multiqc".format(CANCER_CAPTURE_STR)
-        cmd = "multiqc " + \
-               " {} ".format(outdir) + \
-               "-o {} ".format(output) + \
-               "-n {} ".format(basefn) + \
-               "-k json " + \
+    shell:
+        "multiqc  {params.outdir} "
+               "-o {output} "
+               "-n {params.basefn} "
+               "-k json " 
                " --data-dir --zip-data-dir -v -f"
-        
-        shell(cmd)
 
 
 rule overview_plot:
@@ -291,20 +287,13 @@ rule overview_plot:
     output:
         "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest))
     params:
-        samples = ":".join(samples_of_interest)
-    run:
-        from os.path import dirname
+        samples = ":".join(samples_of_interest),
+        mainpath = dirname(dirname(outdir)),
+        outdir = outdir
+    shell:
+        "source activate purecn-env && "
+        "QC_overview.R  -s {params.samples} "
+                        "-d {params.outdir} "
+                        "-o {output} "
+                        "-m {params.mainpath} "
 
-        mainpath = dirname(dirname(outdir))
-
-        activate_cmd = "source activate purecn-env"
-
-        running_cmd = "QC_overview.R " + \
-                        "-s {} ".format(params.samples) + \
-                        "-d {} ".format(outdir) + \
-                        "-o {} ".format(output) + \
-                        "-m {} ".format(mainpath)
-        
-        deactivate_cmd = "conda deactivate"
-
-        shell(" && ".join([activate_cmd, running_cmd, deactivate_cmd])) 

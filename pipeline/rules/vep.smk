@@ -11,18 +11,23 @@ rule vep_annotation:
         germline = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR),
         somatic = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: params['vep']['threads']
-    run:
-        ensembl_vep = "source activate ensembl-vep"
-        vep_cmd = "vep --vcf --output_file STDOUT " + \
-                " --pick --filter_common " + \
-                " --dir {} ".format(input.vep_dir) + \
-                " --fasta {} ".format(input.reference) + \
-                " --check_existing  --total_length --allele_number " + \
-                " --no_escape --no_stats --everything --offline " + \
-                " --custom {},,vcf,exact,0,ClinicalSignificance ".format(input.brca_exchange) + \
-                " --fork 16 "
-        
-        germline_cmd = vep_cmd + " -i {}  >  {}".format(input.germline, output.germline)
-        somatic_cmd = vep_cmd + " -i {}  >  {}".format(input.somatic, output.somatic)
-        
-        shell(" && ".join([ensembl_vep, germline_cmd, somatic_cmd]))
+    shell:
+        "source activate ensembl-vep && "
+        "vep --vcf --output_file STDOUT " 
+            " --pick --filter_common "
+            " --dir {input.vep_dir} "
+            " --fasta {input.reference} "
+            " --check_existing  --total_length --allele_number "
+            " --no_escape --no_stats --everything --offline "
+            " --custom {input.brca_exchange},,vcf,exact,0,ClinicalSignificance "
+            " --fork 16 "
+            " -i {input.germline} > {output.germline} && "
+        "vep --vcf --output_file STDOUT " 
+            " --pick --filter_common "
+            " --dir {input.vep_dir} "
+            " --fasta {input.reference} "
+            " --check_existing  --total_length --allele_number "
+            " --no_escape --no_stats --everything --offline "
+            " --custom {input.brca_exchange},,vcf,exact,0,ClinicalSignificance "
+            " --fork 16 "
+            " -i {input.somatic} > {output.somatic} "

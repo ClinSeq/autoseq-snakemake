@@ -1,6 +1,7 @@
 import json
 import collections
 
+
 include: "utils/utils.py"
 include: "utils/clinseq_barcodes.py"
 
@@ -12,9 +13,8 @@ refjson = json.load(open(config['reference']))
 basepath = os.path.dirname(config['reference'])
 reference = make_paths_absolute(refjson, basepath)
 umi = config['umi']
-
-# libdir
 libdir = config['libdir']
+steps = config['steps']
 
 # Need to check clinseq_barcodes and data available for those valid barcodes
 sampledata, all_clinseq_barcodes = check_sampledata(libdir, samples)
@@ -36,44 +36,60 @@ capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
 targets = reference['targets'][capture_name]['targets-bed-slopped20']
 all_chromosomes = list(get_chromosomes(targets))
 
-BAM_FILES = expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes)
-UMIBAM_FILES = expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=all_clinseq_barcodes)
-split_bams = expand(outdir + "/bams/split_targets/bam/{sample}_{umimap}.{chr}.bam", 
-                sample = all_clinseq_barcodes, chr = all_chromosomes, umimap = ["umimapped", "umimapped-2"])
-split_bedfile = outdir + "/bams/split_targets/"
 capture_to_results = collections.defaultdict(SinglePanelResults)
-capture_to_results[NORMAL_CAPTURE].bamfile = get_capture_bam(NORMAL_CAPTURE, BAM_FILES)
-capture_to_results[CANCER_CAPTURE].bamfile = get_capture_bam(CANCER_CAPTURE, BAM_FILES)
-capture_to_results[NORMAL_CAPTURE].umibam = get_capture_bam(NORMAL_CAPTURE, UMIBAM_FILES)
-capture_to_results[CANCER_CAPTURE].umibam = get_capture_bam(CANCER_CAPTURE, UMIBAM_FILES)
+OUTPUT = list()
+
+if 'ALL' in steps or 'preprocess' in steps:
+    BAM_FILES = expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes)
+    UMIBAM_FILES = expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=all_clinseq_barcodes)
+    OUTPUT.append(BAM_FILES)
+    OUTPUT.append(UMIBAM_FILES)
+
+    capture_to_results[NORMAL_CAPTURE].bamfile = get_capture_bam(NORMAL_CAPTURE, BAM_FILES)
+    capture_to_results[CANCER_CAPTURE].bamfile = get_capture_bam(CANCER_CAPTURE, BAM_FILES)
+    capture_to_results[NORMAL_CAPTURE].umibam = get_capture_bam(NORMAL_CAPTURE, UMIBAM_FILES)
+    capture_to_results[CANCER_CAPTURE].umibam = get_capture_bam(CANCER_CAPTURE, UMIBAM_FILES)
 
 # QC outputs
-samples_of_interest = [compose_lib_capture_str(unique_capture) for unique_capture in
-                               [NORMAL_CAPTURE, CANCER_CAPTURE]]
-PICARD_QC = list()
-PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-insertsize.txt", 
-                        sample=all_clinseq_barcodes))
-PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-oxog.txt",
-                        sample=all_clinseq_barcodes))
-PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-hsmetrics.txt",
-                        sample=all_clinseq_barcodes))
+samples_of_interest = [compose_lib_capture_str(unique_capture) 
+                            for unique_capture in [NORMAL_CAPTURE, CANCER_CAPTURE]]
 
-CONTEST = list()
-CONTEST.append(outdir + "/contamination/pop_vcf_{}-{}.vcf".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
-CONTEST.append("{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR))
-CONTEST.append("{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR))
+if 'ALL' in steps or 'qc' in steps:
+    FASTQC = expand(outdir + "/qc/fastqc/{sample}/", sample=all_clinseq_barcodes)
+    OUTPUT.append(FASTQC)
 
-# CNV - calling
-CNV_OUTPUT = list()
-CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cns", sample=all_clinseq_barcodes))
-CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cnr", sample=all_clinseq_barcodes))
-CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.seg", sample=all_clinseq_barcodes))
-CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_profile.bedGraph", sample=all_clinseq_barcodes))
-CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_segments.bedGraph", sample=all_clinseq_barcodes))
-CNV_OUTPUT.append("{}/variants/{}-{}-liqbio-cna.json".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
-CNV_OUTPUT.append("{}/qc/{}-{}-liqbio-purity.json".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
-CNV_OUTPUT.append("{}/qc/{}-{}-liqbio-cna.png".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    PICARD_QC = list()
+    PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-insertsize.txt", 
+                            sample=all_clinseq_barcodes))
+    PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-oxog.txt",
+                            sample=all_clinseq_barcodes))
+    PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-hsmetrics.txt",
+                            sample=all_clinseq_barcodes))
 
+    CONTEST = list()
+    CONTEST.append(outdir + "/contamination/pop_vcf_{}-{}.vcf".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    CONTEST.append("{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR))
+    CONTEST.append("{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR))
+    
+    MSI = list()
+    MSI.append("{}/msisensor-{}-{}.tsv".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    QC_overview = "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest))
+    
+    OUTPUT.append(QC_overview)
+    OUTPUT.append(MSI)
+
+
+if 'ALL' in steps or 'variants' in steps:
+    CNV_OUTPUT = list()
+    CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cns", sample=all_clinseq_barcodes))
+    CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cnr", sample=all_clinseq_barcodes))
+    CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.seg", sample=all_clinseq_barcodes))
+    CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_profile.bedGraph", sample=all_clinseq_barcodes))
+    CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_segments.bedGraph", sample=all_clinseq_barcodes))
+    CNV_OUTPUT.append("{}/variants/{}-{}-liqbio-cna.json".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    CNV_OUTPUT.append("{}/qc/{}-{}-liqbio-purity.json".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    CNV_OUTPUT.append("{}/qc/{}-{}-liqbio-cna.png".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    OUTPUT.append(CNV_OUTPUT)
 
 # set results to capture
 for sample in all_clinseq_barcodes:
@@ -88,7 +104,7 @@ for sample in all_clinseq_barcodes:
         capture_to_results[CANCER_CAPTURE].cnr = outdir + "/cnv/{}.cnr".format(sample)
         capture_to_results[CANCER_CAPTURE].seg = outdir + "/cnv/{}.seg".format(sample)
 
-    # svs results to 
+    # svs results to sample capture
     for event in ["DEL", "DUP", "INV", "TRA"]:
         if '-N-' in sample:
             capture_to_results[NORMAL_CAPTURE].svs[event] = "{}/svs/{}-{}.gtf".format(outdir, sample, event)
@@ -97,23 +113,24 @@ for sample in all_clinseq_barcodes:
             capture_to_results[CANCER_CAPTURE].svs[event] = "{}/svs/{}-{}.gtf".format(outdir, sample, event)
 
 
-# variants - output
-VARIANTS = list()
-VARIANTS.append("{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR))
-VARIANTS.append("{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
-VARIANTS.append(expand(outdir + "/svs/{sample}-{events}.gtf", sample=all_clinseq_barcodes, events=["DEL", "DUP", "INV", "TRA"]))
-VARIANTS.append(expand(outdir + "/svs/{sample}_effects.json", sample=all_clinseq_barcodes))
-VARIANTS.append("{}/svs/svaba/{}-{}.svaba.somatic.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
-VARIANTS.append("{}/svs/svaba/{}-{}.svaba.germline.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
-VARIANTS.append("{}/svs/lumpy/{}-{}-lumpy.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
-VARIANTS.append("{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
-VARIANTS.append("{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+if 'ALL' in steps or 'variants' in steps:
+    VARIANTS = list()
+    VARIANTS.append("{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR))
+    VARIANTS.append("{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
+    VARIANTS.append(expand(outdir + "/svs/{sample}-{events}.gtf", sample=all_clinseq_barcodes, events=["DEL", "DUP", "INV", "TRA"]))
+    VARIANTS.append(expand(outdir + "/svs/{sample}_effects.json", sample=all_clinseq_barcodes))
+    VARIANTS.append("{}/svs/svaba/{}-{}.svaba.somatic.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    VARIANTS.append("{}/svs/svaba/{}-{}.svaba.germline.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    VARIANTS.append("{}/svs/lumpy/{}-{}-lumpy.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    VARIANTS.append("{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    VARIANTS.append("{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 
-
-IGV = list()
-IGV.append("{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
-IGV.append("{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR))
-IGV.append("{}/variants/{}-and-{}.germline-variants-somatic-afs.bedGraph".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    IGV = list()
+    IGV.append("{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
+    IGV.append("{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR))
+    IGV.append("{}/variants/{}-and-{}.germline-variants-somatic-afs.bedGraph".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    OUTPUT.append(VARIANTS)
+    OUTPUT.append(IGV)
 
 
 wildcard_constraints:
@@ -126,11 +143,8 @@ container: config['singularity']
 
 rule all:
     input: 
-        expand(outdir + "/qc/fastqc/{sample}/", sample=all_clinseq_barcodes),
-        UMIBAM_FILES, BAM_FILES, VARIANTS, CONTEST,
-        CNV_OUTPUT, IGV, PICARD_QC,
+        OUTPUT,
         outdir + "/bams/intermediate_bamfiles.removed",
-        "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest)),
         directory("{}/multiqc".format(outdir))
     params:
         bamdir = outdir + "/bams/split_targets/bam/*.bam"

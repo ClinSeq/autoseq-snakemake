@@ -1,8 +1,7 @@
 import collections, os, re
-from rich.console import Console
+import sys
+from loguru import logger as Log
 
-
-console = Console()
 
 # Fields defining a unique library capture item. Note: A library capture item can
 # include an item where no capture was performed; i.e. capture_kit_id indicates
@@ -42,7 +41,6 @@ def find_fastqs(library, libdir):
     regex_fq2 = '(.+)(_2\.fastq.gz|_2\.fq.gz|R2_\d{3}.fastq.gz)'
 
     d = normpath(os.path.join(libdir, library))
-    console.log("Looking for fastq files for library {library} in {libdir}".format(library=library, libdir=libdir))
 
     fq1s = []
     fq2s = []
@@ -60,7 +58,6 @@ def find_fastqs(library, libdir):
     fq1s.sort()
     fq2s.sort()
 
-    console.log("Found {}".format((fq1s, fq2s)))
     return fq1s, fq2s
 
 
@@ -91,13 +88,12 @@ def data_available_for_clinseq_barcode(libdir, clinseq_barcode):
 
     filedir = os.path.join(libdir, clinseq_barcode)
     if not os.path.exists(filedir):
-        console.log("Dir {} does not exists for {}. Not using library.".format(filedir, clinseq_barcode))
+        Log.error("Dir {} does not exists for {}. Not using library.".format(filedir, clinseq_barcode))
         return False
     if find_fastqs(clinseq_barcode, libdir) == (None, None):
-        console.log("No fastq files found for {} in dir {}".format(clinseq_barcode, filedir))
+        Log.error("No fastq files found for {} in dir {}".format(clinseq_barcode, filedir))
         return False
-
-    console.log("Library {} has data. Using it.".format(clinseq_barcode))
+    
     return True
 
 
