@@ -22,6 +22,7 @@ def parse_slurmargs():
     p = argparse.ArgumentParser(description="SLURM snakemake submit script")
     p.add_argument("dependencies", nargs="*", help="{{dependencies}} for slurm jobs")
     p.add_argument("jobscript", help="Snakemake jobscript with job properties.")
+    p.add_argument("--jobdb", help="Jobdb for slurm job ids")
     return p.parse_args()
 
 

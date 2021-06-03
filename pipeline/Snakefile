@@ -146,12 +146,9 @@ rule all:
         OUTPUT,
         outdir + "/bams/intermediate_bamfiles.removed",
         directory("{}/multiqc".format(outdir))
-    params:
-        bamdir = outdir + "/bams/split_targets/bam/*.bam"
     output:
         outdir + "/analysis_finished"
     shell:
-        "rm {params.bamdir} && "
         "date +'%Y-%m-%d T%T %:z' > {output}"
                                     
 

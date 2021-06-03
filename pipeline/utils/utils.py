@@ -22,13 +22,14 @@ def get_scheduler(scheduler, filetype):
 
 class Pipeline:
     def __init__(self, snakefile, config, sdid, workdir, dryrun, 
-                profile, smk_option, use_singularity, bind_paths, cores='4'):
+                profile, jobdb, smk_option, use_singularity, bind_paths, cores='4'):
         self.snakefile = snakefile
         self.cores = cores
         self.configfile = config
         self.sdid = sdid
         self.workdir = workdir
         self.profile = profile
+        self.jobdb = jobdb
         self.dryrun = dryrun
         self.smk_option = smk_option
         self.use_singularity = use_singularity
@@ -54,7 +55,8 @@ class Pipeline:
             slurm_cmd += " --jobname smk.{{rulename}}.{}.{{jobid}}.sh ".format(self.sdid)
             slurm_cmd += " --cluster-config {} ".format(cluster_config)
             slurm_cmd += (" --cluster '{} "
-                          " {{dependencies}} '".format(slurm_submit))
+                          " --jobdb {} "
+                          " {{dependencies}} '".format(slurm_submit, self.jobdb))
 
         if self.use_singularity:
             singularity_cmd = " --use-singularity "
@@ -106,6 +108,9 @@ class SinglePanelResults():
 
 
 def get_capture_bam(unique_capture, bamfiles):
+    """
+    return bamfiles for given unique capture
+    """
     sample_str = compose_sample_str(unique_capture)
 
     for bam in bamfiles:
@@ -115,7 +120,9 @@ def get_capture_bam(unique_capture, bamfiles):
 
 
 def get_cnvkitref(wildcards, reference):
-
+    """
+    return cnvkit reference file
+    """
     unique_capture = extract_unique_capture(wildcards.sample)
     capture_name = get_capture_name(unique_capture.capture_kit_id)
     library_name = get_prep_kit_name(unique_capture.library_kit_id)
@@ -134,6 +141,9 @@ def get_cnvkitref(wildcards, reference):
 
 
 def get_capture_svs(wildcards, outdir):
+    """
+    return gtfs dictionary for given sample
+    """
     events = ["DEL", "DUP", "INV", "TRA"]
     gtfs = dict()
     for event in events:
@@ -143,12 +153,18 @@ def get_capture_svs(wildcards, outdir):
 
 
 def get_svcaller_mut(wildcards, outdir):
+    """
+    return svcaller mut file name
+    """
     sample_str = compose_sample_str(extract_unique_capture(wildcards.sample))
     
     return "{}/svs/igv/{}_svcaller.mut".format(outdir, sample_str)
 
 
 def get_readgroup(wildcards):
+    """
+    return readgroup for alignments
+    """
     library_id = parse_prep_id(wildcards.sample)
     sample_string = compose_sample_str(extract_unique_capture(wildcards.sample))
 

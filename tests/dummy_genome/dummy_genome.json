@@ -1,0 +1,50 @@
+{
+    "1KG": "variants/1000G_phase1.indels.b37.vcf.gz", 
+    "Mills_and_1KG_gold_standard": "variants/Mills_and_1000G_gold_standard.indels.b37.vcf.gz", 
+    "ar_regions": "intervals/ar_regions.bed", 
+    "brca_exchange": "variants/BrcaExchangeClinvar_15Jan2019_v26_hg19.vcf.gz", 
+    "bwaIndex": "bwa/human_g1k_v37_decoy.fasta", 
+    "chrsizes": "genome/human_g1k_v37_decoy.chrsizes.txt", 
+    "clinvar": "variants/clinvar_20160203.vcf.gz", 
+    "cosmic": "variants/CosmicCodingMuts_v71.vcf.gz", 
+    "dbSNP": "variants/dbsnp142-germline-only.vcf.gz", 
+    "ensemblVersion": "75", 
+    "exac": "variants/ExAC.r0.3.1.sites.vep.vcf.gz", 
+    "fusion_regions": "intervals/fusion_regions.bed", 
+    "genesGenePred": "genes/Homo_sapiens.GRCh37.75.filtered.genepred", 
+    "genesGtf": "genes/Homo_sapiens.GRCh37.75.filtered.gtf", 
+    "genesGtfGenesOnly": "genes/Homo_sapiens.GRCh37.75.filtered.genes-only.gtf", 
+    "genes_bed": "genes/human_grch37_87.bed", 
+    "icgc": "variants/icgc_release_20_simple_somatic_mutation.aggregated.vcf.gz", 
+    "oncokb": "variants/OncoKB_6Mar19_v1.9.txt", 
+    "qdnaseq_background": "genome/qdnaseq_background.Rdata", 
+    "reference_dict": "genome/human_g1k_v37_decoy.dict", 
+    "reference_genome": "genome/human_g1k_v37_decoy.fasta", 
+    "swegene_common": "variants/swegen_common.vcf.gz", 
+    "pondir":"pondir",
+    "no_chr":"genome/human_g1k_v37_decoy_non_chr.bed",
+    "gene_track": "gene_track_output.csv",
+    "targets": {  
+        "probio_comprehensive3": {
+            "blacklist-bed": null, 
+            "cnvkit-ref": {
+                "KAPA_HYPERPREP": {
+                    "CFDNA": "intervals/targets/probio_comprehensive3.KAPA_HYPERPREP.CFDNA.cnn", 
+                    "N": "intervals/targets/probio_comprehensive3.KAPA_HYPERPREP.N.cnn", 
+                    "T": "intervals/targets/probio_comprehensive3.KAPA_HYPERPREP.T.cnn"
+                }
+            }, 
+            "msings-baseline": "intervals/targets/probio_comprehensive3.msings.baseline", 
+            "msings-bed": "intervals/targets/probio_comprehensive3.msings.bed", 
+            "msings-msi_intervals": "intervals/targets/probio_comprehensive3.msings.msi_intervals", 
+            "msisites": "intervals/targets/probio_comprehensive3.slopped20.msisites.tsv", 
+            "purecn_targets": null, 
+            "targets-bed-slopped20": "intervals/targets/probio_comprehensive3.slopped20.bed", 
+            "targets-bed-slopped20-gz": "intervals/targets/probio_comprehensive3.slopped20.bed.gz", 
+            "targets-interval_list": "intervals/targets/probio_comprehensive3.interval_list", 
+            "targets-interval_list-slopped20": "intervals/targets/probio_comprehensive3.slopped20.interval_list"
+        }
+    }, 
+    "ts_regions": "intervals/ts_regions.bed", 
+    "vep_dir": "vep"
+}

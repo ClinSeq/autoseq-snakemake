@@ -54,5 +54,6 @@ rule cat_fastq:
 
         shell(
             " cat {fq1_flist} > {output.fq1} && "
-            " cat {fq2_flist} > {output.fq2} "
+            " cat {fq2_flist} > {output.fq2} && "
+            " rm {fq1_flist} {fq2_flist} "
         )

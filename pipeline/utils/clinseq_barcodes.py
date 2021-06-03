@@ -37,8 +37,8 @@ def find_fastqs(library, libdir):
     """
     if not library:
         return (None, None)
-    regex_fq1 = '(.+)(_1\.fastq.gz|_1\.fq.gz|R1_\d{3}.fastq.gz)'
-    regex_fq2 = '(.+)(_2\.fastq.gz|_2\.fq.gz|R2_\d{3}.fastq.gz)'
+    regex_fq1 = r'(.+)(_1.fastq.gz|_1.fq.gz|R1_\d{3}.fastq.gz)'
+    regex_fq2 = r'(.+)(_2.fastq.gz|_2.fq.gz|R2_\d{3}.fastq.gz)'
 
     d = normpath(os.path.join(libdir, library))
 
@@ -62,6 +62,12 @@ def find_fastqs(library, libdir):
 
 
 def check_sampledata(libdir, sampledata):
+    """
+    Check that data is available for all clinseq barcodes given in the sample json
+
+    :param libdir, sample json
+    :return sample json, clinseq barcodes
+    """
     clinseq_barcodes = []
     for sample_type in ['N', 'T', 'CFDNA']:
         clinseq_barcodes_with_data = []

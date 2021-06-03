@@ -65,4 +65,9 @@ for o in ("output", "error"):
     slurm_utils.ensure_dirs_exist(sbatch_options[o]) if o in sbatch_options else None
 
 # submit job and echo id back to Snakemake (must be the only stdout)
-print(slurm_utils.submit_job(jobscript, **sbatch_options))
+jobid = slurm_utils.submit_job(jobscript, **sbatch_options)
+
+with open(slurm_args.jobdb, "a") as fh:
+    fh.write(f"{jobid}\n")
+
+print(jobid)

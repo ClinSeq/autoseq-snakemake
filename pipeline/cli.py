@@ -136,13 +136,14 @@ def launch(context, ref, samples, outdir, libdir,
     config_dict['umi'] = umi
     config_dict['singularity'] = singularity if use_singularity else ' '
     out_configpath = os.path.join(normpath(outdir), f"config_{sample_str}.yml")
+    jobdb = os.path.join(normpath(outdir), f"{sample_str}.jobdb")
 
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
 
-    if not os.path.exists(out_configpath):
-        with open(out_configpath, 'w') as cf:
-            yaml.safe_dump(config_dict, cf, default_flow_style=False)
+    
+    with open(out_configpath, 'w') as cf:
+        yaml.safe_dump(config_dict, cf, default_flow_style=False)
     
     bind_paths = set()
     if use_singularity:
@@ -156,7 +157,8 @@ def launch(context, ref, samples, outdir, libdir,
                       sdid = sdid, 
                       workdir = outdir, 
                       dryrun = dryrun, 
-                      profile = profile, 
+                      profile = profile,
+                      jobdb = jobdb,
                       smk_option = smk_opt,
                       use_singularity = use_singularity,
                       bind_paths = bind_paths,

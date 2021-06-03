@@ -1,11 +1,13 @@
 
 samples: tests/test_liqbio_sample.json
 
-reference: autoseq-genome/autoseq-genome.json
+reference: tests/dummy_genome/dummy_genome.json
 
 libdir: tests/libraries
 
-outdir: tests/
+umi: True
+singularity: False
+outdir: tests
 
 steps: ALL
 

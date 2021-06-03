@@ -110,7 +110,8 @@ rule gatk3_indelrealigner_umi_1:
             " -known {input.known_mills_gs} "
             " {params.extra}"
             " -I {input.bam} "
-            " -o {output.bam} 2> {log} "
+            " -o {output.bam} 2> {log} && "
+            "rm  {input.bam} "
 
 
 rule fgbio_groupreadsbyumi:
@@ -239,7 +240,8 @@ rule gatk3_indelrealigner_umi_2:
             " -known {input.known_mills_gs} "
             " {params.extra}"
             " -I {input.bam} "
-            " -o {output.bam} 2> {log} "
+            " -o {output.bam} 2> {log} && "
+            "rm  {input.bam} "
 
 
 rule fgbio_filterconsensus:
