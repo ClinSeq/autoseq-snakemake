@@ -10,7 +10,8 @@ setup(name='autoseq',
           "click",
           "pyyaml",
           "pandas",
-          "rich"
+          "rich",
+          "loguru"
       ],
       entry_points={
           'console_scripts': [
