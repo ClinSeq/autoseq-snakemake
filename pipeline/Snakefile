@@ -129,6 +129,8 @@ if 'ALL' in steps or 'variants' in steps:
     IGV.append("{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
     IGV.append("{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR))
     IGV.append("{}/variants/{}-and-{}.germline-variants-somatic-afs.bedGraph".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    IGV.append("{}/IGVnav/igv_session_sv.xml".format(outdir))
+    IGV.append("{}/IGVnav/igv_session_snps.xml".format(outdir))
     OUTPUT.append(VARIANTS)
     OUTPUT.append(IGV)
 
@@ -145,12 +147,26 @@ rule all:
     input: 
         OUTPUT,
         outdir + "/bams/intermediate_bamfiles.removed",
-        directory("{}/multiqc".format(outdir))
+        directory("{}/multiqc".format(outdir)),
     output:
         outdir + "/analysis_finished"
     shell:
         "date +'%Y-%m-%d T%T %:z' > {output}"
                                     
+
+rule generate_symlinks:
+    input:
+        OUTPUT
+    output:
+        "{}/IGVnav/igv_session_sv.xml".format(outdir),
+        "{}/IGVnav/igv_session_snps.xml".format(outdir)
+    params:
+        outdir = outdir
+    log:
+        "{}/logs/generate_symlinks.log".format(outdir)
+    shell:
+        "generate_symlinks.py --outdir {params.outdir}  2> {log} " 
+
 
 include: "rules/pre_processing.smk"
 include: "rules/split_targets.smk"
