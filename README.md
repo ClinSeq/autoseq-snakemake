@@ -1,4 +1,5 @@
-![autoseq-logo](docs/img/autoseq_logo.png)
+![autoseq-logo](docs/img/autoseq_logo.png | width=100)
+
 Autoseq framework upgraded with snakemake, docker, python3+ and cloud-compatibility.
 
 <h1>Autoseq framework</h1>
