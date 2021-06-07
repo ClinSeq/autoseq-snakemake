@@ -1,4 +1,5 @@
 import collections, os, re
+import errno
 import sys
 from loguru import logger as Log
 
@@ -74,6 +75,10 @@ def check_sampledata(libdir, sampledata):
         for clinseq_barcode in sampledata[sample_type]:
             if data_available_for_clinseq_barcode(libdir, clinseq_barcode):
                 clinseq_barcodes_with_data.append(clinseq_barcode)
+            else:
+                Log.error("No fastq files found for {} in dir {}".format(clinseq_barcode, libdir))
+                raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), clinseq_barcode)
+        
         sampledata[sample_type] =  clinseq_barcodes_with_data
         clinseq_barcodes.extend(clinseq_barcodes_with_data)
     

@@ -15,6 +15,12 @@ class TestClinseqBarcodes(unittest.TestCase):
             UniqueCapture("LB", "P-00000001", "CFDNA", "01234567", "TP", "WG")
         self.library = 'LB-P-NA12877-N-03098850-TD1-C31'
         self.libdir = 'tests/libraries'
+        self.sampledata = { 
+                            "sdid": "P-NA12877",
+                            "T": "",
+                            "N": ["LB-P-NA12877-N-03098850-TD1-C31"],
+                            "CFDNA": ["LB-P-NA12877-CFDNA-03098850-TD1-C31"]
+                        }
 
     def test_extract_unique_capture_valid1(self):
         self.assertEqual(self.test_capture1,
@@ -139,4 +145,43 @@ class TestClinseqBarcodes(unittest.TestCase):
         files_basenames = [os.path.basename(f) for f in files[0]] + [os.path.basename(f) for f in files[1]]
         self.assertIn('2_LB-P-NA12877-N-03098850-TD1-TT1_1.fastq.gz', files_basenames)
         self.assertIn('2_LB-P-NA12877-N-03098850-TD1-TT1_2.fastq.gz', files_basenames)
+    
+    @mock.patch('pipeline.utils.clinseq_barcodes.os.path.exists')
+    @mock.patch('pipeline.utils.clinseq_barcodes.find_fastqs')
+    def test_data_available_for_clinseq_barcode_file_exists(self, mock_find_fastqs, mock_os_path_exists):
+        mock_find_fastqs.return_value = True
+        mock_os_path_exists.return_value = True
+        self.assertTrue(
+            data_available_for_clinseq_barcode("test_libdir",
+                                               "LB-P-00000001-CFDNA-01234567-TP201701011540-CM2017001022000"))
+    
+    @mock.patch('pipeline.utils.clinseq_barcodes.os.path.exists')
+    @mock.patch('pipeline.utils.clinseq_barcodes.find_fastqs')
+    def test_data_available_for_clinseq_barcode_no_dir(self, mock_find_fastqs, mock_os_path_exists):
+        mock_find_fastqs.return_value = True
+        mock_os_path_exists.return_value = False
+        self.assertFalse(
+            data_available_for_clinseq_barcode("test_libdir",
+                                               "LB-P-00000001-CFDNA-01234567-TP201701011540-CM2017001022000"))
+
+    @mock.patch('pipeline.utils.clinseq_barcodes.data_available_for_clinseq_barcode')
+    def test_check_sampledata(self, mock_data_available_for_clinseq_barcode):
+        """
+        test that all clinseq barcodes are valid and fq exists
+        """
+        mock_data_available_for_clinseq_barcode.return_value = True
+        barcodes = ["LB-P-NA12877-N-03098850-TD1-C31", "LB-P-NA12877-CFDNA-03098850-TD1-C31"]
+        samples, clinseq_barcodes = check_sampledata(self.libdir, self.sampledata)
+        self.assertEqual(self.sampledata, samples)
+        self.assertEqual(barcodes, clinseq_barcodes)
+
+    @mock.patch('pipeline.utils.clinseq_barcodes.data_available_for_clinseq_barcode')
+    def test_check_sampledata_not_valid(self, mock_data_available_for_clinseq_barcode):
+        """
+        test that all clinseq barcodes are valid and fq exists
+        """
+        mock_data_available_for_clinseq_barcode.return_value = False
+        barcodes = ["LB-P-NA12877-N-03098850-TD1-C31", "LB-P-NA12877-CFDNA-03098850-TD1-C31"]
+        self.assertRaises(FileNotFoundError, lambda: check_sampledata(self.libdir, self.sampledata))
+    
     

@@ -4,7 +4,14 @@ from pipeline.utils.clinseq_barcodes import parse_prep_id, compose_sample_str, \
 
 
 def get_scheduler(scheduler, filetype):
+    """
+    In cluster environment, to get sheduler script and config file
+
+    params: scheduler type, filetype
+    return: file (script or config) path
+    """
     tool_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    submit_fp = ""
 
     if scheduler == 'slurm' and filetype == 'pyscript':
         submit_fp = "scheduler/slurm_submit.py"
@@ -14,13 +21,17 @@ def get_scheduler(scheduler, filetype):
 
     script  = os.path.join(tool_dir, submit_fp)
 
-    if not os.path.exists(script):
+    if not os.path.isfile(script):
         raise FileNotFoundError(script)
     
     return script
 
 
 class Pipeline:
+    """
+    Class pipeline to build snakmake command based on given args.
+
+    """
     def __init__(self, snakefile, config, sdid, workdir, dryrun, 
                 profile, jobdb, smk_option, use_singularity, bind_paths, cores='4'):
         self.snakefile = snakefile
@@ -117,6 +128,8 @@ def get_capture_bam(unique_capture, bamfiles):
         filename = os.path.basename(bam)
         if sample_str in filename:
             return bam
+    
+    return False
 
 
 def get_cnvkitref(wildcards, reference):
