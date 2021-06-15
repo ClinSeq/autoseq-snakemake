@@ -37,11 +37,11 @@ rule gatk3_targetcreator:
     output:
         target_intervals = outdir + "/bams/{sample}.intervals"
     params:
-        java_options = params['gatk3']['realigner_target']['java_options'],
-        extra = params['gatk3']['realigner_target']['extra'],
+        java_options = params['gatk3']['target_creator']['java_options'],
+        extra = params['gatk3']['target_creator']['extra'],
         tmpdir = os.path.join(params['scratch'], 
                                 "realignerTC-{}".format(str(uuid.uuid4())))
-    threads: params['gatk3']['realigner_target']['threads']
+    threads: params['gatk3']['target_creator']['threads']
     log:
         outdir + "/logs/gatk_realigner_targetcreator_{sample}.log"
     shell:

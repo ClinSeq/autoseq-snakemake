@@ -40,7 +40,7 @@ rule strelka_germline:
         " --ref {input.reference} --targeted "
         " --callRegions {input.call_region} "
         " --runDir {output.rundir} && "
-        " {output.rundir}/runWorkflow.py -m local -j 20 && "
+        " {output.rundir}/runWorkflow.py -m local -j {threads} && "
         "zcat {output.rundir}/results/variants/variants.vcf.gz "
         " | awk 'BEGIN {{ OFS = \"\t\"}} /^#/ {{ print $0 }} {{if($7==\"PASS\") print $0 }}' "
         " | bgzip > {output.vcf} && "

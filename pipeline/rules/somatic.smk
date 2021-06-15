@@ -27,6 +27,7 @@ rule vardict_somatic:
         "{}/logs/variants/{}-{}.vardict-somatic.vcf.gz.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:
         "vardict-java -G {input.reference} "
+            " -th {threads} "
             "-f {params.min_alt_frac} "
             "-N {params.tumorid} "
             " -b \"{input.cancer_bam}|{input.normal_bam}\" "
@@ -72,7 +73,7 @@ rule strelka_somatic:
         " --ref {input.reference} "
         " --callRegions {input.target_bed} "
         " --runDir {output.rundir} && "
-        " {output.rundir}/runWorkflow.py -m local -j 20 && "
+        " {output.rundir}/runWorkflow.py -m local -j {threads} && "
         " zcat {output.rundir}/results/variants/somatic.snvs.vcf.gz | "
         " awk 'BEGIN {{ OFS = \"\t\"}} /^#/ {{ print $0 }} {{if($7==\"PASS\") print $0 }}' "
         " | bgzip > {output.snvs_vcf} && "
@@ -219,6 +220,7 @@ rule vardict_purecn:
     threads: params['vardict']['threads']
     shell:
         "vardict-java -G {input.reference} "
+            " -th {threads} "
             "-f {params.min_alt_frac} "
             "-N {params.tumorid} "
             "-r {params.min_num_reads} "

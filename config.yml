@@ -21,53 +21,53 @@ params:
     fastqc:
         threads: 1
     gatk3:
-        threads: 8
-        realigner_target:
+        threads: 1
+        target_creator:
             java_options: "-Xmx4G -XX:ParallelGCThreads=4"
             extra: " -allowPotentiallyMisencodedQuals --maxIntervalSize 20000 "
-            threads: 4
+            threads: 1
         indel_realigner:
             java_options: "-Xmx8G -XX:ParallelGCThreads=4"
             extra: " -allowPotentiallyMisencodedQuals --maxReadsForRealignment 5000000 --maxReadsInMemory 1000000 "
-            threads: 4
+            threads: 2
     picard:
         markdup:
             rmdups: "true"
             java_options: " -Xmx5g -XX:ParallelGCThreads=8 "
             extra: " "
-            threads: 8
+            threads: 1
         merge_bam:
             java_options: " -Xmx10g "
         collectinsertsize:
             java_options: " -XX:ParallelGCThreads=8 "
-            threads: 8
+            threads: 1
         collectoxog:
             java_options: " -XX:ParallelGCThreads=8  -Xmx2g"
-            threads: 8
+            threads: 1
         collecthsmetrics:
             java_options: " -XX:ParallelGCThreads=8 "
-            threads: 8
+            threads: 1
     fgbio:
         fastqtobam:
             java_options: " -Xmx10g -XX:+AggressiveOpts -XX:ParallelGCThreads=8 "
-            threads: 8
+            threads: 1
         groupreadsbyumi:
             java_options: " -Xmx10g -XX:+AggressiveOpts -XX:ParallelGCThreads=8 "
-            threads: 8
+            threads: 1
         callduplexconsensus:
             java_options: " -Xmx10g -XX:+AggressiveOpts -XX:ParallelGCThreads=8 "
             extra: " --min-reads 1 1 0 --min-input-base-quality 30 "
-            threads: 8
+            threads: 1
         filterconsensus:
             java_options: " -Xmx10g -XX:+AggressiveOpts -XX:ParallelGCThreads=8 "
             error_rate: " --max-read-error-rate 1 --max-base-error-rate 0 "
             base_quality: " --min-base-quality 30 "
             extra: " --min-reads 1 1 0 --reverse-per-base-tags true --require-single-strand-agreement true  "
-            threads: 
+            threads: 1
         clipbam:
             java_options: " -Xmx10g -XX:+AggressiveOpts -XX:ParallelGCThreads=8 "
             extra: 
-            threads: 8
+            threads: 1
     create_popvcf:
         threads: 1
     contest_cancer:
@@ -78,13 +78,13 @@ params:
     cnvkit:
         threads: 8
     cnvkit-fix:
-        threads: 8
+        threads: 1
     cnstoseg:
         threads: 1
     cnvkit_tracks:
         threads: 1
     gatk4:
-        threads: 8
+        threads: 1
         haplotypecaller:
             java_options: " -Xmx10g "
         mutect2:
@@ -93,14 +93,14 @@ params:
         threads: 8
     vardict:
         threads: 8
-        min_alt_frac: 0.01
+        min_alt_frac: 0.005
         min_num_reads: null
     varscan:
-        threads: 8
+        threads: 1
         java_options: " -Xmx10g "
-        extra: " --min-coverage 3 --min-var-freq 0.02 --p-value 0.10 --somatic-p-value 0.05 --strand-filter 0 "
+        extra: " --min-coverage 3 --min-var-freq 0.005 --p-value 0.05 --somatic-p-value 0.05 --strand-filter 0 "
     somaticseq:
-        threads: 8
+        threads: 1
     svcaller:
         threads: 1
     svaba:

@@ -208,7 +208,9 @@ def get_target_name(wildcards):
 
 
 def get_chromosomes(targets):
-
+    """
+    extract chromosomes from target bed file 
+    """
     chromos = set()
     with open(targets, 'r') as bedfile:
         for line in bedfile.readlines():

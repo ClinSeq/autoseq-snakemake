@@ -116,8 +116,8 @@ for record in vcf_reader:
         protein_position = canonical_trans['Protein_position'].split('/')
         clinsig =  canonical_trans['CLIN_SIG']
         gnomAD = canonical_trans['gnomAD_AF']
-        brcaEx = canonical_trans['BrcaEx_ClinicalSignificance']
         impact = canonical_trans['IMPACT']
+        brcaEx = canonical_trans['BrcaEx_ClinicalSignificance']
     except KeyError:
         pass
     

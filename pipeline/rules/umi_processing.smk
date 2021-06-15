@@ -62,11 +62,11 @@ rule gatk3_targetcreator_umi_1:
     output:
         target_intervals = outdir + "/bams/split_targets/{sample}_umi_{chr}.intervals"
     params:
-        java_options = params['gatk3']['realigner_target']['java_options'],
-        extra = params['gatk3']['realigner_target']['extra'],
+        java_options = params['gatk3']['target_creator']['java_options'],
+        extra = params['gatk3']['target_creator']['extra'],
         tmpdir = os.path.join(params['scratch'], 
                                 "realignerTC-{}".format(str(uuid.uuid4())))
-    threads: params['gatk3']['realigner_target']['threads']
+    threads: params['gatk3']['target_creator']['threads']
     log:
         outdir + "/logs/gatk_realigner_targetcreator_umi_1_{sample}_{chr}.log"
     shell:
@@ -192,11 +192,11 @@ rule gatk3_targetcreator_umi_2:
     output:
         target_intervals = outdir + "/bams/split_targets/bam/{sample}_consensus_{chr}.intervals"
     params:
-        java_options = params['gatk3']['realigner_target']['java_options'],
-        extra = params['gatk3']['realigner_target']['extra'],
+        java_options = params['gatk3']['target_creator']['java_options'],
+        extra = params['gatk3']['target_creator']['extra'],
         tmpdir = os.path.join(params['scratch'], 
                                 "realignerTC-{}".format(str(uuid.uuid4())))
-    threads: params['gatk3']['realigner_target']['threads']
+    threads: params['gatk3']['target_creator']['threads']
     log:
         outdir + "/logs/gatk_realigner_targetcreator_umi_2_{sample}.{chr}.log"
     shell:

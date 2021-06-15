@@ -5,11 +5,39 @@ from pipeline.utils.utils import *
 from pipeline.utils.clinseq_barcodes import UniqueCapture
 
 
+class Wildcards:
+    def __init__(self, sample):
+        self.sample = sample
+
+
 class TestUtils(unittest.TestCase):
     def setUp(self):
         self.test_capture = \
             UniqueCapture("LB", "P-NA12877", "N", "03098850", "TD1", "C31")
         self.bamfiles = ["LB-P-NA12877-N-03098850-TD1-C31_nodups.bam"]
+        self.reference = {
+            "targets": {  
+                "probio_comprehensive3": {
+                    "blacklist-bed": None, 
+                    "cnvkit-ref": {
+                        "KAPA_HYPERPREP": {
+                            "CFDNA": "intervals/targets/probio_comprehensive3.KAPA_HYPERPREP.CFDNA.cnn", 
+                            "N": "intervals/targets/probio_comprehensive3.KAPA_HYPERPREP.N.cnn", 
+                            "T": "intervals/targets/probio_comprehensive3.KAPA_HYPERPREP.T.cnn"
+                        }
+                    }, 
+                    "msings-baseline": "intervals/targets/probio_comprehensive3.msings.baseline", 
+                    "msings-bed": "intervals/targets/probio_comprehensive3.msings.bed", 
+                    "msings-msi_intervals": "intervals/targets/probio_comprehensive3.msings.msi_intervals", 
+                    "msisites": "intervals/targets/probio_comprehensive3.slopped20.msisites.tsv", 
+                    "purecn_targets": None, 
+                    "targets-bed-slopped20": "intervals/targets/probio_comprehensive3.slopped20.bed", 
+                    "targets-bed-slopped20-gz": "intervals/targets/probio_comprehensive3.slopped20.bed.gz", 
+                    "targets-interval_list": "intervals/targets/probio_comprehensive3.interval_list", 
+                    "targets-interval_list-slopped20": "intervals/targets/probio_comprehensive3.slopped20.interval_list"
+                }
+            }
+        }
 
     def test_convert_to_absolute_path_non_string1(self):
         self.assertEqual(
@@ -101,4 +129,31 @@ class TestUtils(unittest.TestCase):
     def test_get_capture_bam_invalid(self):
         self.assertFalse(get_capture_bam(self.test_capture, []))
 
+    def test_get_capture_svs(self):
+        wildcards = Wildcards("LB-P-NA12877-CFDNA-03098850-TD1-C31")
+        outdir = "/dummy"
+        self.assertEqual(4, len(get_capture_svs(wildcards, outdir)))
+        self.assertTrue(isinstance(get_capture_svs(wildcards, outdir), dict))
+        self.assertTrue(get_capture_svs(wildcards, outdir)['DEL'].endswith(".gtf"))
+    
+    def test_get_svcaller_mut(self):
+        wildcards = Wildcards("LB-P-NA12877-CFDNA-03098850-TD1-C31")
+        outdir = "/dummy"
+        self.assertTrue(get_svcaller_mut(wildcards, outdir).endswith("_svcaller.mut"))
+        self.assertTrue(get_svcaller_mut(wildcards, outdir).startswith("/dummy"))
 
+    def test_get_readgroup(self):
+        wildcards = Wildcards("LB-P-NA12877-CFDNA-03098850-TD1-C31")
+        readgp = '"@RG\\tID:LB-P-NA12877-CFDNA-03098850-TD1-C31\\tSM:LB-P-NA12877-CFDNA-03098850\\tLB:TD1\\tPL:ILLUMINA"'
+        self.assertTrue(isinstance(get_readgroup(wildcards), str))
+        self.assertEqual(get_readgroup(wildcards), readgp)
+    
+    def test_get_targets(self):
+        wildcards = Wildcards("LB-P-NA12877-CFDNA-03098850-TD1-C31")
+        self.assertEqual(get_targets(wildcards, self.reference, "targets-bed-slopped20"), 
+                        "intervals/targets/probio_comprehensive3.slopped20.bed")
+
+    def test_get_target_name(self):
+        wildcards = Wildcards("LB-P-NA12877-CFDNA-03098850-TD1-C31")
+        self.assertEqual(get_target_name(wildcards), 
+                        "probio_comprehensive3")
