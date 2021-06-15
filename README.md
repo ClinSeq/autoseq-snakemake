@@ -21,15 +21,15 @@ The repo is organized into four essential compartments -
 
 ## Authors
 
-- [Sarath Kumar Murugan]("https://github.com/imsarath")
-- [Venkatesh Chellappa]("https://github.com/drvenki")
-- [Rebecka Bergström]("https://github.com/rebber")
-- [Karthick Maniram]("https://github.com/karman-ki")
+- [Sarath Kumar Murugan](https://github.com/imsarath)
+- [Venkatesh Chellappa](https://github.com/drvenki)
+- [Rebecka Bergström](https://github.com/rebber)
+- [Karthick Maniram](https://github.com/karman-ki)
 
 
 # Pipeline 
 NGS-data analysis pipeline written in python for very deep targeted resequencing data from custom panels and works well with targeted or whole-exome data as well. Contains the essential steps (QC, trimming, alignment, realignment, variant calling, prioritization, reporting). Variants from raw VCF file are annotated using VeP! and run through a set of semantic filters to eliminate irrelevant, invalid and non-significant calls. These filters (frequency, functional significance, relevance to type of disease, etc.) have been implemented after elaborate testing with different settings for both data and the callers. 
 The data points in results files are suitable for manual curation in IGV after which they could be exported as a text file or HTML report or a PDF report.
 
-![Autoseq workflow]("docs/img/autoseq_pipeline.png")
+![Autoseq workflow](docs/img/autoseq_pipeline.png)
 
