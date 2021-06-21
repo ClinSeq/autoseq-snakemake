@@ -17,8 +17,9 @@ RUN conda env create -f /env/somaticseqenv.yml && conda clean -a
 
 RUN conda env create -f /env/ensemblvep.yml && conda clean -a
 
-RUN conda create --name purecn-env R=3.5.1 boost && conda clean -a && \
+RUN conda env create -f /env/purecn-env.yml && conda clean -a && \
     conda activate purecn-env && \
+    conda install boost && \
     conda install -c bioconda bioconductor-rhdf5lib && \
     R --quiet -e 'install.packages("BiocManager", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' \
     -e 'BiocManager::install("PureCN")' \
@@ -39,8 +40,6 @@ RUN conda env create -f /env/liqbiocna-env.yml && \
 
 RUN ln -s /opt/conda/lib/libreadline.so.7 /opt/conda/lib/libreadline.so.6 && \
     ln -s /opt/conda/lib/libncurses.so.6 /opt/conda/lib/libncurses.so.5
-
-COPY tools/svcallerenv.yml /env/
 
 RUN apt-get update && \
     apt-get -y install build-essential --fix-missing && \

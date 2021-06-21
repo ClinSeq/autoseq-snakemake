@@ -61,7 +61,7 @@ cat("Read in the files...\n")
 HsMetrics = data.frame()
 for (f in hsmetrics_files) {
   SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
-  DIR = dirname(dirname(dirname(dirname(f))))
+  DIR = dirname(dirname(dirname(f)))
   HsMetrics = rbind(HsMetrics, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
                                                            header = TRUE, stringsAsFactors = FALSE), 
                                      stringsAsFactors = FALSE))
@@ -69,7 +69,7 @@ for (f in hsmetrics_files) {
 MarkDuplicates = data.frame()
 for (f in markduplicates_files) {
   SAMP = sub("-picard-markdup.metrics.txt", "", basename(f))
-  DIR = dirname(dirname(dirname(dirname(f))))
+  DIR = dirname(dirname(dirname(f)))
   MarkDuplicates = rbind(MarkDuplicates, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
                                                                      header = TRUE, stringsAsFactors = FALSE), 
                                                stringsAsFactors = FALSE))
@@ -78,7 +78,7 @@ InsertSize = data.frame()
 InsertSize_histogram = data.frame(stringsAsFactors = FALSE)
 for (f in insertsize_files) {
   SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
-  DIR = dirname(dirname(dirname(dirname(f))))
+  DIR = dirname(dirname(dirname(f)))
   InsertSize = rbind(InsertSize, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
                                                              header = TRUE, stringsAsFactors = FALSE), 
                                        stringsAsFactors = FALSE))
@@ -97,14 +97,14 @@ for (f in contest_files) {
   } else {
     SAMP = samples[2]
   }
-  DIR = dirname(dirname(dirname(f)))
+  DIR = dirname(dirname(f))
   ContEst = rbind(ContEst, cbind(SAMP, DIR, read.table(f, nrow = 1, sep = "\t", header = TRUE, stringsAsFactors = FALSE), 
                                  stringsAsFactors = FALSE))
 }
 msings = data.frame()
 for (f in msings_files) {
   SAMP = sub("_nodups.MSI_Analysis.txt", "", basename(f))
-  DIR = dirname(dirname(dirname(dirname(f))))
+  DIR = dirname(dirname(dirname(f)))
   msings = rbind(msings, cbind(SAMP, DIR, t(read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)))[2,], stringsAsFactors=FALSE)
 }
 colnames(msings) = c("SAMP", "DIR", read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)[,1])
