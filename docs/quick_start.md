@@ -5,18 +5,28 @@ Installation
 Dependencies:
 * python >3.6
 * Singularity > 3.0 
+* conda (package manager)
 
 To install singularity [follow this link](https://sylabs.io/guides/3.0/user-guide/installation.html)
 
 Download and install autoseq-snakemake and the requirements using pip.
+
 ```sh
 git clone https://github.com/Clinseq/autoseq-snakemake.git 
-pip install autoseq-snakemake/
+pip install -e autoseq-snakemake/
+
+cd autoseq-snakemake
+# To install tools
+conda env create -f env/base.yml
+
+# env Variable
+GRIDSS_JAR=/path/to/autoseq-snakemake/pipeline/scripts/gridss-2.10.2-gridss-jar-with-dependencies.jar
 ```
 
-Pull singularity container 
+Pull singularity containers 
 ```sh
 singularity pull --arch amd64 library://imsarath/default/autoseq-smk:latest 
+singularity pull library://imsarath/default/gridss:latest
 ```
 
 Command Line Usage
@@ -56,10 +66,12 @@ Prepare the reference files
 -----------------------------
 
 
-LiqBio Pipeline
+Autoseq UMI Pipeline
 ---------------
 
+To Launch pipeline
+
 ```sh
-autoseq --ref ref.json --outdir /path/to/outdir --jobdb jobdb.json --cores 5 --runner_name slurmrunner --libdir /path/to/libdir liqbio sample.json
+autoseq launch -r autoseq-genome/autoseq-genome.json --samples /path/to/sample.json --outdir /path/to/autoseq-output/ --libdir /path/to/INBOX/ --use-singularity --singularity /path/to/container_dir --umi --cores 8 --profile slurm
 ```
 
