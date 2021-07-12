@@ -129,12 +129,20 @@ def launch(context, ref, samples, outdir, libdir,
         Log.error('Singularity file path is not available, use --singularity for file path')
         raise click.Abort()
     
+    if use_singularity:
+        if not os.path.exists(os.path.join(singularity, "autoseq-smk.sif")) or \
+            not os.path.exists(os.path.join(singularity, "autoseq-smk.sif")):
+            Log.error('Singularity file does not exist !!')
+            raise click.Abort()
+
     config_dict['samples'] = normpath(samples)
     config_dict['reference'] = normpath(ref)
     config_dict['outdir'] = normpath(outdir)
     config_dict['libdir'] = normpath(libdir)
     config_dict['umi'] = umi
-    config_dict['singularity'] = singularity if use_singularity else ' '
+    config_dict['global_container'] = os.path.join(singularity, "autoseq-smk.sif") if use_singularity else ' '
+    config_dict['gridss_container'] = os.path.join(singularity, "gridss.sif") if use_singularity else ' '
+    
     out_configpath = os.path.join(normpath(outdir), f"config_{sample_str}.yml")
     jobdb = os.path.join(normpath(outdir), f"{sample_str}.jobdb")
 

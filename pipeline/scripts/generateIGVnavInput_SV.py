@@ -20,50 +20,6 @@ def parse_svaba(input_vcf, SDID, output, vcftype):
     subprocess.call(" && ".join([header, svaba_cmd]), shell=True)
 
 
-def parse_svict(input_vcf, SDID, output, vcftype):
-    """
-    CHROM START   END SDID    SVTYPE  ALT SUPPORTING_READS    NOTES   GENES
-    vawk '{if (I$SUPPORT>8 && I$SVTYPE ~ "INS" ) print $1, $2, I$END, "$SDID_svict",
-                                                        I$SVTYPE, "<INS>", I$SUPPORT
-    else if (I$SUPPORT>8 && I$SVTYPE ~ "INV" ) print $1, $2, I$END, "P-00356971_svict",
-                                                         I$SVTYPE, "<INV>", I$SUPPORT
-    else if (I$SUPPORT>8 && I$SVTYPE ~ "DEL" ) print $1, $2, I$END, "P-00356971_svict",
-                                                         I$SVTYPE, "<DEL>", I$SUPPORT
-    else if (I$SUPPORT>8 && I$SVTYPE ~ "BND" ) print $1, $2, $2+1, "$SDID_svict",
-                                                         I$SVTYPE, $5, I$SUPPORT}' $input.vcf
-    """
-    header8 = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-              " > " + output + "_svict_SR8.mut"
-
-    header12 = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-               " > " + output + "_svict_SR12.mut"
-
-    sup_8 = "vawk '{if (I$SUPPORT>8 && I$SVTYPE ~ \"BND\" ) print $1, $2, $2+1, \"" + \
-            SDID + '_svict_' + vcftype + "\", I$SVTYPE, $5, I$SUPPORT ;" + \
-            " else if (I$SUPPORT>8 && I$SVTYPE ~ \"INS\" ) print $1, $2, I$END, \"" + \
-            SDID + '_svict_' + vcftype  + "\", I$SVTYPE, \"<INS>\", I$SUPPORT ;" + \
-            " else if (I$SUPPORT>8 && I$SVTYPE ~ \"INV\" ) print $1, $2, I$END, \"" + \
-            SDID + '_svict_' + vcftype + "\", I$SVTYPE, \"<INV>\", I$SUPPORT ; " + \
-            " else if (I$SUPPORT>8 && I$SVTYPE ~ \"DEL\" ) print $1, $2, I$END, \"" + \
-            SDID + '_svict_' + vcftype + "\", I$SVTYPE, \"<DEL>\", I$SUPPORT}' " + input_vcf + \
-            " >> " + output + "_svict_SR8.mut"
-
-    sup_12 = "vawk '{if (I$SUPPORT>12 && I$SVTYPE ~ \"BND\" ) print $1, $2, $2+1, \"" + \
-             SDID + '_svict_' + vcftype + "\", I$SVTYPE, $5, I$SUPPORT ;" + \
-             " else if (I$SUPPORT>12 && I$SVTYPE ~ \"INS\" ) print $1, $2, I$END, \"" + \
-             SDID + '_svict_' + vcftype +"\", I$SVTYPE, \"<INS>\", I$SUPPORT ; " + \
-             " else if (I$SUPPORT>12 && I$SVTYPE ~ \"INV\" ) print $1, $2, I$END, \"" + \
-             SDID + '_svict_' + vcftype + "\", I$SVTYPE, \"<INV>\", I$SUPPORT ; " + \
-             " else if (I$SUPPORT>12 && I$SVTYPE ~ \"DEL\" ) print $1, $2, I$END, \"" + \
-             SDID + '_svict_' + vcftype + "\", I$SVTYPE, \"<DEL>\", I$SUPPORT}' " + input_vcf + \
-             " >> " + output + "_svict_SR12.mut"
-
-    # cmd = "awk ' NR>1 {OFS=\"\\t\"; print $1, $2, $3, $5,\"svict\", $4,\"" + vcftype + "\", $6, $7}' " + output + "_SR8.mut "\
-    #       + " >> " + output_dir + "/annotate_combined_sv.txt"
-
-    subprocess.call(" && ".join([header8, header12, sup_8, sup_12]), shell=True)
-
-
 def parse_lumpy(input_vcf, SDID, output, vcftype):
     """
     ##CHROM START   END SDID    SVTYPE  ALT SVLENGTH    SUPPORT_READS    NOTES   GENES
@@ -101,14 +57,17 @@ def parse_gridss(input_vcf, SDID, output, vcftype):
 
 
 def parse_gtf(gtf, sdid, vcftype):
+    """
+    Parsing svcaller output - gtf
+    """
     if 'DEL' in gtf:
-        svtype = '<DEL>'
+        svtype = 'DEL'
     elif 'DUP' in gtf:
-        svtype = '<DUP>'
+        svtype = 'DUP'
     elif 'TRA' in gtf:
-        svtype = '<TRA>'
+        svtype = 'TRA'
     elif 'INV' in gtf:
-        svtype = '<INV>'
+        svtype = 'INV'
 
     sdid = sdid + '_svcaller_' + vcftype
     events_list = []
@@ -135,8 +94,15 @@ def parse_gtf(gtf, sdid, vcftype):
                     if chrom_a != chrom_b:
                         alt = gene_b
                         sv_length = svtype
-                    event = [chrom_a, start_a, end_b, sdid, svtype, alt, support_reads]
-                    events_list.append(event)
+                    
+                    if svtype == 'TRA':
+                        event_1 = [chrom_a, start_a, end_a, sdid, svtype, alt, support_reads]
+                        event_2 = [chrom_b, start_b, end_b, sdid, svtype, gene_a, support_reads]
+                        events_list.extend([event_1, event_2])
+                    else:
+                        event = [chrom_a, start_a, end_b, sdid, svtype, alt, support_reads]
+                        events_list.append(event)
+                    
     return events_list
 
 
@@ -263,6 +229,12 @@ def annotate_combined_sv(combined_file, genes, pancancer, output):
                 chrom_b = ''.join(list(filter(str.isdigit, data[7].split(':')[0])))
                 start_b = ''.join(list(filter(str.isdigit, data[7].split(':')[1])))
                 end_b = int(start_b) + 1
+                
+                if tool == "svcaller":
+                    chrom_b = data[7].split(':')[0]
+                    start_b = data[7].split(':')[1].split('-')[0]
+                    end_b = data[7].split(':')[1].split('-')[1]
+                
                 igv_coord_b = chrom_b + ':' + str(start_b)
             else:
                 chrom_b = 'NA'
@@ -321,9 +293,7 @@ if __name__ == "__main__":
 
     output_dir = os.path.dirname(output)
 
-    if sv_caller == 'svict':
-        parse_svict(input_file, sdid, output, vcftype)
-    elif sv_caller == 'lumpy':
+    if sv_caller == 'lumpy':
         parse_lumpy(input_file, sdid, output, vcftype)
     elif sv_caller == 'svaba':
         parse_svaba(input_file, sdid, output, vcftype)

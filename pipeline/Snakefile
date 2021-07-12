@@ -139,7 +139,7 @@ wildcard_constraints:
     events = "|".join(["DEL", "DUP", "INV", "TRA"]),
     chr = "|".join(all_chromosomes)
 
-container: config['singularity']
+container: config['global_container']
 
 rule all:
     input: 

@@ -6,7 +6,8 @@ reference: tests/dummy_genome/dummy_genome.json
 libdir: tests/libraries
 
 umi: True
-singularity: False
+global_container: False
+gridss_container: False
 outdir: tests
 
 steps: ALL
@@ -25,7 +26,7 @@ params:
         target_creator:
             java_options: "-Xmx4G -XX:ParallelGCThreads=4"
             extra: " -allowPotentiallyMisencodedQuals --maxIntervalSize 20000 "
-            threads: 1
+            threads: 2
         indel_realigner:
             java_options: "-Xmx8G -XX:ParallelGCThreads=4"
             extra: " -allowPotentiallyMisencodedQuals --maxReadsForRealignment 5000000 --maxReadsInMemory 1000000 "
@@ -57,13 +58,13 @@ params:
         callduplexconsensus:
             java_options: " -Xmx10g -XX:+AggressiveOpts -XX:ParallelGCThreads=8 "
             extra: " --min-reads 1 1 0 --min-input-base-quality 30 "
-            threads: 1
+            threads: 4
         filterconsensus:
             java_options: " -Xmx10g -XX:+AggressiveOpts -XX:ParallelGCThreads=8 "
             error_rate: " --max-read-error-rate 1 --max-base-error-rate 0 "
             base_quality: " --min-base-quality 30 "
             extra: " --min-reads 1 1 0 --reverse-per-base-tags true --require-single-strand-agreement true  "
-            threads: 4
+            threads: 1
         clipbam:
             java_options: " -Xmx10g -XX:+AggressiveOpts -XX:ParallelGCThreads=8 "
             extra: 
@@ -108,7 +109,9 @@ params:
     lumpy:
         threads: 8
     gridss:
-        threads: 8
+        threads: 16
+    gridss_filter:
+        threads: 1
     purecn:
         threads: 1
         maxnonclonal: " --maxnonclonal 0.2 "

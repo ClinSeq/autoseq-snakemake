@@ -198,12 +198,14 @@ rule gridss_svcalling:
         assembly_bam = "{}/svs/gridss/{}-{}-assembly.bam".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         vcf = "{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
-        gridss_jar = os.environ.get('GRIDSS_JAR')
+        gridss_jar = os.environ.get('GRIDSS_JAR'),
+        jvmheap = '15g'
     threads: params['gridss']['threads']
     log:
         outdir + "/logs/svs/gridss-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     shell:
         "gridss.sh --reference {input.reference} "
+        " --jvmheap {params.jvmheap} "
         " --jar {params.gridss_jar} "
         " --assembly {output.assembly_bam} "
         " --threads {threads} --steps  ALL "
@@ -211,9 +213,28 @@ rule gridss_svcalling:
         " --output {output.vcf} {input.normal_bam} {input.tumor_bam}"
 
 
-rule generateIGVnavInput_gridss:
+rule gridss_somatic_filter:
     input:
         vcf = "{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    output:
+        vcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf.bgz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    params:
+        pondir = reference["pondir"],
+        script_dir = " -s /opt/gridss -c /opt/gridss ",
+        plotdir = "{}/svs/gridss/".format(outdir),
+        outvcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    threads: params["gridss_filter"]["threads"]
+    container: config["gridss_container"]
+    shell:
+        "gridss_somatic_filter -p {params.pondir} "
+        " -i {input.vcf} "
+        " -o {params.outvcf} "
+        " --plotdir {params.plotdir} {params.script_dir}"
+
+
+rule generateIGVnavInput_gridss:
+    input:
+        vcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf.bgz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     output:
         "{}/svs/igv/{}-{}_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:

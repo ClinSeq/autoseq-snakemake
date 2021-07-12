@@ -157,8 +157,8 @@ for record in vcf_reader:
 
         if len(record.ALT) == 1 and filter_col == 'PASS' and (impact == 'HIGH' or impact == 'MODERATE'):
             if record.INFO['set'] == 'Intersection' or record.INFO['set'] == 'haplotypecaller':
-                if canonical_trans['Consequence'] == "missense_variant" and 'pathogenic' not in clinsig:
-                    continue
+                # if canonical_trans['Consequence'] == "missense_variant" and 'pathogenic' not in clinsig:
+                #     continue
 
                 if normal['DP'] and normal['AD']:
                     normal_dp = normal['DP']

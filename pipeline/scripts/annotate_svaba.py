@@ -58,10 +58,10 @@ def classify(line, ALT_INDEX, mdict):
             return "DEL"
 
         # INS
-        INS_PATTERN_THIS = re.compile(r'\D\].+\]')
-        INS_PATTERN_MATE = re.compile(r'\[.+\[\D')
-        if INS_PATTERN_THIS.match(alt) and INS_PATTERN_MATE.match(mateAlt):
-            return "DUP/INS"
+        DUP_PATTERN_THIS = re.compile(r'\].+\]\D')
+        DUP_PATTERN_MATE = re.compile(r'\D\[.+\[')
+        if DUP_PATTERN_THIS.match(alt) and DUP_PATTERN_MATE.match(mateAlt):
+            return "DUP"
 
     return 'BND'
 
@@ -79,6 +79,7 @@ if __name__ == "__main__":
             if line.startswith('#'):
                 continue
             vcf_file.append(line)
+    
     matesDict = makeMateDict(vcf_file)
     with open(file, "r") as f:
         for line in f:
