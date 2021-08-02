@@ -1,0 +1,17 @@
+site_name: Autoseq
+site_url: ""
+site_description: Autoseq documentation .
+site_author: Clinseq Team
+
+repo_url: https://github.com/ClinSeq/autoseq-snakemake
+edit_uri: ""
+
+nav :
+  - Autoseq: index.md
+  - Quick Start: quick_start.md
+
+theme:
+    name: readthedocs
+    highlightjs: true
+    hljs_languages:
+        - python

@@ -1,1 +1,4 @@
 .snakemake/
+__pycache__
+autoseq.egg-info/
+tools/

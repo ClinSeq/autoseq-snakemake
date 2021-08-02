@@ -1,0 +1,31 @@
+name: pytests
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8]
+    
+    steps:
+      - uses: actions/checkout@v2
+        name: Check out source-code repository
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+        
+      - name: Install dependencies
+        run: |
+          pip install flake8 pytest
+          pip install -e .
+        
+          
+      - name: Test with pytest
+        env:
+          GRIDSS_JAR: '/path/to/gridss.jar'
+        run: |
+          pytest tests/
