@@ -6,8 +6,11 @@ reference: tests/dummy_genome/dummy_genome.json
 libdir: tests/libraries
 
 umi: True
+
 global_container: False
 gridss_container: False
+franken_container: False
+
 outdir: tests
 
 steps: ALL
@@ -109,7 +112,7 @@ params:
     lumpy:
         threads: 8
     gridss:
-        threads: 16
+        threads: 10
     gridss_filter:
         threads: 1
     purecn:

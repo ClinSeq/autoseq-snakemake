@@ -8,16 +8,59 @@ import re
 import pandas as pd
 
 
+# structural variant color map for IGV SV representation
+igv_color_map = {"DEL": "Non-coding_Transcript",
+                 "DUP": "Truncating",
+                 "INV": "Indel",
+                 "TRA": "Nonsense",
+                 "BND": "Nonsense"
+                 }
+
+
+def get_igvcolortype(mutfile, tool):
+    """
+    function to add type for IGV representation
+    """
+    outfile = open(mutfile.replace(".tmp", ""), "w")
+    
+    if tool == "svaba":
+        outfile.write("\t".join(['CHROM','START','END','SDID','TYPE','SVTYPE','ALT','SUPPORT_normal', 'SUPPORT_tumor']) + '\n')
+    else:
+        outfile.write("\t".join(['CHROM','START','END','SDID','TYPE','SVTYPE','ALT','SUPPORT_READS']) + '\n')
+
+    with open(mutfile, 'r') as fh:
+        for line in fh:
+            if line.startswith("CHROM"):
+                continue
+            data = line.strip().split()
+            chrom = data[0]
+            start = data[1]
+            end = data[2]
+            sdid = data[3]
+            svtype = data[4]
+            igvtype = igv_color_map[svtype]
+            alt = data[5]
+            if tool == "svaba":
+                support_reads = "\t".join([data[6], data[7]])
+            else:
+                support_reads = data[6]
+            outfile.write("\t".join([chrom, start, end, sdid, igvtype, svtype, alt, support_reads]) + "\n")
+    
+    subprocess.call("rm {}".format(mutfile), shell=True)
+
+
 def parse_svaba(input_vcf, SDID, output, vcftype):
     """
     vawk '{print $1, $2, $2+1, "P-00356971_svaba", "BND", $5, S$*$AD, S$*$DP}'
     """
     header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_normal\tSUPPORT_tumor \
              \tDPnormal\tDPtumor\tGENES\"" + " > " + output + "_" + vcftype + "_svaba.mut"
-    svaba_cmd = "vawk '{print $1, $2, $2+1, \"" + SDID + '_svaba_' + vcftype + "\",I$SVTYPE, $5, S$*$AD,S$*$DP}'" + \
-                " " + input_vcf + " >> " + output + "_" + vcftype + "_svaba.mut"
-
+    svaba_cmd = "vawk '{print $1, $2, $2+1, \"" + SDID + '_svaba_' + vcftype +"\",I$SVTYPE, $5, S$*$AD,S$*$DP}'" + \
+                " " + input_vcf + " >> " + output + "_" + vcftype + "_svaba.mut.tmp"
+    
+    tmp_mut = output + "_" + vcftype + "_svaba.mut.tmp"
     subprocess.call(" && ".join([header, svaba_cmd]), shell=True)
+    get_igvcolortype(tmp_mut, "svaba")
 
 
 def parse_lumpy(input_vcf, SDID, output, vcftype):
@@ -29,31 +72,40 @@ def parse_lumpy(input_vcf, SDID, output, vcftype):
     && I$SU>50 && I$SVTYPE !~ "BND") print $1, $2, I$END, "P-00356971_lumpy", I$SVTYPE, $5, I$SVLEN, I$SU}
     """
     header1k_sup_50 = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-                      " > " + output + "_lumpy_len1k_SU50.mut"
+                      " > " + output + "_lumpy_len1k_SU50.mut.tmp"
     header500_sup_24 = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-                       " > " + output + "_lumpy_len500_SU24.mut"
+                       " > " + output + "_lumpy_len500_SU24.mut.tmp"
 
     len1k_sup_50 = "vawk '{if ((I$SVLEN>1000 || I$SVLEN<-1000) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>50 && I$SVTYPE ~ \"BND\") print $1, $2, $2+1, \""+ SDID + '_lumpy_' + vcftype +"\", I$SVTYPE, $5, \"NA\", I$SU ;"  + \
                 " else if ((I$SVLEN>1000 || I$SVLEN<-1000) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>50 && I$SVTYPE !~ \"BND\") print $1, $2, I$END, \""+ SDID + '_lumpy_' + vcftype +"\", I$SVTYPE, $5, I$SU}' " + input_vcf + \
-                " >> " + output + "_lumpy_len1k_SU50.mut"
+                " >> " + output + "_lumpy_len1k_SU50.mut.tmp"
 
     len500_sup_24 = "vawk '{if ((I$SVLEN>500 || I$SVLEN<-500) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>24 && I$SVTYPE ~ \"BND\") print $1, $2, $2+1, \"" + SDID + '_lumpy_' + vcftype + "\", I$SVTYPE, $5, I$SU ;" + \
                 " else if ((I$SVLEN>500 || I$SVLEN<-500) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>24 && I$SVTYPE !~ \"BND\") print $1, $2, I$END, \"" + SDID + '_lumpy_' + vcftype + "\", I$SVTYPE, $5, I$SU }' " + input_vcf + \
-                " >> " + output + "_lumpy_len500_SU24.mut"
+                " >> " + output + "_lumpy_len500_SU24.mut.tmp"
   
     # cmd = "awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"lumpy\", $4, \"" + vcftype + "\", $6, $7}' " + output + "_lumpy_len500_SU24.mut" +  " >> " + output_dir + "/annotate_combined_sv.txt"
 
+    tmp_len500_SU24 = output + "_lumpy_len500_SU24.mut.tmp"
+    tmp_len1k_SU50 = output + "_lumpy_len1k_SU50.mut.tmp"
     subprocess.call(" && ".join([header1k_sup_50, header500_sup_24, len1k_sup_50, len500_sup_24]), shell=True)
+    get_igvcolortype(tmp_len500_SU24, "lumpy")
+    get_igvcolortype(tmp_len1k_SU50, "lumpy")
 
 
 def parse_gridss(input_vcf, SDID, output, vcftype):
+    """
+    GRIDSS - vcf parsing 
+    """
     header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-                      " > " + output + "_pass_gridss.mut"
+                      " > " + output + "_" + vcftype + "_pass_gridss.mut.tmp"
 
     gridss_cmd = "zless " + input_vcf  + " | vawk '{ if($7 == \"PASS\")  print $1, $2, $2+1, \""+ SDID + '_gridss_' + vcftype +"\", I$SVTYPE, $5, I$VF}' " \
-                 " >> " + output + "_pass_gridss.mut"
+                 " >> " + output + "_" + vcftype +"_pass_gridss.mut.tmp"
     
-    subprocess.call(" && ".join([header, gridss_cmd]), shell=True)    
+    tmp_mut = output + "_" + vcftype + "_pass_gridss.mut.tmp"
+    subprocess.call(" && ".join([header, gridss_cmd]), shell=True)
+    get_igvcolortype(tmp_mut, "gridss")    
 
 
 def parse_gtf(gtf, sdid, vcftype):
@@ -115,13 +167,15 @@ def parse_svcaller(input_dir, SDID, output, vcftype):
         events.extend(parse_gtf(gtf, sdid, vcftype))
 
     with open(mut_file, 'w') as mut_fh:
-        mut_fh.write("\t".join(['CHROM','START','END','SDID','SVTYPE','ALT', 'SUPPORT_READS']) + '\n')
+        mut_fh.write("\t".join(['CHROM','START','END','SDID','TYPE','SVTYPE','ALT', 'SUPPORT_READS']) + '\n')
         for event in events:
             mut_fh.write('\t'.join(map(str, event)) + '\n')
  
 
 def combine_mut(input_dir, output_dir):
-
+    """
+    Function to combine all mut files prepared for IGVNav
+    """
     files = glob.glob(input_dir + "/*.mut")
     cmd = []
 
@@ -133,25 +187,21 @@ def combine_mut(input_dir, output_dir):
         vcftype = ''
         sup_reads = ''
         filebase = os.path.basename(file)
-        if 'svict_SR8' in file:
-            vcftype = 'cfdna' if '-CFDNA-' in filebase else 'tumor' if '-T-' in filebase else 'germline'
-            cmd.append("awk ' NR>1 {OFS=\"\\t\"; print $1, $2, $3, $5,\"svict\", $4,\"" + vcftype + "\", $6, $7}' " \
-                        + file + " >> " + output_dir + "/annotate_combined_sv.txt")
-        elif 'lumpy_len500_SU24' in file:
-            cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"lumpy\", $4, \"somatic\", $6, $7}' " \
+        if 'lumpy_len500_SU24' in file:
+            cmd.append("awk -F'\\t' 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $6,\"lumpy\", $4, \"somatic\", $7, $8}' " \
                         + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
         elif 'svaba.mut' in file:
             vcftype = 'somatic' if 'somatic' in filebase else 'germline'
-            sup_reads = '$8' if vcftype == 'SOMATIC' else '$7'
-            cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"svaba\", $4, \"" + vcftype + "\", $6, " + sup_reads + "}' " +\
+            sup_reads = '$9' if vcftype == 'SOMATIC' else '$8'
+            cmd.append("awk -F'\\t' 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $6,\"svaba\", $4, \"" + vcftype + "\", $7, " + sup_reads + "}' " +\
                 file + " >> " + output_dir + "/annotate_combined_sv.txt")
         elif 'svcaller.mut' in file:
             vcftype = 'cfdna' if '-CFDNA-' in filebase else 'tumor' if '-T-' in filebase else 'germline'
-            cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"svcaller\", $4, \"" + vcftype + "\", $6, $7}' " \
+            cmd.append("awk -F'\\t' 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $6,\"svcaller\", $4, \"" + vcftype + "\", $7, $8}' " \
                         + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
         elif 'gridss.mut' in file:
-            vcftype = 'cfdna' if '-CFDNA-' in filebase else 'tumor' if '-T-' in filebase else 'germline'            
-            cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"gridss\", $4, \"" + vcftype + "\", $6, $7}' " \
+            vcftype = 'somatic' if 'somatic' in filebase else 'germline'            
+            cmd.append("awk -F'\\t' 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $6,\"gridss\", $4, \"" + vcftype + "\", $7, $8}' " \
                         + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
 
     subprocess.call(" && ".join(cmd), shell=True)
@@ -160,6 +210,9 @@ def combine_mut(input_dir, output_dir):
 
 
 def load_bed(bed_file):
+    """
+    Loading genes from genes.bed file for SV annotations
+    """
     genes = {}
     with open(bed_file, 'r') as genes_fh:
         genes_db = genes_fh.readlines()
@@ -178,6 +231,9 @@ def load_bed(bed_file):
 
 
 def gene_annotation(chrom, start, end, genes, design):
+    """
+    Return gene name for given  SV event
+    """
     gene = ''
     in_gene = ''
 
@@ -205,6 +261,9 @@ def gene_annotation(chrom, start, end, genes, design):
 
 
 def annotate_combined_sv(combined_file, genes, pancancer, output):
+    """
+    Parsing combined sv list and apply gene annotation for each SV
+    """
     # output_file = open(output, 'w')
     summary_columns = ['CHROM_A', 'START_A', 'END_A', 'CHROM_B', 'START_B', 'END_B',
                        'IGV_COORD', 'SVTYPE', 'SV_LENGTH', 'SUPPORT_READS', 'TOOL', 'SDID', 'SAMPLE',

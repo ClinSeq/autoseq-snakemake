@@ -194,12 +194,12 @@ rule gridss_svcalling:
         tumor_bam = capture_to_results[CANCER_CAPTURE].bamfile,
         reference = reference["bwaIndex"]
     output:
-        workdir = directory("{}/svs/gridss/".format(outdir)),
         assembly_bam = "{}/svs/gridss/{}-{}-assembly.bam".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         vcf = "{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
         gridss_jar = os.environ.get('GRIDSS_JAR'),
-        jvmheap = '15g'
+        jvmheap = '10g',
+        workdir = directory("{}/svs/gridss/".format(outdir))
     threads: params['gridss']['threads']
     log:
         outdir + "/logs/svs/gridss-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
@@ -209,7 +209,7 @@ rule gridss_svcalling:
         " --jar {params.gridss_jar} "
         " --assembly {output.assembly_bam} "
         " --threads {threads} --steps  ALL "
-        " --workingdir {output.workdir} "
+        " --workingdir {params.workdir} "
         " --output {output.vcf} {input.normal_bam} {input.tumor_bam}"
 
 

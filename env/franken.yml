@@ -1,18 +1,20 @@
-name: flanken
+name: franken
 channels:
-  - anaconda
-  - r
   - conda-forge
-  - bioconda
+  - r
+  - anaconda
   - defaults
 dependencies:
   - _libgcc_mutex=0.1=main
   - _r-mutex=1.0.0=mro_2
   - binutils_impl_linux-64=2.31.1=h6176602_1
   - binutils_linux-64=2.31.1=h6176602_7
+  - blas=1.0=mkl
+  - boost=1.67.0=py37_4
   - bzip2=1.0.6=h14c3975_5
-  - ca-certificates=2020.1.1=0
+  - ca-certificates=2021.7.5=h06a4308_1
   - cairo=1.14.12=h8948797_3
+  - certifi=2021.5.30=py37h06a4308_0
   - curl=7.64.1=hbc83047_0
   - cyrus-sasl=2.1.26=h82bf5a1_4
   - dbus=1.13.6=h746ee38_0
@@ -38,8 +40,10 @@ dependencies:
   - gxx_linux-64=7.3.0=h553295d_7
   - harfbuzz=1.8.8=hffaf4a1_0
   - icu=58.2=h9c2bf20_1
+  - intel-openmp=2021.3.0=h06a4308_3350
   - jpeg=9b=h024ee3a_2
   - krb5=1.16.1=h173b8e3_7
+  - libboost=1.67.0=h46d08c1_4
   - libcurl=7.64.1=h20c2e04_0
   - libdb=6.1.26=0
   - libedit=3.1.20181209=hc058e9b_0
@@ -55,14 +59,23 @@ dependencies:
   - libxcb=1.13=h1bed415_1
   - libxml2=2.9.9=he19cac6_0
   - make=4.2.1=h1bed415_1
+  - mkl=2021.3.0=h06a4308_520
+  - mkl-service=2.4.0=py37h7f8727e_0
+  - mkl_fft=1.3.0=py37h42c9631_2
+  - mkl_random=1.2.2=py37h51133e4_0
   - mro-base=3.5.1=3
   - mro-base_impl=3.5.1=h9a62091_0
   - ncurses=6.1=he6710b0_1
-  - openssl
+  - numpy=1.20.3=py37hf144106_0
+  - numpy-base=1.20.3=py37h74d4b33_0
+  - openssl=1.1.1k=h27cfd23_0
   - pandoc=2.2.3.2=0
   - pango=1.42.4=h049681c_0
   - pcre=8.43=he6710b0_0
+  - pip=21.2.2=py37h06a4308_0
   - pixman=0.38.0=h7b6447c_0
+  - py-boost=1.67.0=py37h04863e7_4
+  - python=3.7.3=h0371630_0
   - qt=5.6.3=h8bf5577_3
   - r-assertthat=0.2.0=mro351hf348343_0
   - r-backports=1.1.2=mro351hd10c6a6_0
@@ -168,11 +181,13 @@ dependencies:
   - r-xml2=1.2.0=mro351hebc1506_0
   - r-xtable=1.8_2=mro351hf348343_0
   - r-yaml=2.2.0=mro351hd10c6a6_0
+  - readline=7.0=h7b6447c_5
   - rstudio=1.1.456=h6bb024c_1
+  - setuptools=52.0.0=py37h06a4308_0
+  - six=1.16.0=pyhd3eb1b0_0
   - sqlite=3.28.0=h7b6447c_0
   - tk=8.6.8=hbc83047_0
   - unixodbc=2.3.7=h14c3975_0
+  - wheel=0.37.0=pyhd3eb1b0_0
   - xz=5.2.4=h14c3975_4
   - zlib=1.2.11=h7b6447c_3
-
-
