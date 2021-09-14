@@ -142,6 +142,7 @@ def launch(context, ref, samples, outdir, libdir,
     config_dict['umi'] = umi
     config_dict['global_container'] = os.path.join(singularity, "autoseq-smk.sif") if use_singularity else ' '
     config_dict['gridss_container'] = os.path.join(singularity, "gridss.sif") if use_singularity else ' '
+    config_dict['franken_container'] = os.path.join(singularity, "franken.sif") if use_singularity else ' '
     
     out_configpath = os.path.join(normpath(outdir), f"config_{sample_str}.yml")
     jobdb = os.path.join(normpath(outdir), f"{sample_str}.jobdb")

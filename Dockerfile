@@ -1,4 +1,4 @@
-FROM continuumio/miniconda3:4.8.2
+FROM continuumio/miniconda3:4.8.3
 
 LABEL description="Autoseq Snakemake workflow"
 
@@ -25,18 +25,6 @@ RUN conda env create -f /env/purecn-env.yml && conda clean -a && \
     -e 'BiocManager::install("PureCN")' \
     -e 'install.packages("optparse", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' \
     -e 'install.packages("futile.logger", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' 
-
-RUN conda env create -f /env/liqbiocna-env.yml && \
-    conda activate liqbiocna-env && \
-    conda install boost && \
-    conda install -c bioconda bioconductor-rhdf5lib && \
-    R --quiet -e 'install.packages("BiocManager", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' \
-    -e 'BiocManager::install("VariantAnnotation")' \
-    -e 'install.packages("getopt", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' \
-    -e 'install.packages("gridExtra", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' \
-    -e 'install.packages("RJSONIO", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' \
-    -e 'install.packages("ggplot2", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' \
-    -e 'install.packages("plotly", repos = "http://ftp.acc.umu.se/mirror/CRAN/")'
 
 RUN ln -s /opt/conda/lib/libreadline.so.7 /opt/conda/lib/libreadline.so.6 && \
     ln -s /opt/conda/lib/libncurses.so.6 /opt/conda/lib/libncurses.so.5
