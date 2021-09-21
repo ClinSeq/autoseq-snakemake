@@ -98,9 +98,8 @@ rule liqbiocna_plot:
         tumor_inv = capture_to_results[CANCER_CAPTURE].svs['INV'],
         tumor_tra = capture_to_results[CANCER_CAPTURE].svs['TRA'],
     threads: params['liqbiocna']['threads']
-    container: config["franken_container"]
-    shell:
-        "source activate franken && " 
+    run:
+        shell("source activate franken && " 
         "liqbioCNA_Interactive_plots.R  --tumor_cnr {input.tumor_cnr} "
                     "  --tumor_cns {input.tumor_cns} "
                     "  --normal_cnr {input.normal_cnr} "
@@ -125,4 +124,4 @@ rule liqbiocna_plot:
                     "  --cna_json {output.cna_json} "
                     "  --purity_json {output.purity_json} "
                     "  --gene_track {input.gene_track} && "
-        " source deactivate "
+        " source deactivate ")

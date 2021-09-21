@@ -29,7 +29,7 @@ RUN conda env create -f /env/purecn-env.yml && conda clean -a && \
 RUN ln -s /opt/conda/lib/libreadline.so.7 /opt/conda/lib/libreadline.so.6 && \
     ln -s /opt/conda/lib/libncurses.so.6 /opt/conda/lib/libncurses.so.5
 
-RUN apt-get update && \
+RUN apt-get --allow-releaseinfo-change update && \
     apt-get -y install build-essential --fix-missing && \
     apt-get -y install zlib1g-dev && \
     apt-get -y install libncurses-dev && \
@@ -50,6 +50,7 @@ COPY . /autoseq-snakemake/
 COPY tools/strelka /tools/strelka
 COPY tools/somaticseq /tools/somaticseq
 COPY tools/vcf2maf /tools/vcf2maf
+COPY tools/VarDictJava /tools/VarDictJava
 
 RUN pip install /autoseq-snakemake/
 
@@ -58,5 +59,5 @@ RUN ln -s /opt/conda/envs/gatk_3/lib/libcrypto.so.1.1 /opt/conda/envs/gatk_3/lib
 
 ENV MSINGSENV=/tools/msings/msings-env
 ENV GRISS_JAR=/autoseq-snakemake/pipeline/scripts/gridss-2.10.2-gridss-jar-with-dependencies.jar
-ENV PATH=$PATH:/autoseq-snakemake/pipeline/scripts/:/tools/strelka/bin:/tools/somaticseq/somaticseq:/tools/vcf2maf
+ENV PATH=$PATH:/autoseq-snakemake/pipeline/scripts/:/tools/strelka/bin:/tools/somaticseq/somaticseq:/tools/vcf2maf:/tools/VarDictJava/build/install/VarDict/bin
 CMD [ "/bin/bash", "-c" ]

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import glob
 import gzip
 import pysam
 
@@ -105,17 +106,25 @@ def main():
     parser = argparse.ArgumentParser(description=
         'Generate evidence bam for structural variants ')
     parser.add_argument('--bam', required=True, help="Input bam file ")
+    parser.add_argument('--svs', required=True, help="structural variants dir as input")
     parser.add_argument('--assembly', help="SV Assembly bam/ alignments file ")
-    parser.add_argument('--mut', help="List of variants as mut file")
     parser.add_argument('--vcf', help="List of variants as vcf file")
-    parser.add_argument('--tool', help="Tool name - Variant callers (gridss, svaba, lumpy)")
+    parser.add_argument('--tool', help="Tool name - Variant callers (gridss, svaba, svcallers)")
     parser.add_argument('--output', help="output tab delimited file for IGVNav, format=output.bam")
     args = parser.parse_args()
     
     # mutfile for lumpy
+    if args.svs:
+        svaba_aln = glob.glob(args.svs + "/svaba/" + "*.alignments.txt.gz")
+        gridss_vcf = glob.glob(args.svs + "/gridss/" + "*gridss.filtered.vcf.bgz")
+        gridss_asm = glob.glob(args.svs + "/gridss/" + "*assembly.bam")
+
+    print(svaba_aln)
+    print(gridss_vcf)
+        
     if args.mut:
         variants = parse_mut(args.mut)
-
+    
     if args.tool == 'gridss':
         assm_ids = extract_asm(args.vcf)
         read_names = extract_rp(assm_ids, args.assembly_bam)
@@ -123,7 +132,7 @@ def main():
     if args.tool == 'svaba':
         read_names = extract_contigs(args.vcf, args.assembly)
 
-    extract_reads(args.bam, read_names)    
+    # extract_reads(args.bam, read_names)
 
 
 

@@ -159,7 +159,11 @@ def parse_gtf(gtf, sdid, vcftype):
 
 
 def parse_svcaller(input_dir, SDID, output, vcftype):
-    gtf_files = glob.glob(input_dir + "/" + SDID + "-*.gtf")
+    """
+    parse sdid and extract corresponding gtf files to process
+    """
+    sdid = "-".join(SDID.split("-")[0:4])
+    gtf_files = glob.glob(input_dir + "/" + sdid + "-*.gtf")
     mut_file = output + "/" + SDID + "_svcaller.mut"
     sdid = re.search("P-[A-Za-z0-9]*", SDID).group()
     events = []

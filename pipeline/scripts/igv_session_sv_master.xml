@@ -1,53 +1,28 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<Session genome="hg19" hasGeneTrack="true" hasSequenceTrack="true" locus="All" nextAutoscaleGroup="2" path="/nfs/PROBIO/for_igv/igv_session_C3_new.xml" version="8">
+<Session genome="hg19" hasGeneTrack="true" hasSequenceTrack="true" locus="All" nextAutoscaleGroup="2" version="8">
 	<Resources>
 	{add_resource}	
-        <Resource name="Other" path="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/Other.rmask.gz"/>
         <Resource path="/nfs/PROBIO/for_igv/AR_exon_genomic_locations.bed"/>
-        <Resource name="Simple" path="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/Simple_repeat.rmask.gz"/>
         <Resource path="/nfs/PROBIO/for_igv/wgEncodeCrgMapabilityAlign50mer.bigWig"/>
-        <Resource name="Unknown" path="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/Unknown.rmask.gz"/>
-        <Resource name="Satellite" path="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/Satellite.rmask.gz"/>
         <Resource path="/nfs/PROBIO/for_igv/consensusBlacklist.bed"/>
-        <Resource name="SINE" path="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/SINE.rmask.gz"/>
-        <Resource name="Low Complexity" path="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/Low_complexity.rmask.gz"/>
-        <Resource name="RNA" path="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/RNA.rmask.gz"/>
         <Resource path="/nfs/PROBIO/for_igv/simple_repeats.bed"/>
-        <Resource path="/nfs/PROBIO/for_igv/comprehensive3_baits_twist.bed"/>
-        <Resource name="LTR" path="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/LTR.rmask.gz"/>
-        <Resource name="RC" path="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/RC.rmask.gz"/>
         <Resource name="Ensembl Genes" path="https://s3.amazonaws.com/igv.org.genomes/hg19/ensGene.txt.gz"/>
-        <Resource name="DNA" path="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/DNA.rmask.gz"/>
-        <Resource name="LINE" path="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/LINE.rmask.gz"/>
-        <Resource path="/nfs/PROBIO/for_igv/comprehensive3_customized_targets_twist.bed"/>
     </Resources>
     <Panel height="580" name="DataPanel" width="2543">
-        <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" featureVisibilityWindow="4062175" fontSize="10" height="15" id="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/SINE.rmask.gz" name="SINE" visible="true"/>
-        <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" featureVisibilityWindow="7364200" fontSize="10" height="15" id="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/LINE.rmask.gz" name="LINE" visible="true"/>
-        <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" featureVisibilityWindow="8509759" fontSize="10" height="15" id="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/LTR.rmask.gz" name="LTR" visible="true"/>
-        <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" featureVisibilityWindow="34978586" fontSize="10" height="15" id="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/DNA.rmask.gz" name="DNA" visible="true"/>
-        <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" featureVisibilityWindow="12756616" fontSize="10" height="15" id="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/Simple_repeat.rmask.gz" name="Simple" visible="true"/>
-        <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" featureVisibilityWindow="31919496" fontSize="10" height="15" id="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/Low_complexity.rmask.gz" name="Low Complexity" visible="true"/>
-        <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" featureVisibilityWindow="872815689" fontSize="10" height="15" id="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/Satellite.rmask.gz" name="Satellite" visible="true"/>
-        <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" featureVisibilityWindow="2147483647" fontSize="10" height="15" id="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/RC.rmask.gz" name="RC" visible="true"/>
-        <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" featureVisibilityWindow="357402591" fontSize="10" height="15" id="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/RNA.rmask.gz" name="RNA" visible="true"/>
-        <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" featureVisibilityWindow="2147483647" fontSize="10" height="15" id="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/Other.rmask.gz" name="Other" visible="true"/>
-        <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" featureVisibilityWindow="806442238" fontSize="10" height="15" id="https://s3.amazonaws.com/igv.broadinstitute.org/annotations/hg19/variations/Unknown.rmask.gz" name="Unknown" visible="true"/>
-        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.DataSourceTrack" color="0,0,178" fontSize="10" id="/nfs/PROBIO/for_igv/wgEncodeCrgMapabilityAlign50mer.bigWig" name="wgEncodeCrgMapabilityAlign50mer.bigWig" renderer="BAR_CHART" visible="true" windowFunction="mean">
-            <DataRange baseline="0.0" drawBaseline="true" flipAxis="false" maximum="0.9424266" minimum="0.0" type="LINEAR"/>
-        </Track>
-	{add_sv_mut_track}
+	    {add_sv_mut_track}
     </Panel>
     {add_panel}
     <Panel height="600" name="FeaturePanel" width="2543">
         <Track altColor="0,0,178" clazz="org.broad.igv.track.SequenceTrack" color="0,0,178" fontSize="10" id="Reference sequence" name="Reference sequence" visible="true"/>
         <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;423.0;255,255,255;0,0,178" fontSize="10" height="35" id="hg19_genes" name="RefSeq Genes" visible="true"/>
         <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" featureVisibilityWindow="10692194" fontSize="10" id="https://s3.amazonaws.com/igv.org.genomes/hg19/ensGene.txt.gz" name="Ensembl Genes" visible="true"/>
-        <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;103.0;255,255,255;0,0,178" fontSize="10" id="/nfs/PROBIO/for_igv/comprehensive3_customized_targets_twist.bed" name="comprehensive3_customized_targets_twist.bed" visible="true"/>
-        <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;103.0;255,255,255;0,0,178" fontSize="10" id="/nfs/PROBIO/for_igv/comprehensive3_baits_twist.bed" name="comprehensive3_baits_twist.bed" visible="true"/>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.DataSourceTrack" color="0,0,178" fontSize="10" id="/nfs/PROBIO/for_igv/wgEncodeCrgMapabilityAlign50mer.bigWig" name="wgEncodeCrgMapabilityAlign50mer.bigWig" renderer="BAR_CHART" visible="true" windowFunction="mean">
+            <DataRange baseline="0.0" drawBaseline="true" flipAxis="false" maximum="0.9424266" minimum="0.0" type="LINEAR"/>
+    </Track>
+    	{add_capture_bed}
         <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;0.0;255,255,255;0,0,178" fontSize="10" id="/nfs/PROBIO/for_igv/AR_exon_genomic_locations.bed" name="AR_exon_genomic_locations.bed" visible="true"/>
         <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;5.0;255,255,255;0,0,178" fontSize="10" id="/nfs/PROBIO/for_igv/consensusBlacklist.bed" name="consensusBlacklist.bed" visible="true"/>
-	<Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;1798.0;255,255,255;0,0,178" fontSize="10" id="/nfs/PROBIO/for_igv/simple_repeats.bed" name="tb_simpleRepeat" visible="true"/>
+	    <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;1798.0;255,255,255;0,0,178" fontSize="10" id="/nfs/PROBIO/for_igv/simple_repeats.bed" name="tb_simpleRepeat" visible="true"/>
 	{add_sv_gtf_track}
     </Panel>
     <PanelLayout dividerFractions="0.14373464373464373,0.36977886977886976,0.6326781326781327"/>

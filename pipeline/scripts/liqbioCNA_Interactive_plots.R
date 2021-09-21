@@ -219,7 +219,7 @@ data2_exon <- data2[data2$Feature == 'exon',]
   salf=(salf[,-1])
   
   # mark the type
-  salf$pch=rep(0,nrow(salf))
+  salf$pch=rep(22,nrow(salf))
   salf$pch[salf$type=='snv']=21
   salf$pch[salf$type=='del']=24
   salf$pch[salf$type=='ins']=25
@@ -303,7 +303,6 @@ data2_exon <- data2[data2$Feature == 'exon',]
           thisrow=sum(rowspermut[1:i])-rowspermut[i]+j
           table[thisrow,1:length(t2)]=t2
         }
-        
       }
     }
     table=table[,-which(colnames(table)=="AF")]  # remove AF col from vep data to not confuse with AF from galf
@@ -317,7 +316,7 @@ data2_exon <- data2[data2$Feature == 'exon',]
   galf$gnomAD_AF=as.numeric(levels(galf$gnomAD_AF)[galf$gnomAD_AF])  # Make gnom_AD numerical so it can be used
   galf=(galf[which(galf$AO>=12 & galf$AF>=0.2 & (galf$gnomAD_AF < 0.05 | is.na(galf$gnomAD_AF))),-1])
   # mark the type
-  galf$pch=rep(0,nrow(galf))
+  galf$pch=rep(22,nrow(galf))
   galf$pch[galf$type=='snv']=21
   galf$pch[galf$type=='del']=24
   galf$pch[galf$type=='ins']=25
@@ -422,9 +421,9 @@ data2_exon <- data2[data2$Feature == 'exon',]
     t_strvs=rbind(t_strvs,sv)
   }, silent=T)
   try( { 
-    sv <- read.delim(opts$svcaller_T_INS,header=F,stringsAsFactors = F)
+    sv <- read.delim(opts$svcaller_T_INV,header=F,stringsAsFactors = F)
     colnames(sv)[c(1,4,5)]=c('chr','start','end')
-    sv$type='INS'
+    sv$type='INV'
     t_strvs=rbind(t_strvs,sv)
   }, silent=T)
   try( { 
@@ -456,9 +455,9 @@ data2_exon <- data2[data2$Feature == 'exon',]
     n_strvs=rbind(n_strvs,sv)
   }, silent=T)
   try( { 
-    sv <- read.delim(opts$svcaller_N_INS,header=F,stringsAsFactors = F)
+    sv <- read.delim(opts$svcaller_N_INV,header=F,stringsAsFactors = F)
     colnames(sv)[c(1,4,5)]=c('chr','start','end')
-    sv$type='INS'
+    sv$type='INV'
     n_strvs=rbind(n_strvs,sv)
   }, silent=T)
   try( { 
@@ -683,7 +682,7 @@ write(exportJson, opts$cna_json)
     points(alf$td,alf$t,cex=0.3,col='#00000080',xlim=xlim,ylim=ylim,pch=16,lwd=lwd)
     points(alf$nd,alf$n,cex=0.1,col='#60606080',xlim=xlim,ylim=ylim,pch=3,lwd=lwd)
     scol=rep('#C00000CC',nrow(salf))
-    scol[salf$FILTER!=PASS]='#500000CC'
+    scol[salf$FILTER!='PASS']='#500000CC'
     points(salf$DP.T,salf$AF.T,cex=0.4,col=scol,xlim=xlim,ylim=ylim,pch=salf$pch,lwd=lwd)
     segments(x0=median(alf$td,na.rm = T),y0=0,x1=median(alf$td,na.rm = T),y1=1,col='#00000080',lwd=lwd,lty=3)
     segments(x0=median(alf$nd,na.rm = T),y0=0,x1=median(alf$nd,na.rm = T),y1=1,col='#7070FF80',lwd=lwd,lty=3)
@@ -722,7 +721,7 @@ write(exportJson, opts$cna_json)
     par(mar=c(0,0,0,0))
     plot(1,type='n',axes=F,xlab='',ylab='')
     mtext('DNA ratio',1,padj=text1padj,cex=cex.text)
-    mtext('Allelic imablance',2,padj=-3,cex=cex.text)
+    mtext('Allelic imbalance',2,padj=-3,cex=cex.text)
     
     for (c in 1:24)
     {
@@ -876,7 +875,8 @@ write(exportJson, opts$cna_json)
                col=col,
                lwd=3)
       ix=purecn_loh$C==0
-      if (sum(ix, na.rm=TRUE)>0) points(x = (purecn_loh$cumstart[ix]+purecn_loh$cumend[ix])/2,y = -1.8,pch=24,bg='lightblue')
+      ixSum=sum(ix, na.rm=TRUE)
+      if (ixSum>0) points(x = (purecn_loh$cumstart[ix]+purecn_loh$cumend[ix])/2,y = rep(-1.8, ixSum),pch=24,bg='lightblue')
     }
     
     #Add a bar between chromosomes to distinguish them

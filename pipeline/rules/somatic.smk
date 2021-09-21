@@ -26,7 +26,7 @@ rule vardict_somatic:
     log:
         "{}/logs/variants/{}-{}.vardict-somatic.vcf.gz.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:
-        "vardict-java -G {input.reference} "
+        "VarDict -G {input.reference} "
             " -th {threads} "
             "-f {params.min_alt_frac} "
             "-N {params.tumorid} "
@@ -219,7 +219,7 @@ rule vardict_purecn:
         tmpvcf = f"{params['scratch']}/{uuid.uuid4()}.vcf.gz"
     threads: params['vardict']['threads']
     shell:
-        "vardict-java -G {input.reference} "
+        "VarDict -G {input.reference} "
             " -th {threads} "
             "-f {params.min_alt_frac} "
             "-N {params.tumorid} "

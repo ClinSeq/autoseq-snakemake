@@ -33,7 +33,7 @@ params:
         indel_realigner:
             java_options: "-Xmx8G -XX:ParallelGCThreads=4"
             extra: " -allowPotentiallyMisencodedQuals --maxReadsForRealignment 5000000 --maxReadsInMemory 1000000 "
-            threads: 2
+            threads: 3
     picard:
         markdup:
             rmdups: "true"

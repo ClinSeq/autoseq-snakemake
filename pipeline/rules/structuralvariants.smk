@@ -236,7 +236,7 @@ rule generateIGVnavInput_gridss:
     input:
         vcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf.bgz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     output:
-        "{}/svs/igv/{}-{}_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+        "{}/svs/igv/{}-{}_somatic_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
         prefix = outdir + "/svs/igv/{}-{}".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         sdid = "-".join(NORMAL_CAPTURE_STR.split("-")[1:3])
@@ -254,7 +254,7 @@ rule annotate_generateIGVnavInput:
         svaba_germline = "{}/svs/igv/{}-{}_germline_svaba.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         lumpy_len500 = "{}/svs/igv/{}-{}_lumpy_len500_SU24.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         lumpy_1k = "{}/svs/igv/{}-{}_lumpy_len1k_SU50.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
-        gridss_somatic = "{}/svs/igv/{}-{}_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        gridss_somatic = "{}/svs/igv/{}-{}_somatic_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         genes = reference["genes_bed"],
         target_bed = reference['targets'][capture_name]['targets-bed-slopped20']
     output:

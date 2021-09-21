@@ -13,7 +13,6 @@ dependencies:
   - pybedtools=0.8.1
   - fastqc=0.11.9
   - gatk4=4.1.2
-  - vardict-java=1.8.2
   - bcftools=1.8
   - vcflib=1.0
   - vt
