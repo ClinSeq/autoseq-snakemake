@@ -12,7 +12,14 @@ Packages | [Python >3.6](https://www.python.org/), [Snakemake](https://snakemake
 Q&A | [Questions & Answers](https://github.com/ClinSeq/autoseq)
 
 
-* [Quick Start](/autoseq.html)
-    * [Installation](/autoseq.html#installation)
-    * [Command Line usage](/autoseq.html#command-line-usage)
-    * [General Discriptions](/autoseq.html#general-discriptions)
+# Content
+
+* [Quick Start](/quick_start.html)
+    * [Installation](/quick_start.html#installation)
+    * [Command Line Usage](/quick_start.html#command-line-usage)
+* [Setting up](/setting_up.html)
+* [Autoseq Pipeline](/autoseq_pipeline.html)
+* [Barcodes](/barcodes.html)
+* [Autoseq scripts](/scripts.html)
+
+
