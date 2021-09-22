@@ -102,36 +102,52 @@ def extract_contigs(vcf, align):
     return read_names
 
 
+def extract_readnames(bam):
+    """
+    extract readnames from svcaller evidance bam files
+    """
+    samfile = pysam.AlignmentFile(bam, "rb")
+    read_names = list()
+    for read in samfile.fetch():
+        read_names.append(read.query_name)
+    
+    print(read_names)
+    return read_names
+
+
 def main():
     parser = argparse.ArgumentParser(description=
         'Generate evidence bam for structural variants ')
     parser.add_argument('--bam', required=True, help="Input bam file ")
     parser.add_argument('--svs', required=True, help="structural variants dir as input")
-    parser.add_argument('--assembly', help="SV Assembly bam/ alignments file ")
-    parser.add_argument('--vcf', help="List of variants as vcf file")
-    parser.add_argument('--tool', help="Tool name - Variant callers (gridss, svaba, svcallers)")
     parser.add_argument('--output', help="output tab delimited file for IGVNav, format=output.bam")
     args = parser.parse_args()
     
-    # mutfile for lumpy
+    # extract files from svs dir
     if args.svs:
+        svaba_vcf = glob.glob(args.svs + "/svaba/" + "*.svaba.somatic.annotated.sv.vcf")
         svaba_aln = glob.glob(args.svs + "/svaba/" + "*.alignments.txt.gz")
-        gridss_vcf = glob.glob(args.svs + "/gridss/" + "*gridss.filtered.vcf.bgz")
+        gridss_vcf = glob.glob(args.svs + "/gridss/" + "*gridss.filtered.vcf")
         gridss_asm = glob.glob(args.svs + "/gridss/" + "*assembly.bam")
-
-    print(svaba_aln)
-    print(gridss_vcf)
-        
-    if args.mut:
-        variants = parse_mut(args.mut)
+        svcaller_bams = glob.glob(args.svs + "/*-CFDNA-*.bam")
     
-    if args.tool == 'gridss':
-        assm_ids = extract_asm(args.vcf)
-        read_names = extract_rp(assm_ids, args.assembly_bam)
-        
-    if args.tool == 'svaba':
-        read_names = extract_contigs(args.vcf, args.assembly)
+    read_names = set()
 
+    print("Processing gridss output ...")
+    assm_ids = extract_asm(gridss_vcf[0])
+    read_names.update(set(extract_rp(assm_ids, gridss_asm[0])))
+    print("GRIDSS - Done")
+        
+    print("Processing svaba output ...")
+    read_names.update(set(extract_contigs(svaba_vcf[0], svaba_aln[0])))
+    print("SvABA - Done")
+
+    print("Processing svcaller output ...")
+    for event in svcaller_bams:
+        read_names.update(set(extract_readnames(event)))
+    print("SVCALLER - Done")
+
+    print()
     # extract_reads(args.bam, read_names)
 
 
