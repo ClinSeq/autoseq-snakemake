@@ -20,11 +20,16 @@ def csq_parsing(csq, vcftype):
 
     csq_dicts = []
     can_trans = {}
-    if vcftype == 'germline':
-        csq_keys = ['Allele','Consequence','IMPACT','SYMBOL','Gene','Feature_type','Feature','BIOTYPE','EXON','INTRON','HGVSc','HGVSp','cDNA_position','CDS_position','Protein_position','Amino_acids','Codons','Existing_variation','ALLELE_NUM','DISTANCE','STRAND','FLAGS','VARIANT_CLASS','SYMBOL_SOURCE','HGNC_ID','CANONICAL','TSL','APPRIS','CCDS','ENSP','SWISSPROT','TREMBL','UNIPARC','SOURCE','GENE_PHENO','SIFT','PolyPhen','DOMAINS','miRNA','HGVS_OFFSET','AF','AFR_AF','AMR_AF','EAS_AF','EUR_AF','SAS_AF','AA_AF','EA_AF','gnomAD_AF','gnomAD_AFR_AF','gnomAD_AMR_AF','gnomAD_ASJ_AF','gnomAD_EAS_AF','gnomAD_FIN_AF','gnomAD_NFE_AF','gnomAD_OTH_AF','gnomAD_SAS_AF','MAX_AF','MAX_AF_POPS','CLIN_SIG','SOMATIC','PHENO','PUBMED','MOTIF_NAME','MOTIF_POS','HIGH_INF_POS','MOTIF_SCORE_CHANGE','BrcaEx','BrcaEx_ClinicalSignificance']
-    elif vcftype == 'somatic':
-        csq_keys = ['Allele','Consequence','IMPACT','SYMBOL','Gene','Feature_type','Feature','BIOTYPE','EXON','INTRON','HGVSc','HGVSp','cDNA_position','CDS_position','Protein_position','Amino_acids','Codons','Existing_variation','ALLELE_NUM','DISTANCE','STRAND','FLAGS','VARIANT_CLASS','SYMBOL_SOURCE','HGNC_ID','CANONICAL','TSL','APPRIS','CCDS','ENSP','SWISSPROT','TREMBL','UNIPARC','SOURCE','GENE_PHENO','SIFT','PolyPhen','DOMAINS','miRNA','HGVS_OFFSET','AF','AFR_AF','AMR_AF','EAS_AF','EUR_AF','SAS_AF','AA_AF','EA_AF','gnomAD_AF','gnomAD_AFR_AF','gnomAD_AMR_AF','gnomAD_ASJ_AF','gnomAD_EAS_AF','gnomAD_FIN_AF','gnomAD_NFE_AF','gnomAD_OTH_AF','gnomAD_SAS_AF','MAX_AF','MAX_AF_POPS','FREQS','CLIN_SIG','SOMATIC','PHENO','PUBMED','MOTIF_NAME','MOTIF_POS','HIGH_INF_POS','MOTIF_SCORE_CHANGE','BrcaEx','BrcaEx_ClinicalSignificance']
+    csq_keys_wofreq = ['Allele','Consequence','IMPACT','SYMBOL','Gene','Feature_type','Feature','BIOTYPE','EXON','INTRON','HGVSc','HGVSp','cDNA_position','CDS_position','Protein_position','Amino_acids','Codons','Existing_variation','ALLELE_NUM','DISTANCE','STRAND','FLAGS','VARIANT_CLASS','SYMBOL_SOURCE','HGNC_ID','CANONICAL','TSL','APPRIS','CCDS','ENSP','SWISSPROT','TREMBL','UNIPARC','SOURCE','GENE_PHENO','SIFT','PolyPhen','DOMAINS','miRNA','HGVS_OFFSET','AF','AFR_AF','AMR_AF','EAS_AF','EUR_AF','SAS_AF','AA_AF','EA_AF','gnomAD_AF','gnomAD_AFR_AF','gnomAD_AMR_AF','gnomAD_ASJ_AF','gnomAD_EAS_AF','gnomAD_FIN_AF','gnomAD_NFE_AF','gnomAD_OTH_AF','gnomAD_SAS_AF','MAX_AF','MAX_AF_POPS','CLIN_SIG','SOMATIC','PHENO','PUBMED','MOTIF_NAME','MOTIF_POS','HIGH_INF_POS','MOTIF_SCORE_CHANGE','BrcaEx','BrcaEx_ClinicalSignificance']
+    
+    csq_keys_wfreq = ['Allele','Consequence','IMPACT','SYMBOL','Gene','Feature_type','Feature','BIOTYPE','EXON','INTRON','HGVSc','HGVSp','cDNA_position','CDS_position','Protein_position','Amino_acids','Codons','Existing_variation','ALLELE_NUM','DISTANCE','STRAND','FLAGS','VARIANT_CLASS','SYMBOL_SOURCE','HGNC_ID','CANONICAL','TSL','APPRIS','CCDS','ENSP','SWISSPROT','TREMBL','UNIPARC','SOURCE','GENE_PHENO','SIFT','PolyPhen','DOMAINS','miRNA','HGVS_OFFSET','AF','AFR_AF','AMR_AF','EAS_AF','EUR_AF','SAS_AF','AA_AF','EA_AF','gnomAD_AF','gnomAD_AFR_AF','gnomAD_AMR_AF','gnomAD_ASJ_AF','gnomAD_EAS_AF','gnomAD_FIN_AF','gnomAD_NFE_AF','gnomAD_OTH_AF','gnomAD_SAS_AF','MAX_AF','MAX_AF_POPS', 'FREQS','CLIN_SIG','SOMATIC','PHENO','PUBMED','MOTIF_NAME','MOTIF_POS','HIGH_INF_POS','MOTIF_SCORE_CHANGE','BrcaEx','BrcaEx_ClinicalSignificance']
+    
     for transcript in csq:
+        if len(transcript.split('|')) == 70:
+            csq_keys = csq_keys_wfreq
+        else:
+            csq_keys = csq_keys_wofreq
+
         tmp = {csq_keys[idx]: ann for idx,ann in enumerate(transcript.split('|')) }
         csq_dicts.append(tmp)
 
@@ -65,6 +70,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('vcf', help="Input VCF file for annotation")
 parser.add_argument('oncokb', help="OncoKB - all variants tab demilited file")
 parser.add_argument('vcftype', help="somatic (or) germline vcf")
+parser.add_argument('-v', '--vardict', help="Adding vardict long indels into IGVNav")
 parser.add_argument('--output', help="output tab demilited file for IGVNav", default='output.txt')
 args = parser.parse_args()
 
@@ -76,6 +82,9 @@ vcf_reader = vcf.Reader(open(args.vcf, 'r'))
 vcftype = args.vcftype
 
 output_file = open(args.output, 'w') 
+
+if args.vardict:
+    vardict_vcf = vcf.Reader(open(args.vardict, 'r'))
 
 ###############generate IGVNAV symblins################################################################
 
@@ -104,7 +113,7 @@ except Exception as e:
 # output file headers 
 
 if vcftype == "somatic":
-    output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'IMPACT', 'CONSEQUENCE', 'HGVSp', 'T_DP', 'T_ALT', 'T_VAF', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'gnomAD', 'BRCAEx', 'OncoKB']) + "\n")
+    output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'IMPACT', 'CONSEQUENCE', 'HGVSp', 'T_DP', 'T_ALT', 'T_VAF', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'gnomAD', 'BRCAEx', 'OncoKB', 'NUM_TOOLS']) + "\n")
 elif vcftype == "germline":
     output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'IMPACT', 'CONSEQUENCE', 'HGVSp', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID', 'gnomAD', 'BRCAEx', 'OncoKB']) + "\n")
 
@@ -149,8 +158,15 @@ for record in vcf_reader:
         tumor_alt = sum(tumor['DP4'][2:])
         tumor_vaf = tumor['VAF']
 
+        num_tools = int(record.INFO['NUM_TOOLS'])
+
         if (filter_col == 'PASS' or filter_col == 'LowQual'):
-            output_file.write('\t'.join(map(str, [record.CHROM, record.POS, str(record.POS+1) , record.REF, record.ALT, '', '', '', gene, impact, canonical_trans['Consequence'], canonical_trans['HGVSp'], tumor_dp, tumor_alt, tumor_vaf, normal_dp, normal_alt, normal_vaf, clinsig, gnomAD, brcaEx, oncogenicity])) + "\n")
+            output_file.write('\t'.join(map(str, [record.CHROM, record.POS, str(record.POS+1) , 
+                                                  record.REF, record.ALT, '', '', '', gene, 
+                                                  impact, canonical_trans['Consequence'], 
+                                                  canonical_trans['HGVSp'], tumor_dp, tumor_alt, 
+                                                  tumor_vaf, normal_dp, normal_alt, normal_vaf, 
+                                                  clinsig, gnomAD, brcaEx, oncogenicity, num_tools])) + "\n")
     
     elif vcftype == "germline":
         normal = record.samples[0]
@@ -165,5 +181,63 @@ for record in vcf_reader:
                     normal_alt = normal['AD'][1]
                     normal_vaf = float(normal_alt)/float(normal_dp)
 
-                    output_file.write('\t'.join(map(str, [record.CHROM, record.POS, str(record.POS+1) , record.REF, record.ALT, '', '', '', gene, impact, canonical_trans['Consequence'], canonical_trans['HGVSp'], normal_dp , normal_alt, round(normal_vaf, 2), clinsig, record.ID, gnomAD, brcaEx, oncogenicity])) + "\n")
+                    output_file.write('\t'.join(map(str, [record.CHROM, record.POS, str(record.POS+1), 
+                                                          record.REF, record.ALT, '', '', '', gene, 
+                                                          impact, canonical_trans['Consequence'], 
+                                                          canonical_trans['HGVSp'], normal_dp , normal_alt, 
+                                                          round(normal_vaf, 2), clinsig, record.ID, gnomAD,
+                                                          brcaEx, oncogenicity])) + "\n")
             
+## adding vardict indels into IGVNav 
+
+if args.vardict and vcftype == "somatic":
+    
+    for record in vardict_vcf:
+        # filter snvs 
+        if record.INFO['TYPE'] == "SNV":
+            continue
+
+        ref = record.REF
+        alt = record.ALT[0]
+
+        try:
+            # filter small indels - length less than 5 
+            if len(ref) > 5 or len(alt) > 5:
+
+                canonical_trans = csq_parsing(record.INFO['CSQ'], vcftype)
+
+                gene = canonical_trans['SYMBOL']
+                aa = canonical_trans['Amino_acids'].split('/')
+                protein_position = canonical_trans['Protein_position'].split('/')
+                clinsig =  canonical_trans['CLIN_SIG']
+                gnomAD = canonical_trans['gnomAD_AF']
+                brcaEx = canonical_trans['BrcaEx_ClinicalSignificance']
+                impact = canonical_trans['IMPACT']
+                oncogenicity = ''
+
+                # Oncogenicity annotation from OncoKB
+                if gene in OncoKB_lookup:
+                    if len(aa) > 1 and len(protein_position) > 1:
+                        protein_change = aa[0] +  protein_position[0] + aa[1]
+                        if protein_change in OncoKB_lookup[gene]:
+                            oncogenicity = OncoKB_lookup[gene][protein_change]
+                
+                normal = [sam for sam in record.samples if '-N-' in sam.sample][0]
+                tumor = [sam for sam in record.samples if '-CFDNA-' in sam.sample or '-T-' in sam.sample][0]
+            
+                normal_ref = normal['AD'][0]
+                normal_alt = normal['AD'][1]
+                normal_vaf = normal['AF']
+                tumor_ref = tumor['AD'][0]
+                tumor_alt = tumor['AD'][1]
+                tumor_vaf = tumor['AF']
+
+                output_file.write('\t'.join(map(str, [record.CHROM, record.POS-1, record.POS,
+                                                    record.REF, record.ALT, '', '', '', gene, 
+                                                    impact, canonical_trans['Consequence'], 
+                                                    canonical_trans['HGVSp'], tumor_dp, tumor_alt, 
+                                                    tumor_vaf, normal_dp, normal_alt, normal_vaf, 
+                                                    clinsig, gnomAD, brcaEx, oncogenicity, 1])) + "\n")
+        except TypeError:
+            print(record)
+            pass

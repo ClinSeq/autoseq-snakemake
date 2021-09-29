@@ -25,7 +25,7 @@ shell.prefix("set -eo pipefail;")
 
 # NORMAL, CANCER SAMPLES
 NORMAL_CAPTURE = [extract_unique_capture(sample) for sample in all_clinseq_barcodes if '-N-' in sample][0]
-CANCER_CAPTURE = [extract_unique_capture(sample) for sample in all_clinseq_barcodes if '-CFDNA-' in sample][0]
+CANCER_CAPTURE = [extract_unique_capture(sample) for sample in all_clinseq_barcodes if '-CFDNA-' in sample or '-T-' in sample][0]
 NORMAL_CAPTURE_STR = compose_lib_capture_str(NORMAL_CAPTURE)
 CANCER_CAPTURE_STR = compose_lib_capture_str(CANCER_CAPTURE)
 NORMAL_SAMPLE_STR = compose_sample_str(NORMAL_CAPTURE)
@@ -99,7 +99,7 @@ for sample in all_clinseq_barcodes:
         capture_to_results[NORMAL_CAPTURE].cnr = outdir + "/cnv/{}.cnr".format(sample)
         capture_to_results[NORMAL_CAPTURE].seg = outdir + "/cnv/{}.seg".format(sample)
     
-    if '-CFDNA-' in sample:
+    if '-CFDNA-' in sample or '-T-' in sample:
         capture_to_results[CANCER_CAPTURE].cns = outdir + "/cnv/{}.cns".format(sample)
         capture_to_results[CANCER_CAPTURE].cnr = outdir + "/cnv/{}.cnr".format(sample)
         capture_to_results[CANCER_CAPTURE].seg = outdir + "/cnv/{}.seg".format(sample)
@@ -109,7 +109,7 @@ for sample in all_clinseq_barcodes:
         if '-N-' in sample:
             capture_to_results[NORMAL_CAPTURE].svs[event] = "{}/svs/{}-{}.gtf".format(outdir, sample, event)
         
-        if '-CFDNA-' in sample:
+        if '-CFDNA-' in sample or '-T-' in sample:
             capture_to_results[CANCER_CAPTURE].svs[event] = "{}/svs/{}-{}.gtf".format(outdir, sample, event)
 
 

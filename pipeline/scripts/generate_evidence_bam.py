@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import argparse
 import glob
 import gzip
@@ -52,7 +53,7 @@ def extract_rp(assm_ids, assm_bam):
     return read_names
 
 
-def extract_reads(bam, read_names):
+def extract_reads(bam, read_names, output):
     """
     Extract reads from tumor nodups bam file
     """
@@ -60,7 +61,11 @@ def extract_reads(bam, read_names):
     name_indexed = pysam.IndexedReads(samfile)
     name_indexed.build()
 
-    outfile = pysam.AlignmentFile("output.bam", "wb", template = samfile)
+    outdir = os.path.dirname(output)
+    bam_prefix = os.path.basename(output).split('.bam')[0]
+    bam_sorted = str(os.path.join(outdir, bam_prefix + ".sorted.bam"))
+    
+    outfile = pysam.AlignmentFile(output, "wb", template = samfile)
     
     for name in read_names:
         try:
@@ -70,6 +75,13 @@ def extract_reads(bam, read_names):
         except KeyError:
             print(f"Reads could not find: {name}")
             pass
+    
+    outfile.close()
+    pysam.sort(output, '-o', bam_sorted)
+    pysam.index(bam_sorted)
+    
+    os.remove(output)
+
     return 
 
 
@@ -111,7 +123,6 @@ def extract_readnames(bam):
     for read in samfile.fetch():
         read_names.append(read.query_name)
     
-    print(read_names)
     return read_names
 
 
@@ -134,12 +145,18 @@ def main():
     read_names = set()
 
     print("Processing gridss output ...")
-    assm_ids = extract_asm(gridss_vcf[0])
-    read_names.update(set(extract_rp(assm_ids, gridss_asm[0])))
+    if len(gridss_vcf) == 0:
+        print("No gridss output !!")
+    else:
+        assm_ids = extract_asm(gridss_vcf[0])
+        read_names.update(set(extract_rp(assm_ids, gridss_asm[0])))
     print("GRIDSS - Done")
         
     print("Processing svaba output ...")
-    read_names.update(set(extract_contigs(svaba_vcf[0], svaba_aln[0])))
+    if len(svaba_aln) == 0:
+        print("No svaba output !!")
+    else:
+        read_names.update(set(extract_contigs(svaba_vcf[0], svaba_aln[0])))
     print("SvABA - Done")
 
     print("Processing svcaller output ...")
@@ -147,8 +164,7 @@ def main():
         read_names.update(set(extract_readnames(event)))
     print("SVCALLER - Done")
 
-    print()
-    # extract_reads(args.bam, read_names)
+    extract_reads(args.bam, read_names, args.output)
 
 
 

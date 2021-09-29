@@ -279,10 +279,11 @@ rule make_allelic_fraction_track:
 rule somatic_generateIGVnav:
     input:
         somatic = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        vardict_vcf = "{}/variants/vardict/{}-{}.vardict-somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
         oncokb = reference['oncokb']
     output:
         "{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     params:
         vcftype = "somatic"
     shell:
-        "generateIGVnavInput.py {input.somatic} {input.oncokb} {params.vcftype} --output {output} "
+        "generateIGVnavInput.py {input.somatic} {input.oncokb} {params.vcftype} -v {input.vardict_vcf} --output {output} "
