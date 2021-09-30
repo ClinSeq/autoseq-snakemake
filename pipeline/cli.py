@@ -82,7 +82,7 @@ def list(context):
     pipelines.add_column("Type")
     pipelines.add_column("Last update")
     
-    pipelines.add_row("1", "Liqbio", "Targeted Re-sequencing", "May 25 2021")
+    pipelines.add_row("1", "Autoseq", "Targeted Re-sequencing", "May 25 2021")
 
     console.print(pipelines)
     
@@ -122,7 +122,10 @@ def launch(context, ref, samples, outdir, libdir,
     
     config_dict = yaml.load(open(configfile), Loader=yaml.FullLoader)
 
-    sample_str = "_".join(all_clinseq_barcodes)
+    normal_barcode = [i for i in all_clinseq_barcodes if '-N-' in i]
+    tumor_barcode = [i for i in all_clinseq_barcodes if '-T-' in i or '-CFDNA-' in i]
+
+    sample_str = "_".join(tumor_barcode + normal_barcode)
     outdir = os.path.join(outdir, sampledata['sdid'], sample_str)
 
     if use_singularity and not singularity:
@@ -140,9 +143,9 @@ def launch(context, ref, samples, outdir, libdir,
     config_dict['outdir'] = normpath(outdir)
     config_dict['libdir'] = normpath(libdir)
     config_dict['umi'] = umi
-    config_dict['global_container'] = os.path.join(singularity, "autoseq-smk.sif") if use_singularity else ' '
-    config_dict['gridss_container'] = os.path.join(singularity, "gridss.sif") if use_singularity else ' '
-    config_dict['franken_container'] = os.path.join(singularity, "franken.sif") if use_singularity else ' '
+    config_dict['container']['base'] = os.path.join(singularity, "autoseq-smk.sif") if use_singularity else ' '
+    config_dict['container']['gridss'] = os.path.join(singularity, "gridss.sif") if use_singularity else ' '
+    config_dict['container']['franken'] = os.path.join(singularity, "franken.sif") if use_singularity else ' '
     
     out_configpath = os.path.join(normpath(outdir), f"config_{sample_str}.yml")
     jobdb = os.path.join(normpath(outdir), f"{sample_str}.jobdb")
@@ -159,9 +162,9 @@ def launch(context, ref, samples, outdir, libdir,
         for path in ('samples', 'reference', 'outdir', 'libdir'):
             bind_paths.add(os.path.dirname(config_dict[path]))
 
-    snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Snakefile')
+    snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'autoseq/Snakefile')
 
-    liqbio = Pipeline(snakefile = snakefile, 
+    autoseq = Pipeline(snakefile = snakefile, 
                       config = out_configpath, 
                       sdid = sdid, 
                       workdir = outdir, 
@@ -173,9 +176,9 @@ def launch(context, ref, samples, outdir, libdir,
                       bind_paths = bind_paths,
                       cores = cores)
     
-    cmd = liqbio.build_cmd()
+    cmd = autoseq.build_cmd()
 
-    Log.info("Launching Liqbio pipeline ...")
+    Log.info("Launching autoseq pipeline ...")
     # print(cmd) 
     try:
         subprocess.run(cmd, shell=True)

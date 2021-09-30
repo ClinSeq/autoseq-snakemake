@@ -224,7 +224,7 @@ rule gridss_somatic_filter:
         plotdir = "{}/svs/gridss/".format(outdir),
         outvcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     threads: params["gridss_filter"]["threads"]
-    container: config["gridss_container"]
+    container: config['container']["gridss"]
     shell:
         "gridss_somatic_filter -p {params.pondir} "
         " -i {input.vcf} "

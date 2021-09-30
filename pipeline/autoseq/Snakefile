@@ -2,8 +2,8 @@ import json
 import collections
 
 
-include: "utils/utils.py"
-include: "utils/clinseq_barcodes.py"
+include: "../utils/utils.py"
+include: "../utils/clinseq_barcodes.py"
 
 samples = json.load(open(config['samples']))
 params = config['params']
@@ -139,7 +139,7 @@ wildcard_constraints:
     events = "|".join(["DEL", "DUP", "INV", "TRA"]),
     chr = "|".join(all_chromosomes)
 
-container: config['global_container']
+container: config['container']['base']
 
 rule all:
     input: 

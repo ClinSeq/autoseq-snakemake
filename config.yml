@@ -7,9 +7,10 @@ libdir: tests/libraries
 
 umi: True
 
-global_container: False
-gridss_container: False
-franken_container: False
+container: 
+    base: False
+    gridss: False
+    franken: False
 
 outdir: tests
 
