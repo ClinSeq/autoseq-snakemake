@@ -98,13 +98,16 @@ def list(context):
 @click.option("--dryrun/--run", default=False, help=" --dryrun for testing snakemake workflow")
 @click.option("--umi", is_flag=True, help="To process the data with UMI- Unique Molecular Identifier")
 @click.option("--profile", default='shell', help="job schedulers eg. SLURM")
+@click.option("--pipeline", default='autoseq', help="Pipeline to be launched")
+@click.option("-n", "--normal-bam", default=None, help="Normal bam files dir, Applicable only to tumor only pipeline")
 @click.option("--use-singularity", is_flag=True, help="To use singularity")
 @click.option("--singularity", help="Path to singularity image")
 @click.option("--smk-opt", help="snakemake option")
 @click.option("--cores", help="max number of cores")
 @click.pass_context
 def launch(context, ref, samples, outdir, libdir, 
-            configfile, scratch, dryrun, umi, profile, use_singularity,
+            configfile, scratch, dryrun, umi, profile, 
+            pipeline, normal_bam, use_singularity, 
             singularity, cores, smk_opt):
     """
     launch the respective pipeline with samples json 
@@ -138,6 +141,7 @@ def launch(context, ref, samples, outdir, libdir,
             Log.error('Singularity file does not exist !!')
             raise click.Abort()
 
+    # config dictionary update
     config_dict['samples'] = normpath(samples)
     config_dict['reference'] = normpath(ref)
     config_dict['outdir'] = normpath(outdir)
@@ -147,13 +151,26 @@ def launch(context, ref, samples, outdir, libdir,
     config_dict['container']['gridss'] = os.path.join(singularity, "gridss.sif") if use_singularity else ' '
     config_dict['container']['franken'] = os.path.join(singularity, "franken.sif") if use_singularity else ' '
     
+    # pipeline based args
+    if pipeline == 'tumor_only' and normal_bam:
+        nClip_bam = os.path.join(normal_bam, normal_barcode[0] + "_clipoverlap.bam")
+        nNodups_bam = os.path.join(normal_bam , normal_barcode[0] + "_nodups.bam")
+        for bam in [nClip_bam, nNodups_bam]:
+            if os.path.isfile(bam):
+                Log.info(f"Normal sample bam file - {bam}")
+            else:
+                Log.error(f"{bam} does not exist")
+                raise click.Abort()
+
+        config_dict['normal_bams'] = [nClip_bam, nNodups_bam]
+        
+
     out_configpath = os.path.join(normpath(outdir), f"config_{sample_str}.yml")
     jobdb = os.path.join(normpath(outdir), f"{sample_str}.jobdb")
 
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
 
-    
     with open(out_configpath, 'w') as cf:
         yaml.safe_dump(config_dict, cf, default_flow_style=False)
     
@@ -161,8 +178,11 @@ def launch(context, ref, samples, outdir, libdir,
     if use_singularity:
         for path in ('samples', 'reference', 'outdir', 'libdir'):
             bind_paths.add(os.path.dirname(config_dict[path]))
-
-    snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'autoseq/Snakefile')
+        
+    if pipeline == "tumor_only":
+        snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tumor_only/Snakefile')
+    else:
+        snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'autoseq/Snakefile')
 
     autoseq = Pipeline(snakefile = snakefile, 
                       config = out_configpath, 
@@ -178,7 +198,7 @@ def launch(context, ref, samples, outdir, libdir,
     
     cmd = autoseq.build_cmd()
 
-    Log.info("Launching autoseq pipeline ...")
+    Log.info(f"Launching autoseq - {pipeline} pipeline ...")
     # print(cmd) 
     try:
         subprocess.run(cmd, shell=True)
