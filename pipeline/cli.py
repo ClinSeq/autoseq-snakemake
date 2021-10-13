@@ -137,7 +137,7 @@ def launch(context, ref, samples, outdir, libdir,
     
     if use_singularity:
         if not os.path.exists(os.path.join(singularity, "autoseq-smk.sif")) or \
-            not os.path.exists(os.path.join(singularity, "autoseq-smk.sif")):
+            not os.path.exists(os.path.join(singularity, "gridss.sif")):
             Log.error('Singularity file does not exist !!')
             raise click.Abort()
 
@@ -179,6 +179,9 @@ def launch(context, ref, samples, outdir, libdir,
         for path in ('samples', 'reference', 'outdir', 'libdir'):
             bind_paths.add(os.path.dirname(config_dict[path]))
         
+        bind_paths.add(os.path.dirname(os.path.dirname(config_dict['reference'])))
+
+
     if pipeline == "tumor_only":
         snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tumor_only/Snakefile')
     else:

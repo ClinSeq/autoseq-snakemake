@@ -92,6 +92,8 @@ rule picard_collecthsmetrics:
 
 
 cancer_capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
+normal_capture_name = get_capture_name(NORMAL_CAPTURE.capture_kit_id)
+
 basename = os.path.basename(capture_to_results[CANCER_CAPTURE].bamfile).split('.bam')[0]
 msings_outdir = "{}/msings-{}".format(outdir, CANCER_CAPTURE_STR)
 msings_output = "{}/{}/{}.MSI_Analysis.txt".format(msings_outdir, basename, basename)
@@ -149,7 +151,6 @@ rule purecn:
         " {output.loh_csv} "
 
 
-normal_capture_name = get_capture_name(NORMAL_CAPTURE.capture_kit_id)
 
 rule create_popvcf:
     input:

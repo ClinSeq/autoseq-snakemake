@@ -60,53 +60,83 @@ msings_files = msings_files[grep("WGS", msings_files, invert = TRUE)]
 cat("Read in the files...\n")
 HsMetrics = data.frame()
 for (f in hsmetrics_files) {
-  SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
-  DIR = dirname(dirname(dirname(f)))
-  HsMetrics = rbind(HsMetrics, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
-                                                           header = TRUE, stringsAsFactors = FALSE), 
-                                     stringsAsFactors = FALSE))
+  tryCatch({
+    SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
+    DIR = dirname(dirname(dirname(f)))
+    HsMetrics = rbind(HsMetrics, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
+                                                        header = TRUE, stringsAsFactors = FALSE), 
+                                                        stringsAsFactors = FALSE))
+  }, error = function(err) {
+      print(paste("Sample: ", SAMP, " QC: HsMetrics"))
+      print(paste("ERROR: ", err))
+  })
 }
+
 MarkDuplicates = data.frame()
 for (f in markduplicates_files) {
-  SAMP = sub("-picard-markdup.metrics.txt", "", basename(f))
-  DIR = dirname(dirname(dirname(f)))
-  MarkDuplicates = rbind(MarkDuplicates, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
-                                                                     header = TRUE, stringsAsFactors = FALSE), 
-                                               stringsAsFactors = FALSE))
+    tryCatch({
+        SAMP = sub("-picard-markdup.metrics.txt", "", basename(f))
+        DIR = dirname(dirname(dirname(f)))
+        MarkDuplicates = rbind(MarkDuplicates, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
+                                                                    header = TRUE, stringsAsFactors = FALSE), 
+                                                                    stringsAsFactors = FALSE))
+    }, error = function(err) {
+      print(paste("Sample: ", SAMP, " QC: MarkDuplicates"))
+      print(paste("ERROR: ", err))
+    }) 
 }
+
 InsertSize = data.frame()
 InsertSize_histogram = data.frame(stringsAsFactors = FALSE)
 for (f in insertsize_files) {
-  SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
-  DIR = dirname(dirname(dirname(f)))
-  InsertSize = rbind(InsertSize, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
+    tryCatch({
+        SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
+        DIR = dirname(dirname(dirname(f)))
+        InsertSize = rbind(InsertSize, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
                                                              header = TRUE, stringsAsFactors = FALSE), 
                                        stringsAsFactors = FALSE))
-  InsertSize_histogram = rbind(InsertSize_histogram, 
+        InsertSize_histogram = rbind(InsertSize_histogram, 
                                cbind(SAMP, DIR, read.table(f, skip = 10, sep = "\t",
                                                            header = TRUE, stringsAsFactors = FALSE),
                                      stringsAsFactors = FALSE))
+    }, error = function(err) {
+      print(paste("Sample: ", SAMP, " QC: InsertSize"))
+      print(paste("ERROR: ", err))
+    }) 
 }
+
 ContEst = data.frame()
 for (f in contest_files) {
-  fname = strsplit(basename(f), split = "\\.")[[1]][1]
-  clinseq_barcodes = rev(strsplit(f, split = "/")[[1]])[3]
-  samples = unlist(strsplit(clinseq_barcodes, split = "_"))
-  if(grepl('-N-', fname, fixed=TRUE)){
-    SAMP = samples[1]
-  } else {
-    SAMP = samples[2]
-  }
-  DIR = dirname(dirname(f))
-  ContEst = rbind(ContEst, cbind(SAMP, DIR, read.table(f, nrow = 1, sep = "\t", header = TRUE, stringsAsFactors = FALSE), 
-                                 stringsAsFactors = FALSE))
+  tryCatch({
+    fname = strsplit(basename(f), split = "\\.")[[1]][1]
+    clinseq_barcodes = rev(strsplit(f, split = "/")[[1]])[3]
+    samples = unlist(strsplit(clinseq_barcodes, split = "_"))
+    if(grepl('-N-', fname, fixed=TRUE)){
+      SAMP = samples[1]
+    } else {
+      SAMP = samples[2]
+    }
+    DIR = dirname(dirname(f))
+    ContEst = rbind(ContEst, cbind(SAMP, DIR, read.table(f, nrow = 1, sep = "\t", header = TRUE, stringsAsFactors = FALSE), 
+                                  stringsAsFactors = FALSE))
+  }, error = function(err) {
+    print(paste("Sample: ", SAMP, " QC: contamination test"))
+    print(paste("ERROR: ", err))
+  })    
 }
+
 msings = data.frame()
 for (f in msings_files) {
-  SAMP = sub("_nodups.MSI_Analysis.txt", "", basename(f))
-  DIR = dirname(dirname(dirname(f)))
-  msings = rbind(msings, cbind(SAMP, DIR, t(read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)))[2,], stringsAsFactors=FALSE)
+  tryCatch({
+    SAMP = sub("_nodups.MSI_Analysis.txt", "", basename(f))
+    DIR = dirname(dirname(dirname(f)))
+    msings = rbind(msings, cbind(SAMP, DIR, t(read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)))[2,], stringsAsFactors=FALSE)
+  }, error = function(err) {
+    print(paste("Sample: ", SAMP, " QC: mSINGs"))
+    print(paste("ERROR: ", err))
+  })
 }
+
 colnames(msings) = c("SAMP", "DIR", read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)[,1])
 msings$`msi status`[which(msings$msing_score<0.2)] = "NEG"  # use cut-off 0.2 for MSI-H (default 0.1 is too low)
 msings$msing_score = as.numeric(msings$msing_score)
