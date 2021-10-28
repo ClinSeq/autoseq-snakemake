@@ -91,6 +91,16 @@ rule picard_collecthsmetrics:
             "METRIC_ACCUMULATION_LEVEL=LIBRARY "
 
 
+rule samtools_flagstat:
+    input:
+        bam = outdir + "/bams/{sample}_nodups.bam"
+    output:
+        outdir + "/qc/samtools/{sample}-flagstats.json"
+    threads: params['samtools']['flagstat']['threads']
+    shell:
+        "samtools flagstat -@ {threads} -O json {input.bam} > {output} "
+
+
 rule create_popvcf:
     input:
         popvcf = reference["swegene_common"],
@@ -280,6 +290,7 @@ rule multiqc:
 rule overview_plot:
     input:
         PICARD_QC,
+        expand(outdir + "/qc/samtools/{sample}-flagstats.json", sample = all_clinseq_barcodes),
         "{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR),
         "{}/contamination/{}.contest.txt".format(outdir, NORMAL_CAPTURE_STR),
         "{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR),

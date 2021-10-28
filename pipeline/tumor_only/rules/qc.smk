@@ -91,6 +91,16 @@ rule picard_collecthsmetrics:
             "METRIC_ACCUMULATION_LEVEL=LIBRARY "
 
 
+rule samtools_flagstat:
+    input:
+        bam = outdir + "/bams/{sample}_nodups.bam"
+    output:
+        outdir + "/qc/samtools/{sample}-flagstats.json"
+    threads: params['samtools']['flagstat']['threads']
+    shell:
+        "samtools flagstat -@ {threads} -O json {input.bam} > {output} "
+
+
 cancer_capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
 normal_capture_name = get_capture_name(NORMAL_CAPTURE.capture_kit_id)
 
@@ -238,6 +248,7 @@ rule contam_caveat:
 rule overview_plot:
     input:
         PICARD_QC,
+        expand(outdir + "/qc/samtools/{sample}-flagstats.json", sample = cancer_sample),
         "{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR),
         "{}/contamination/{}.contest.txt".format(outdir, NORMAL_CAPTURE_STR),
         "{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR),

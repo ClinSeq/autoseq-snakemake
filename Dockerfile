@@ -24,7 +24,8 @@ RUN conda env create -f /env/purecn-env.yml && conda clean -a && \
     R --quiet -e 'install.packages("BiocManager", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' \
     -e 'BiocManager::install("PureCN")' \
     -e 'install.packages("optparse", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' \
-    -e 'install.packages("futile.logger", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' 
+    -e 'install.packages("futile.logger", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' \
+    -e 'install.packages("rjson", repos = "http://ftp.acc.umu.se/mirror/CRAN/")'
 
 RUN ln -s /opt/conda/lib/libreadline.so.7 /opt/conda/lib/libreadline.so.6 && \
     ln -s /opt/conda/lib/libncurses.so.6 /opt/conda/lib/libncurses.so.5

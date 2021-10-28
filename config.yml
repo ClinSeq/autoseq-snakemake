@@ -54,6 +54,9 @@ params:
         collecthsmetrics:
             java_options: " -XX:ParallelGCThreads=8 "
             threads: 1
+    samtools:
+        flagstat: 
+            threads: 8
     fgbio:
         fastqtobam:
             java_options: " -Xmx10g -XX:+AggressiveOpts -XX:ParallelGCThreads=8 "

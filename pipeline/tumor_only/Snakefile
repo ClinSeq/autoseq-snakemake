@@ -53,6 +53,7 @@ all_chromosomes = list(get_chromosomes(targets))
 
 # only tumor sample need to be processed
 cancer_sample = [_ for _ in all_clinseq_barcodes if '-T-' in _ or '-CFDNA-' in _]
+
 wildcard_constraints:
     samples = "|".join(cancer_sample)
 
@@ -82,10 +83,6 @@ CONTEST = list()
 CONTEST.append(outdir + "/contamination/pop_vcf_{}-{}.vcf".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 CONTEST.append("{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR))
 CONTEST.append("{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR))
-
-# QC_overview = "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest))
-# OUTPUT.append(QC_overview)
-
 
 # copy-number variation calling
 CNV_OUTPUT = list()
