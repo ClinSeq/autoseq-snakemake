@@ -152,6 +152,7 @@ samples_of_interest = [compose_lib_capture_str(unique_capture)
 QC_overview = "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest))
 
 OUTPUT.append(QC_overview)
+OUTPUT.append(outdir + "/bams/intermediate_bam_files.removed")
 
 container: config['container']['base']
 
@@ -179,6 +180,28 @@ rule generate_symlinks:
         "{}/logs/generate_symlinks.log".format(outdir)
     shell:
         "generate_symlinks.py --targets {params.target_bed} --outdir {params.outdir}  2> {log} "
+
+
+rule remove_bamfiles:
+    input:
+        expand(outdir + "/bams/{sample}_unmapped.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_umimapped.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_realigned-1.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_groupedbyumi.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_consensus.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_umimapped-2.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_realigned-2.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_consensus_filtered.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_nodups.bam", sample=cancer_sample)
+    output:
+        outdir + "/bams/intermediate_bam_files.removed"
+    run:
+        del_bam = [bam for bam in input if 'clipoverlap' not in bam and 'nodups' not in bam]
+        bamfiles = " ".join(del_bam)
+        shell("rm {bamfiles} ")
+        shell("touch {output} ")
+
 
 
 include: "../autoseq/rules/split_targets.smk"
