@@ -203,9 +203,8 @@ rule gridss_svcalling:
     threads: params['gridss']['threads']
     log:
         outdir + "/logs/svs/gridss-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
-    container: config['container']["gridss"]
     shell:
-        "gridss --reference {input.reference} "
+        "gridss.sh --reference {input.reference} "
         " --jvmheap {params.jvmheap} "
         " --jar {params.gridss_jar} "
         " --assembly {output.assembly_bam} "
