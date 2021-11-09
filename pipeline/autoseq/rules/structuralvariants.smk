@@ -234,7 +234,7 @@ rule gridss_somatic_filter:
 
 rule generateIGVnavInput_gridss:
     input:
-        vcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf.bgz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+        vcf = "{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     output:
         "{}/svs/igv/{}-{}_somatic_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
