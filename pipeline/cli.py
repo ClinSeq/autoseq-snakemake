@@ -151,6 +151,10 @@ def launch(context, ref, samples, outdir, libdir,
     config_dict['container']['gridss'] = os.path.join(singularity, "gridss.sif") if use_singularity else ' '
     config_dict['container']['franken'] = os.path.join(singularity, "franken.sif") if use_singularity else ' '
     
+    # update scratch dir
+    if scratch:
+        config_dict["scratch"] = scratch
+    
     # pipeline based args
     if pipeline == 'tumor_only' and normal_bam:
         nClip_bam = os.path.join(normal_bam, normal_barcode[0] + "_clipoverlap.bam")
