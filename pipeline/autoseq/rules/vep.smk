@@ -14,6 +14,7 @@ rule vep_annotation:
     shell:
         "source activate ensembl-vep && "
         "vep --vcf --output_file STDOUT " 
+            " --pick --filter_common "
             " --dir {input.vep_dir} "
             " --fasta {input.reference} "
             " --check_existing  --total_length --allele_number "
@@ -44,6 +45,7 @@ rule vep_vardict:
     shell:
         "source activate ensembl-vep && "
         "vep --vcf --output_file STDOUT " 
+            " --pick --filter_common "
             " --dir {input.vep_dir} "
             " --fasta {input.reference} "
             " --check_existing  --total_length --allele_number "
