@@ -150,19 +150,24 @@ colnames(flagstat_data) = c("SAMP", "DIR", "mapped_reads", "paired_reads", "prop
                        "with_itself_and_mate_mapped_reads", "singletons_reads", "mate_mapped_diff_chr_reads")
 
 for (f in flagstat_files){
-  json_data = fromJSON(file = f)
-  read_total = as.numeric(json_data[['QC-passed reads']]['total'] )
-  SAMP = sub("-flagstats.json", "", basename(f))
-  DIR = dirname(dirname(dirname(f)))
-  mapped = as.numeric(json_data[['QC-passed reads']]['mapped']) / read_total 
-  paired = as.numeric(json_data[['QC-passed reads']]['paired in sequencing']) / read_total 
-  properly_paired = as.numeric(json_data[['QC-passed reads']]['properly paired']) / read_total
-  with_itself_mate_mapped = as.numeric(json_data[['QC-passed reads']]['with itself and mate mapped']) / read_total 
-  matemapped_diff_chr = as.numeric(json_data[['QC-passed reads']]['with mate mapped to a different chr']) / read_total 
-  singletons = as.numeric(json_data[['QC-passed reads']]['singletons']) / read_total
-  nrows = nrow(flagstat_data)
-  flagstat_data[nrows+1, ] = c(SAMP, DIR, mapped, paired, properly_paired, 
-                          with_itself_mate_mapped, singletons, matemapped_diff_chr)
+  tryCatch({
+    json_data = fromJSON(file = f)
+    read_total = as.numeric(json_data[['QC-passed reads']]['total'] )
+    SAMP = sub("-flagstats.json", "", basename(f))
+    DIR = dirname(dirname(dirname(f)))
+    mapped = as.numeric(json_data[['QC-passed reads']]['mapped']) / read_total 
+    paired = as.numeric(json_data[['QC-passed reads']]['paired in sequencing']) / read_total 
+    properly_paired = as.numeric(json_data[['QC-passed reads']]['properly paired']) / read_total
+    with_itself_mate_mapped = as.numeric(json_data[['QC-passed reads']]['with itself and mate mapped']) / read_total 
+    matemapped_diff_chr = as.numeric(json_data[['QC-passed reads']]['with mate mapped to a different chr']) / read_total 
+    singletons = as.numeric(json_data[['QC-passed reads']]['singletons']) / read_total
+    nrows = nrow(flagstat_data)
+    flagstat_data[nrows+1, ] = c(SAMP, DIR, mapped, paired, properly_paired, 
+                            with_itself_mate_mapped, singletons, matemapped_diff_chr)
+  }, error = function(err) {
+    print(paste("Sample: ", SAMP, " QC: mSINGs"))
+    print(paste("ERROR: ", err))
+  })
 }
 
 
