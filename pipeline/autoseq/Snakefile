@@ -122,7 +122,6 @@ if 'ALL' in steps or 'variants' in steps:
     VARIANTS.append("{}/svs/svaba/{}-{}.svaba.somatic.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
     VARIANTS.append("{}/svs/svaba/{}-{}.svaba.germline.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
     VARIANTS.append("{}/svs/lumpy/{}-{}-lumpy.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
-    VARIANTS.append("{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
     VARIANTS.append("{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 
     IGV = list()
