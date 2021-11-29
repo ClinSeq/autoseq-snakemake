@@ -1820,13 +1820,14 @@ if (!is.null(bins)) {
 
     }
 
+      
   col=rep(NA,nrow(purecn_loh))
   col[purecn_loh$C==1]='blue'
   col[purecn_loh$C==0]='violet'
   col[purecn_loh$C==3]='red'
   col[purecn_loh$C>=4]='orange'
-
-  p <- p + geom_segment(data=purecn_loh,
+  if(sum(purecn_loh$cumstart, na.rm=TRUE)>0){
+	  p <- p + geom_segment(data=purecn_loh,
                         aes(x = purecn_loh$cumstart, y = -1.8,
                             xend = purecn_loh$cumend , yend = -1.8,
                             text=sprintf("chr:%s <br> start: %2f <br> end: %2f <br>type: %s <br> arm:%s  ",
@@ -1840,6 +1841,7 @@ if (!is.null(bins)) {
                         size=1,
                         col =  col,
                         show.legend=F)
+  }
 
   ix=purecn_loh$C==0
   if (sum(ix, na.rm=TRUE)>0){
@@ -1908,6 +1910,7 @@ try(  {
                 ),
           col='red',cex=2,srt=90, size=4)
  }
+
 }, silent=T)
 
 
@@ -2127,6 +2130,7 @@ xlim=c(0.3,2.1)
 ylim=c(0,1)
 snpcov='NA'; if (!is.null(alf)) if (nrow(alf)>0)
   snpcov=paste0('T',round(median(alf$td)),'/N',round(median(alf$nd)))
+purity$Ploidy = ifelse(is.na(purity$Ploidy), 0, purity$Ploidy)
 text = paste0(purity$Sampleid,' ----- ', format(Sys.time(), "%F %H:%M:%S"),'',
               '  SNPcov:',snpcov,
               '  purCn.Ploidy:',round(purity$Ploidy,2),
