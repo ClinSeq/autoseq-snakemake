@@ -4,5 +4,11 @@
         "output": "logs/cluster/{rule}.out",
         "error": "logs/cluster/{rule}.err",
         "partition": "core"
+    },
+    "gatk3_indelrealigner_umi_1": {
+        "time": "100:00:00"
+    },
+    "gatk3_indelrealigner_umi_2": {
+        "time": "100:00:00"
     }
 }

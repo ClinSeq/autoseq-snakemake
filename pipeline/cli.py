@@ -153,7 +153,7 @@ def launch(context, ref, samples, outdir, libdir,
     
     # update scratch dir
     if scratch:
-        config_dict["scratch"] = scratch
+        config_dict["params"]["scratch"] = scratch
     
     # pipeline based args
     if pipeline == 'tumor_only' and normal_bam:
