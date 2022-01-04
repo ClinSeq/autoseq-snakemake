@@ -21,7 +21,7 @@ rule vardict_somatic:
         min_alt_frac = params['vardict']['min_alt_frac'],
         min_num_reads = params['vardict']['min_num_reads'],
         blacklist_bed = reference["targets"][capture_name]["blacklist-bed"],
-        pyexe = "/opt/conda/bin/python" if config['container']['base'] else sys.executable
+        pyexe = "/opt/conda/bin/python" if config['container']['base'] != ' '  else sys.executable
     threads: params['vardict']['threads']
     log:
         "{}/logs/variants/{}-{}.vardict-somatic.vcf.gz.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
