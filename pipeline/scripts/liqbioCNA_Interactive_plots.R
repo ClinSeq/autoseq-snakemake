@@ -2025,9 +2025,11 @@ if (nrow(galf)>0) {
     pos_g[is.na(pos_g)]=''; pos_g[pos_g=='-']=''; aa_g[is.na(aa_g)]=''
   }
   ix_g=g_ix & pos_g!='' & g_g %in% genes$label & aa_g!=''
-  p1 <- p1 + geom_text(aes(x = galf$cumpos[ix_g],y=galf$AF[ix_g]+0.07, label = paste0(g_g[ix_g],' ',pos_g[ix_g],
-                                                                            aa_g[ix_g])),cex=1,srt=30,col=g_scol[ix_g])
-  #text(x = galf$cumpos[ix],y=galf$AF[ix]+0.07,labels = paste0(g[ix],' ',pos[ix],aa[ix]),cex=0.4,srt=30,col=scol[ix])
+  if (sum(ix_g, na.rm = TRUE)>0) {
+    p1 <- p1 + geom_text(aes(x = galf$cumpos[ix_g],y=galf$AF[ix_g]+0.07, label = paste0(g_g[ix_g],' ',pos_g[ix_g],
+                                                                                        aa_g[ix_g])),cex=1,srt=30,col=g_scol[ix_g])
+    #text(x = galf$cumpos[ix],y=galf$AF[ix]+0.07,labels = paste0(g[ix],' ',pos[ix],aa[ix]),cex=0.4,srt=30,col=scol[ix])
+  }
 }
 
 p1<-ggplotly(p1, tooltip = "text",  height = 1024)
