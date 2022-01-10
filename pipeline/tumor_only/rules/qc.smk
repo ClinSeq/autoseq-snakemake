@@ -133,7 +133,6 @@ rule purecn:
         seg = capture_to_results[CANCER_CAPTURE].seg,
         vcf = "{}/variants/{}-merged.germline.split_norm.gnomADg.vep.SNPs.dbsnpids.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
     output:
-        outdir = directory("{}/purecn".format(outdir)),
         csv = "{}/purecn/{}.csv".format(outdir, CANCER_CAPTURE_STR),
         genes_csv = "{}/purecn/{}_genes.csv".format(outdir, CANCER_CAPTURE_STR),
         variants_csv = "{}/purecn/{}_variants.csv".format(outdir, CANCER_CAPTURE_STR),
