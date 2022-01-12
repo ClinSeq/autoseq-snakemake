@@ -138,13 +138,14 @@ rule purecn:
         variants_csv = "{}/purecn/{}_variants.csv".format(outdir, CANCER_CAPTURE_STR),
         loh_csv = "{}/purecn/{}_loh.csv".format(outdir, CANCER_CAPTURE_STR),
     params:
+        outdir = "{}/purecn".format(outdir),
         tumorid = CANCER_CAPTURE_STR,
         minaf = params['purecn']['minaf'],
         maxnonclonal = params['purecn']['maxnonclonal']
     threads: params['purecn']['threads']
     shell:
         "source activate purecn-env && "
-        "PureCN.R  --out {output.outdir} "
+        "PureCN.R  --out {params.outdir} "
         " --sampleid {params.tumorid} "
         " --segfile {input.seg} "
         " --tumor {input.cnr} "
