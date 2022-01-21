@@ -82,7 +82,7 @@ vcf_reader = vcf.Reader(open(args.vcf, 'r'))
 vcftype = args.vcftype
 sdid = "-".join(os.path.basename(args.vcf).split('-')[1:3])
 sid = "-".join(os.path.basename(args.vcf).split('-')[0:5])
-output_file = open(args.output, 'wr') 
+output_file = open(args.output, 'w') 
 variants = list()
 
 if args.vardict:
