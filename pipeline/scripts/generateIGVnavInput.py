@@ -80,8 +80,10 @@ OncoKB_lookup = loadOncoKB(args.oncokb)
 #vcf_reader = vcf.Reader(open("/home/chimera/Downloads/new_vcf_format.vcf", 'r'))
 vcf_reader = vcf.Reader(open(args.vcf, 'r'))
 vcftype = args.vcftype
-
-output_file = open(args.output, 'w') 
+sdid = "-".join(os.path.basename(args.vcf).split('-')[1:3])
+sid = "-".join(os.path.basename(args.vcf).split('-')[0:5])
+output_file = open(args.output, 'wr') 
+variants = list()
 
 if args.vardict:
     vardict_vcf = vcf.Reader(open(args.vardict, 'r'))
@@ -161,6 +163,10 @@ for record in vcf_reader:
         num_tools = int(record.INFO['NUM_TOOLS'])
 
         if (filter_col == 'PASS' or filter_col == 'LowQual'):
+            # forming variant string to remove duplicates
+            # eg: 3-113275658-G-TTTTTTT
+            tmp_str = "-".join(map(str, [record.CHROM, record.POS, record.REF, record.ALT[0]]))
+            variants.append(tmp_str)
             output_file.write('\t'.join(map(str, [record.CHROM, record.POS, str(record.POS+1) , 
                                                   record.REF, record.ALT, '', '', '', gene, 
                                                   impact, canonical_trans['Consequence'], 
@@ -203,6 +209,10 @@ if args.vardict and vcftype == "somatic":
         try:
             # filter small indels - length less than 5 
             if len(ref) > 5 or len(alt) > 5:
+                # to avoid duplicates    
+                tmp_str = "-".join(map(str, [record.CHROM, record.POS, ref, alt]))
+                if tmp_str in variants:
+                    continue
 
                 canonical_trans = csq_parsing(record.INFO['CSQ'], vcftype)
 
@@ -225,10 +235,10 @@ if args.vardict and vcftype == "somatic":
                 normal = [sam for sam in record.samples if '-N-' in sam.sample][0]
                 tumor = [sam for sam in record.samples if '-CFDNA-' in sam.sample or '-T-' in sam.sample][0]
             
-                normal_ref = normal['AD'][0]
+                normal_dp = sum(normal['AD'])
                 normal_alt = normal['AD'][1]
                 normal_vaf = normal['AF']
-                tumor_ref = tumor['AD'][0]
+                tumor_dp = sum(tumor['AD'])
                 tumor_alt = tumor['AD'][1]
                 tumor_vaf = tumor['AF']
 
