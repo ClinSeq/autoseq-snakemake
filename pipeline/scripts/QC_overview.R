@@ -74,6 +74,8 @@ for (f in hsmetrics_files) {
       print(paste("ERROR: ", err))
   })
 }
+#fix column class for column sometimes read in as character due to a "?" instead of NA
+HsMetrics$FOLD_80_BASE_PENALTY = as.numeric(HsMetrics$FOLD_80_BASE_PENALTY)
 
 MarkDuplicates = data.frame()
 for (f in markduplicates_files) {
