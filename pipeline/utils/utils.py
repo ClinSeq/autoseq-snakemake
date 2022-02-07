@@ -246,6 +246,7 @@ def get_capture_name(capture_kit_code):
                             "PA": "pancancer",
                             "C2": "probio_comprehensive2",
                             "C3": "probio_comprehensive3",
+                            "C4": "probio_comprehensive4",
                             "PN": "pancancer2"
                             }
 
