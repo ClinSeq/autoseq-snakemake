@@ -117,9 +117,9 @@ for (f in contest_files) {
     clinseq_barcodes = rev(strsplit(f, split = "/")[[1]])[3]
     samples = unlist(strsplit(clinseq_barcodes, split = "_"))
     if(grepl('-N-', fname, fixed=TRUE)){
-      SAMP = samples[1]
-    } else {
       SAMP = samples[2]
+    } else {
+      SAMP = samples[1]
     }
     DIR = dirname(dirname(f))
     ContEst = rbind(ContEst, cbind(SAMP, DIR, read.table(f, nrow = 1, sep = "\t", header = TRUE, stringsAsFactors = FALSE), 
