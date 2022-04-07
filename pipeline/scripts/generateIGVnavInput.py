@@ -162,7 +162,7 @@ for record in vcf_reader:
 
         num_tools = int(record.INFO['NUM_TOOLS'])
 
-        if (filter_col == 'PASS' or filter_col == 'LowQual'):
+        if (filter_col == 'PASS' or filter_col == 'LowQual') and (impact == 'HIGH' or impact == 'MODERATE'):
             # forming variant string to remove duplicates
             # eg: 3-113275658-G-TTTTTTT
             tmp_str = "-".join(map(str, [record.CHROM, record.POS, record.REF, record.ALT[0]]))
