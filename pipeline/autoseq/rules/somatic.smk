@@ -286,4 +286,4 @@ rule somatic_generateIGVnav:
     params:
         vcftype = "somatic"
     shell:
-        "generateIGVnavInput.py {input.somatic} {input.oncokb} {params.vcftype} -v {input.vardict_vcf} --output {output} "
+        "generateIGVnavInput.py {input.somatic} {input.oncokb} {params.vcftype} --output {output} "
