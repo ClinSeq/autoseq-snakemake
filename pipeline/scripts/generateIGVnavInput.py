@@ -115,9 +115,9 @@ except Exception as e:
 # output file headers 
 
 if vcftype == "somatic":
-    output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'IMPACT', 'CONSEQUENCE', 'HGVSp', 'T_DP', 'T_ALT', 'T_VAF', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'gnomAD', 'BRCAEx', 'OncoKB', 'NUM_TOOLS']) + "\n")
+    output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'IMPACT', 'CONSEQUENCE', 'TRANSCRIPT', 'HGVSc', 'HGVSp', 'T_DP', 'T_ALT', 'T_VAF', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'gnomAD', 'BRCAEx', 'OncoKB', 'NUM_TOOLS']) + "\n")
 elif vcftype == "germline":
-    output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'IMPACT', 'CONSEQUENCE', 'HGVSp', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID', 'gnomAD', 'BRCAEx', 'OncoKB']) + "\n")
+    output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'IMPACT', 'CONSEQUENCE', 'TRANSCRIPT', 'HGVSc','HGVSp', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID', 'gnomAD', 'BRCAEx', 'OncoKB']) + "\n")
 
 for record in vcf_reader:
     try:
@@ -169,8 +169,8 @@ for record in vcf_reader:
             variants.append(tmp_str)
             output_file.write('\t'.join(map(str, [record.CHROM, record.POS-1, record.POS,
                                                   record.REF, record.ALT, '', '', '', gene, 
-                                                  impact, canonical_trans['Consequence'], 
-                                                  canonical_trans['HGVSp'], tumor_dp, tumor_alt, 
+                                                  impact, canonical_trans['Consequence'], canonical_trans['Feature'],
+                                                  canonical_trans['HGVSc'], canonical_trans['HGVSp'], tumor_dp, tumor_alt, 
                                                   tumor_vaf, normal_dp, normal_alt, normal_vaf, 
                                                   clinsig, gnomAD, brcaEx, oncogenicity, num_tools])) + "\n")
     
@@ -190,7 +190,8 @@ for record in vcf_reader:
                     output_file.write('\t'.join(map(str, [record.CHROM, record.POS-1, record.POS,
                                                           record.REF, record.ALT, '', '', '', gene, 
                                                           impact, canonical_trans['Consequence'], 
-                                                          canonical_trans['HGVSp'], normal_dp , normal_alt, 
+                                                          canonical_trans['Feature'], canonical_trans['HGVSc'],
+                                                          canonical_trans['HGVSp'], normal_dp , normal_alt,
                                                           round(normal_vaf, 2), clinsig, record.ID, gnomAD,
                                                           brcaEx, oncogenicity])) + "\n")
             
