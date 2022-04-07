@@ -167,7 +167,7 @@ for record in vcf_reader:
             # eg: 3-113275658-G-TTTTTTT
             tmp_str = "-".join(map(str, [record.CHROM, record.POS, record.REF, record.ALT[0]]))
             variants.append(tmp_str)
-            output_file.write('\t'.join(map(str, [record.CHROM, record.POS, str(record.POS+1) , 
+            output_file.write('\t'.join(map(str, [record.CHROM, record.POS-1, record.POS,
                                                   record.REF, record.ALT, '', '', '', gene, 
                                                   impact, canonical_trans['Consequence'], 
                                                   canonical_trans['HGVSp'], tumor_dp, tumor_alt, 
@@ -187,7 +187,7 @@ for record in vcf_reader:
                     normal_alt = normal['AD'][1]
                     normal_vaf = float(normal_alt)/float(normal_dp)
 
-                    output_file.write('\t'.join(map(str, [record.CHROM, record.POS, str(record.POS+1), 
+                    output_file.write('\t'.join(map(str, [record.CHROM, record.POS-1, record.POS,
                                                           record.REF, record.ALT, '', '', '', gene, 
                                                           impact, canonical_trans['Consequence'], 
                                                           canonical_trans['HGVSp'], normal_dp , normal_alt, 
