@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 # Markus Mayrhofer 2022
 # Dependencies ------------------------------------------------------------
 suppressPackageStartupMessages(library(optparse))
