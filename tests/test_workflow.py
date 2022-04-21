@@ -11,7 +11,7 @@ class TestWorkflow(unittest.TestCase):
     def setUp(self):
         self.snakefile = "pipeline/autoseq/Snakefile"
         self.to_snakefile = "pipeline/tumor_only/Snakefile"
-        self.config = "config.yml"
+        self.config = "tests/test_config.yml"
         self.reference = "tests/dummy_genome/dummy_genome.json"
     
     @patch("pipeline.utils.utils.os.path.isfile")
@@ -42,7 +42,7 @@ class TestWorkflow(unittest.TestCase):
     @patch("pipeline.utils.utils.get_chromosomes")
     @patch("os.symlink")
     @patch("os.makedirs")
-    def test_autoseq_valid(self, mock_isfile, mock_get_chromosomes, mock_os_symlink, mock_makedirs):
+    def test_tumor_only_valid(self, mock_isfile, mock_get_chromosomes, mock_os_symlink, mock_makedirs):
         mock_isfile.return_value = True
         mocked_open = mock_open(read_data='{"1", "2", "3", "4", "5", "6", "7", "8", "X", "Y"}')
         mock_get_chromosomes.return_value = {'1', '2', '3', '4', '5', '6', '7', '8', 'X', 'Y'}
