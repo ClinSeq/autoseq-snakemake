@@ -2,6 +2,7 @@ import os
 import uuid 
 
 capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
+cancer_sample = [_ for _ in all_clinseq_barcodes if '-T-' in _ or '-CFDNA-' in _]
 
 # rule cnvkit:
 #     input:
@@ -59,7 +60,8 @@ rule jumblerun_cnv:
         reference = reference['targets'][capture_name]['jumble-ref']
     output:
         expand(outdir + "/cnv/{sample}.cns", sample=all_clinseq_barcodes),
-        expand(outdir + "/cnv/{sample}.cnr", sample=all_clinseq_barcodes)
+        expand(outdir + "/cnv/{sample}.cnr", sample=all_clinseq_barcodes),
+        expand(outdir + "/cnv/{sample}.seg", sample=cancer_sample)
     params:
         outdir = outdir + "/cnv/"
     threads: params['jumble']['threads']
