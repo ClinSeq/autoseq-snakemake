@@ -551,48 +551,50 @@ if (normal) {
 # Table output ------------------------------------------------------------
 
 
+clinbarcode <- str_remove(name, "_nodups.bam")
 
-fwrite(x = segments_tumor,file = paste0(opt$output_dir,'/',name,'.segments.csv'))
-fwrite(x = both,file = paste0(opt$output_dir,'/',name,'.bins.csv'))
-fwrite(x = targets,file = paste0(opt$output_dir,'/',name,'.targets.csv'))
+fwrite(x = segments_tumor,file = paste0(opt$output_dir,'/',clinbarcode,'.segments.csv'))
+fwrite(x = both,file = paste0(opt$output_dir,'/',clinbarcode,'.bins.csv'))
+fwrite(x = targets,file = paste0(opt$output_dir,'/',clinbarcode,'.targets.csv'))
 # fwrite(x = background,file = paste0(opt$output_dir,'/',name,'.background.csv'))
 
 
 # for compatibility with CNVkit. Currently with targets only to allow PureCN to work.
-# cnr:  chromosome	start	end	gene	depth	log2	weight
+# cnr:  chromosome      start   end     gene    depth   log2    weight
 cnr <- targets[,.(chromosome=as.character(chromosome),start,end,gene,depth=round(count/width*160,3),log2,weight=1)][gene=='',gene:='-']
 cnr[,chromosome:=str_replace(chromosome,'23','X')][,chromosome:=str_replace(chromosome,'24','Y')]
-fwrite(x = cnr,file = paste0(opt$output_dir,'/',name,'.cnr'),sep = '\t')
+fwrite(x = cnr,file = paste0(opt$output_dir,'/',clinbarcode,'.cnr'),sep = '\t')
 
-# cns:  chromosome	start	end	gene	log2	depth	probes	weight
+# cns:  chromosome      start   end     gene    log2    depth   probes  weight
 cns <- segments_tumor[type=='segment',.(chromosome,start,end,gene=genes,log2=mean,depth=mean,probes=bins)]
-fwrite(x = cns,file = paste0(opt$output_dir,'/',name,'.cns'),sep = '\t')
+fwrite(x = cns,file = paste0(opt$output_dir,'/',clinbarcode,'.cns'),sep = '\t')
 
 if (normal) {
-    fwrite(x = segments_normal,file = paste0(opt$output_dir,'/',name_n,'.segments.csv'))
+    n_clinbarcode <- str_remove(name_n, "_nodups.bam")
+    fwrite(x = segments_normal,file = paste0(opt$output_dir,'/',n_clinbarcode,'.segments.csv'))
     #fwrite(x = background,file = paste0(opt$output_dir,'/',name,'-',name_n,'.background.csv'))
-    
+
     # for compatibility
-    # cnr:  chromosome	start	end	gene	depth	log2	weight
+    # cnr:  chromosome  start   end     gene    depth   log2    weight
     cnr <- both[,.(chromosome=as.character(chromosome),start,end,gene,depth=round(count_n/width*160,3),log2=log2_n,weight=1)][gene=='',gene:='-']
     cnr[,chromosome:=str_replace(chromosome,'23','X')][,chromosome:=str_replace(chromosome,'24','Y')]
-    fwrite(x = cnr,file = paste0(opt$output_dir,'/',name_n,'.cnr'),sep = '\t')
-    
-    # cns:  chromosome	start	end	gene	log2	depth	probes	weight
+    fwrite(x = cnr,file = paste0(opt$output_dir,'/',n_clinbarcode,'.cnr'),sep = '\t')
+
+    # cns:  chromosome  start   end     gene    log2    depth   probes  weight
     cns <- segments_normal[type=='segment',.(chromosome,start,end,gene=genes,log2=mean,depth=mean,probes=bins)]
-    fwrite(x = cns,file = paste0(opt$output_dir,'/',name_n,'.cns'),sep = '\t')
+    fwrite(x = cns,file = paste0(opt$output_dir,'/',n_clinbarcode,'.cns'),sep = '\t')
 }
 
 # DNAcopy segment file for main sample only:
-# ID	chrom	loc.start	loc.end	num.mark	seg.mean	C
+# ID    chrom   loc.start       loc.end num.mark        seg.mean        C
 seg <- segments[,.(ID=name,chrom=chromosome,loc.start=start_pos,loc.end=end_pos,num.mark=nbrOfLoci,seg.mean=mean,C=NA)]
-fwrite(x = seg,file = paste0(opt$output_dir,'/',name,'_dnacopy.seg'),sep = '\t')
+fwrite(x = seg,file = paste0(opt$output_dir,'/',clinbarcode,'_dnacopy.seg'),sep = '\t')
 
 
 # Count file output ------------------------------------------------------------
 
-saveRDS(counts,paste0(opt$output_dir,'/',name,'.counts.RDS'))
-if (normal) saveRDS(counts_normal,paste0(opt$output_dir,'/',name_n,'.counts.RDS'))
+saveRDS(counts,paste0(opt$output_dir,'/',clinbarcode,'.counts.RDS'))
+if (normal) saveRDS(counts_normal,paste0(opt$output_dir,'/',n_clinbarcode,'.counts.RDS'))
 
 
 # Plot 1: overview ------------------------------------------------------------
@@ -601,7 +603,7 @@ both$type <- 'Target'
 both[gene=='Background']$type <- 'Background'
 
 
-pdf(file = paste0(opt$output_dir,'/',name,'.pdf'),width = 20,height=14,pointsize = 1)
+pdf(file = paste0(opt$output_dir,'/',clinbarcode,'.pdf'),width = 20,height=14,pointsize = 1)
 
 stats <- paste('Coverage:', 
                paste(round(quantile(targets[is_backbone==T]$count,c(.01,.99))),collapse = '-')
