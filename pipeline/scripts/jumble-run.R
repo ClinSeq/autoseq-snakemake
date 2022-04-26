@@ -548,7 +548,7 @@ if (normal) {
 
 # Table output ------------------------------------------------------------
 
-
+both[,chromosome:=as.character(chromosome)][chromosome=='23',chromosome:='X'][chromosome=='24',chromosome:='Y']
 
 fwrite(x = segments_tumor,file = paste0(opt$output_dir,'/',name,'.segments.csv'))
 fwrite(x = both,file = paste0(opt$output_dir,'/',name,'.bins.csv'))
