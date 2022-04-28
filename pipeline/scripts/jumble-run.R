@@ -54,7 +54,7 @@ opt <- parse_args(OptionParser(option_list = option_list))
 
 # #PSFF with RDS and vcf
 # setwd('~/Data/CLINSEQ/')
-# opt <- list(reference_file='pancancer2_baits_twist.bed.reference.RDS',
+# opt <- list(reference_file='references/pancancer2_baits_twist.bed.reference.RDS',
 #             input_bam='psff_PN/iPCM-P-00436099-T-MOL2594i-KH20211123-PN20211124_nodups.bam.counts.RDS',
 #             snp_vcf='psff_vcf/iPCM-P-00436099-T-MOL2594i-KH-PN-iPCM-P-00436099-N-03998767-KH-PN.vardict-somatic-purecn.vcf.gz',
 #             output_dir='psff_pdf/'
@@ -597,6 +597,9 @@ fwrite(x = seg,file = paste0(opt$output_dir,'/',clinbarcode,'_dnacopy.seg'),sep 
 saveRDS(counts,paste0(opt$output_dir,'/',clinbarcode,'.counts.RDS'))
 if (normal) saveRDS(counts_normal,paste0(opt$output_dir,'/',n_clinbarcode,'.counts.RDS'))
 
+# Save workspace ------------------------------------------------------------
+save.image(paste0(opt$output_dir,'/',clinbarcode,'.jumble_workspace.RDS'))
+
 
 # Plot 1: overview ------------------------------------------------------------
 
@@ -867,6 +870,175 @@ if (F) {
 
     print(fig+pa)
 }
+
+# Plot 4: new frankenplot ------------------------------------------------------------
+
+if (F) {
+    p <- NULL
+    t <- both[chromosome==13 & str_detect(gene,'RB1')]$target; both[target %in% min(t):max(t),gene:='RB1']
+    #sort(both[chromosome==11 & !gene %in% c('','Background'),table(gene)])
+    both[gene %in% c('AR','ATM','BRCA2','PTEN','RB1','NTRK3','ERG','CDK12','TMPRSS2','FGFR2','TP53','CDKN2A','APC'),label:=gene]
+    
+    
+    both[,smooth_log2:=runmed(log2,k=21),by=chromosome]
+    both[,dna_ratio:=2^smooth_log2]
+    #both[allele_ratio>.95 | allele_ratio<.05,allele_ratio:=NA]
+    both[!is.na(allele_ratio)][allele_ratio<.95 & allele_ratio>.05,maf:=runmed(abs(allele_ratio-.5)+.5,9)]
+    # top left grid plot
+    p$a <- ggplot(both) + xlim(c(0,2)) + ylim(c(.5,1)) + xlab('Corrected depth (smooth)') + ylab('Major allele ratio (smooth)') +
+        geom_point(data=both[,.(dna_ratio,maf)],aes(x=dna_ratio,y=maf),col='grey') +
+        geom_point(aes(x=dna_ratio,y=maf),fill='#60606090',col='#20202090',shape=21) +
+        geom_point(data=both[label!=''],aes(x=dna_ratio,y=maf,fill=label),shape=21,col='#00000050',size=1) +
+        facet_wrap(facets = vars(factor(chromosome,levels=unique(chromosome),ordered=T)),ncol = 8) +
+        theme(panel.spacing = unit(0, "lines"),strip.text.x = element_text(size = 8))
+    # top right plot
+    p$b <- ggplot(both) + xlim(c(0,max(c(2,both$smooth_log2)))) + ylim(c(.5,1)) + xlab('Corrected depth (smooth)') + ylab('Major allele ratio (smooth)') +
+        geom_point(data=both[,.(dna_ratio,maf)],aes(x=dna_ratio,y=maf),fill='#60606090',col='#20202090',shape=21) +
+        geom_point(data=both[label!=''],aes(x=dna_ratio,y=abs(allele_ratio-.5)+.5,fill=label),shape=21,col='#00000050',size=1)
+    # chroms object by genomic pos
+    chroms <- reference$chromlength[chromosome!='Y']
+    chroms[,start:=as.double(0)] 
+    chroms[,stop:=as.double(length)] 
+    chroms[,mid:=as.double(round(length/2))] 
+    for (i in 2:nrow(chroms)) {
+        chroms[i,start:=chroms$stop[i-1]]
+        chroms[i,stop:=chroms$stop[i-1]+length]
+        chroms[i,mid:=chroms$stop[i-1]+round(length/2)]
+    }    
+    # fix positions by genome
+    both[,gpos:=mid]
+    for (chr in unique(both$chromosome)[-1]) both[chromosome==chr,gpos:=gpos+sum(reference$chromlength[1:(which(chromosome==chr)-1)]$length)]
+    segments[,gstart:=as.double(start_pos)][,gstop:=as.double(end_pos)]
+    for (chr in unique(both$chromosome)[-1]) {
+        segments[chromosome==chr,gstart:=gstart+sum(reference$chromlength[1:(which(chromosome==chr)-1)]$length)]
+        segments[chromosome==chr,gstop:=gstop+sum(reference$chromlength[1:(which(chromosome==chr)-1)]$length)]
+    }
+    # logR by pos + segments (2nd left)
+    p$c <- ggplot(both) + xlab('Genomic position') + ylab('Corrected depth') +
+        geom_point(data=both[is.na(label)],mapping = aes(x=gpos,y=2^log2),fill='#60606090',col='#20202090',shape=21,size=1) +
+        geom_point(data=both[!is.na(label)],mapping = aes(x=gpos,y=2^log2,fill=label),shape=21,col='#00000050',size=1) +
+        scale_fill_hue() + scale_y_log10(limits=c(min(.5,min(2^both$smooth_log2)),max(2,max(2^both$smooth_log2)))) +
+        geom_segment(data=segments,col='green',size=1,
+                     mapping = aes(x=gstart,xend=gstop,y=2^mean,yend=2^mean)) +
+        scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
+                           expand = c(.01,.01),labels = chroms$chromosome) +
+        theme(panel.grid.major.x = element_blank(),
+              panel.grid.minor.y = element_line(),
+              panel.grid.minor.x = element_line(color = 'black'),
+              axis.line = element_line(),
+              axis.ticks = element_line()) 
+    # logR by gc (2nd right)
+    p$d <- ggplot(both) + xlab('Target GC content') + ylab('Corrected depth') +
+        geom_point(data=both[is.na(label)],mapping = aes(x=gc,y=2^log2),fill='#60606090',col='#20202090',shape=21,size=1) +
+        geom_smooth(data=both[!is.na(label)],mapping = aes(x=gc,y=2^log2,col=label),size=1,se=F) +
+        scale_fill_hue() + scale_y_log10(limits=c(min(.5,min(2^both$smooth_log2)),max(2,max(2^both$smooth_log2))))  
+    # allele ratio by pos (3rd left)
+    p$e <- ggplot(both) + xlab('Genomic position') + ylab('Allele ratio') +
+        geom_point(data=both[is.na(label)],mapping = aes(x=gpos,y=allele_ratio),fill='#60606090',col='#20202090',shape=21,size=1) +
+        geom_point(data=both[!is.na(label)],mapping = aes(x=gpos,y=allele_ratio,fill=label),shape=21,col='#00000050',size=1) +
+        scale_fill_hue() + ylim(0:1) +
+        scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
+                           expand = c(.01,.01),labels = chroms$chromosome) +
+        theme(panel.grid.major.x = element_blank(),
+              panel.grid.minor.y = element_line(),
+              panel.grid.minor.x = element_line(color = 'black'),
+              axis.line = element_line(),
+              axis.ticks = element_line()) 
+    # allele ratio by smoothed logR (3rd right)
+    temp <- both[!is.na(label),median(log2),by=label]
+    p$f <- ggplot(both) + xlab('Corrected depth (smooth)') + ylab('Allele ratio') +
+        geom_point(data=both[is.na(label)],mapping = aes(x=2^smooth_log2,y=allele_ratio),fill='#60606090',col='#20202090',shape=21,size=1) +
+        geom_point(data=both[!is.na(label)],mapping = aes(x=2^smooth_log2,y=allele_ratio,fill=label),shape=21,col='#00000050',size=1) +
+        scale_fill_hue() + ylim(0:1) + scale_x_log10(limits=c(min(.5,min(2^both$smooth_log2)),max(2,max(2^both$smooth_log2)))) +
+        geom_point(data=temp,mapping=aes(x=2^V1,y=0,fill=label),size=2,shape=24,show.legend=F)
+    # chroms object by order
+    chroms=data.table(chromosome=unique(both$chromosome),
+                      start=0,
+                      end=0,
+                      mid=0)
+    for (chr in chroms$chromosome) {
+        chroms$start[chr==chroms$chromosome]=both[chromosome==chr,min(bin)]
+        chroms$end[chr==chroms$chromosome]=both[chromosome==chr,max(bin)]
+        chroms$mid[chr==chroms$chromosome]=both[chromosome==chr,mean(bin)]
+    }
+    # logR by order (4rth left)
+    p$g <- ggplot(both) + xlab('Order of genomic position') + ylab('Corrected depth') +
+        geom_point(data=both[is.na(label)],mapping = aes(x=bin,y=2^log2),fill='#60606090',col='#20202090',shape=21,size=1) +
+        geom_point(data=both[!is.na(label)],mapping = aes(x=bin,y=2^log2,fill=label),shape=21,col='#00000050',size=1) +
+        scale_fill_hue() + scale_y_log10(limits=c(min(.5,min(2^both$smooth_log2)),max(2,max(2^both$smooth_log2)))) +
+        geom_segment(data=segments,col='green',size=1,
+                     mapping = aes(x=start,xend=end,y=2^mean,yend=2^mean)) +
+        scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
+                           expand = c(.01,.01),labels = chroms$chromosome) +
+        theme(panel.grid.major.x = element_blank(),
+              panel.grid.minor.y = element_line(),
+              panel.grid.minor.x = element_line(color = 'black'),
+              axis.line = element_line(),
+              axis.ticks = element_line()) 
+    # logR by gc (4rth right)
+    p$h <- ggplot(both) + xlab('Target GC content') + ylab('Corrected depth') +
+        geom_point(data=both[is.na(label)],mapping = aes(x=gc,y=2^log2),fill='#60606090',col='#20202090',shape=21,size=1) +
+        geom_smooth(data=both[!is.na(label)],mapping = aes(x=gc,y=2^log2,col=label),size=1,se=F) +
+        scale_fill_hue() + scale_y_log10(limits=c(min(.5,min(2^both$smooth_log2)),max(2,max(2^both$smooth_log2)))) 
+    # allele ratio by order (5rth left)
+    p$i <- ggplot(both) + xlab('Order of genomic position') + ylab('Allele ratio') +
+        geom_point(data=both[is.na(label)],mapping = aes(x=bin,y=allele_ratio),fill='#60606090',col='#20202090',shape=21,size=1) +
+        geom_point(data=both[!is.na(label)],mapping = aes(x=bin,y=allele_ratio,fill=label),shape=21,col='#00000050',size=1) +
+        scale_fill_hue() + ylim(0:1) +
+        scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
+                           expand = c(.01,.01),labels = chroms$chromosome) +
+        theme(panel.grid.major.x = element_blank(),
+              panel.grid.minor.y = element_line(),
+              panel.grid.minor.x = element_line(color = 'black'),
+              axis.line = element_line(),
+              axis.ticks = element_line()) 
+    # allele ratio by depth (5th right)
+    m <- both[!is.na(target),median(count*160/width)]
+    p$j <- ggplot(both) + xlab('Sequence depth') + ylab('Allele ratio') +
+        geom_point(data=both[is.na(label)],mapping = aes(x=count*160/width,y=allele_ratio),fill='#60606090',col='#20202090',shape=21,size=1) +
+        geom_point(data=both[!is.na(label)],mapping = aes(x=count*160/width,y=allele_ratio,fill=label),shape=21,col='#00000050',size=1) +
+        scale_fill_hue() + ylim(0:1) + scale_x_log10(limits=c(m/3,m*3))
+    # depth by order (6rth left)
+    p$k <- ggplot(both) + xlab('Order of genomic position') + ylab('Sequence depth') +
+        geom_point(data=both[is.na(label)],mapping = aes(x=bin,y=count*160/width),fill='#60606090',col='#20202090',shape=21,size=1) +
+        geom_point(data=both[!is.na(label)],mapping = aes(x=bin,y=count*160/width,fill=label),shape=21,col='#00000050',size=1) +
+        scale_fill_hue() + scale_y_log10(limits=c(m/2,m*2)) +
+        scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
+                           expand = c(.01,.01),labels = chroms$chromosome) +
+        theme(panel.grid.major.x = element_blank(),
+              panel.grid.minor.y = element_line(),
+              panel.grid.minor.x = element_line(color = 'black'),
+              axis.line = element_line(),
+              axis.ticks = element_line()) 
+    # depth by GC (6rth right)
+    p$l <- ggplot(both) + xlab('Target GC content') + ylab('Sequence depth') +
+        geom_point(data=both[is.na(label)],mapping = aes(x=gc,y=count*160/width),fill='#60606090',col='#20202090',shape=21,size=1) +
+        geom_smooth(data=both[!is.na(label)],mapping = aes(x=gc,y=count*160/width,col=label),size=1,se=F) +
+        scale_fill_hue() + scale_y_log10(limits=c(m/2,m*2))
+    
+    
+    stats <- paste0('Coverage: ',
+                    paste(round(quantile(targets[is_backbone==T]$count,c(.01,.99))),collapse = '-')
+    )
+    
+    pa <- plot_annotation(
+        title = paste(clinbarcode,'         ',date(),'         ',stats),
+    )
+    layout <-  "AAAAB
+                AAAAB
+                CCCCD
+                EEEEF
+                GGGGH
+                IIIIJ
+                KKKKL"
+    for (i in 1:length(p)) p[[i]] <- p[[i]] + guides(fill=guide_legend(override.aes=list(shape=21,size=3)))
+    fig=p$a+p$b+p$c+p$d+p$e+p$f+p$g+p$h+p$i+p$j+p$k+p$l+
+        plot_layout(design = layout,guides = 'collect')
+    
+    print(fig+pa)
+    
+}
+
 
 # Close pdf ------------------------------------------------------------
 dev.off()
