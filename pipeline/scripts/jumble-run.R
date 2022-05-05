@@ -871,31 +871,29 @@ if (F) {
 
 if (T) {
     
-    png(file = paste0(opt$output_dir,'/',clinbarcode,'.pdf'),width = 1800,height=1400,res=150)
+   
     
     p <- NULL
     t <- both[chromosome==13 & str_detect(gene,'RB1')]$target; both[target %in% min(t):max(t),gene:='RB1']
-    #sort(both[chromosome==11 & !gene %in% c('','Background'),table(gene)])
     both[,label:=NA][gene %in% c('AR','ATM','BRCA2','PTEN','RB1','NTRK3','ERG','CDK12','TMPRSS2'),label:=gene]
-    
-    
     both[,smooth_log2:=runmed(log2,k=21),by=chromosome]
-    both[,dna_ratio:=2^smooth_log2]
-    #both[allele_ratio>.95 | allele_ratio<.05,allele_ratio:=NA]
+
     if (snp_allele_ratio) { 
-        both[!is.na(allele_ratio)][allele_ratio<.95 & allele_ratio>.05,maf:=runmed(abs(allele_ratio-.5)+.5,9)]
+        both[allele_ratio>.95 | allele_ratio<.05,allele_ratio:=NA]
+        both[,maf:=abs(allele_ratio-.5)+.5]
+        both[!is.na(maf)][maf<.95,maf:=runmed(maf,9)]
         # snp (grid) smooth-to-alleleratio plot
         p$grid <- ggplot(both) + xlim(c(.2,1.8)) + ylim(c(.5,1)) + xlab('Corrected depth (smooth)') + ylab('Major allele ratio (smooth)') +
-            geom_point(data=both[,.(dna_ratio,maf)],aes(x=dna_ratio,y=maf),col='lightgrey') +
-            geom_point(aes(x=dna_ratio,y=maf),fill='#60606090',col='#20202090',shape=21) +
-            geom_point(data=both[label!=''],aes(x=dna_ratio,y=maf,fill=label),shape=21,col='#00000050',size=1) +
+            geom_point(data=both[,.(log2,maf)],aes(x=2^log2,y=maf),col='lightgrey') +
+            geom_point(aes(x=2^log2,y=maf),fill='#60606090',col='#20202090',shape=21) +
+            geom_point(data=both[label!=''],aes(x=2^log2,y=maf,fill=label),shape=21,col='#00000050',size=1) +
             facet_wrap(facets = vars(factor(chromosome,levels=unique(chromosome),ordered=T)),ncol = 8) +
             theme(panel.spacing = unit(0, "lines"),strip.text.x = element_text(size = 8))
         # snp (all) smooth-to-alleleratio plot
         temp <- both[!is.na(label),median(log2),by=label]
         p$nogrid <- ggplot(both) + xlim(c(.2,max(c(1.8,both$smooth_log2)))) + ylim(c(.5,1)) + xlab('Corrected depth (smooth)') + ylab('Major allele ratio (smooth)') +
-            geom_point(data=both[,.(dna_ratio,maf)],aes(x=dna_ratio,y=maf),fill='#60606090',col='#20202090',shape=21) +
-            geom_point(data=both[label!=''],aes(x=dna_ratio,y=abs(allele_ratio-.5)+.5,fill=label),shape=21,col='#00000050',size=1) +
+            geom_point(data=both[,.(log2,maf)],aes(x=2^log2,y=maf),fill='#60606090',col='#20202090',shape=21) +
+            geom_point(data=both[label!=''],aes(x=2^log2,y=abs(allele_ratio-.5)+.5,fill=label),shape=21,col='#00000050',size=1) +
             #geom_segment(data=temp,mapping=aes(x=2^V1,xend=2^V1,y=.99,yend=1,col=label),size=.4,show.legend=F)
             geom_point(data=temp,mapping=aes(x=2^V1,y=1,fill=label),size=2,shape=25,show.legend=F)
     }
@@ -1056,10 +1054,13 @@ if (T) {
             plot_layout(design = layout,guides = 'collect')
     }
     
+    png(file = paste0(opt$output_dir,'/',clinbarcode,'.png'),width = 1800,height=1400,res=100)
     print(fig+pa)
     
 }
 
 
 # Close pdf ------------------------------------------------------------
+
+
 dev.off()
