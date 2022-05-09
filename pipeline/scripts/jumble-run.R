@@ -467,13 +467,13 @@ seg <- segments[,.(ID=name,chrom=chromosome,loc.start=start_pos,loc.end=end_pos,
 fwrite(x = seg,file = paste0(opt$output_dir,'/',clinbarcode,'_dnacopy.seg'),sep = '\t')
 
 
-# Count file output ------------------------------------------------------------
-
-saveRDS(counts,paste0(opt$output_dir,'/',clinbarcode,'.counts.RDS'))
+# Count file output (not overwrite) ------------------------------------------------------------
+if (!file.exists(paste0(opt$output_dir,'/',clinbarcode,'.counts.RDS')))
+    saveRDS(counts,paste0(opt$output_dir,'/',clinbarcode,'.counts.RDS'))
 
 
 # Save workspace ------------------------------------------------------------
-save.image(paste0(opt$output_dir,'/',clinbarcode,'.jumble_workspace.RDS'))
+#save.image(paste0(opt$output_dir,'/',clinbarcode,'.jumble_workspace.RDS'))
 
 
 # Plot prototype ------------------------------------------------------------
@@ -785,7 +785,7 @@ if (T) {
         geom_point(data=bins[is.na(label)],mapping = aes(x=gc,y=2^log2),fill='#60606040',col='#20202040',shape=21,size=1) +
         geom_smooth(data=bins[!is.na(label)],mapping = aes(x=gc,y=2^log2,col=label),size=.5,se=F,show.legend = F) +
         scale_fill_hue() + scale_y_log10(limits=c(min(.5,min(2^bins$smooth_log2)),max(2,max(2^bins$smooth_log2)))) 
-    
+    m <- bins[!is.na(target),median(count*160/width)]
     if (snp_allele_ratio) {
         # allele ratio by order 
         p$order_alleleratio <- ggplot(bins) + xlab('Order of genomic position') + ylab('Allele ratio') +
@@ -800,7 +800,6 @@ if (T) {
                   axis.line = element_line(),
                   axis.ticks = element_line()) 
         # allele ratio by depth
-        m <- bins[!is.na(target),median(count*160/width)]
         p$depth_alleleratio <- ggplot(bins) + xlab('Sequence depth') + ylab('Allele ratio') +
             geom_point(data=bins[is.na(label)],mapping = aes(x=count*150/width,y=allele_ratio),fill='#60606070',col='#20202070',shape=21,size=1) +
             geom_point(data=bins[!is.na(label)],mapping = aes(x=count*150/width,y=allele_ratio,fill=label),shape=21,col='#00000050',size=1) +
