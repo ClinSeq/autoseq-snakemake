@@ -55,21 +55,22 @@ cancer_sample = [_ for _ in all_clinseq_barcodes if '-T-' in _ or '-CFDNA-' in _
 
 rule jumblerun_cnv:
     input:
-        normal_bam = capture_to_results[NORMAL_CAPTURE].umibam,
-        tumor_bam = capture_to_results[CANCER_CAPTURE].umibam,
+        bam = outdir + "/bams/{sample}_nodups.bam",
         reference = reference['targets'][capture_name]['jumble-ref']
     output:
-        expand(outdir + "/cnv/{sample}.cns", sample=all_clinseq_barcodes),
-        expand(outdir + "/cnv/{sample}.cnr", sample=all_clinseq_barcodes),
-        expand(outdir + "/cnv/{sample}.seg", sample=cancer_sample)
+        cns = outdir + "/cnv/{sample}.cns",
+        cnr = outdir + "/cnv/{sample}.cnr",
+        seg = outdir + "/cnv/{sample}.seg"
     params:
         outdir = outdir + "/cnv/"
     threads: params['jumble']['threads']
+    log:
+        outdir + "/logs/variants/{sample}-jumblerun-cnv.log"
     shell:
+        "source activate jumble-env && "
         "jumble-run.R -r {input.reference} "
-        " -n {input.normal_bam} "
-        " -b {input.tumor_bam} " 
-        " -o {params.outdir} "
+        " -b {input.bam} " 
+        " -o {params.outdir} 2> {log} "
 
 
 rule cnvkit_tracks:

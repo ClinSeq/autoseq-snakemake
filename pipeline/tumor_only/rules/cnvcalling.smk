@@ -45,10 +45,13 @@ rule jumblerun_cnv:
     params:
         outdir = outdir + "/cnv/"
     threads: params['jumble']['threads']
+    log:
+        outdir + "/logs/variants/{sample}-jumblerun-cnv.log"
     shell:
+        "source activate jumble-env && "
         "jumble-run.R -r {input.reference} "
         " -b {input.tumor_bam} " 
-        " -o {params.outdir} "
+        " -o {params.outdir} 2> {log} "
 
 
 rule cnvkit_tracks:
