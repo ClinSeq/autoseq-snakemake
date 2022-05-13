@@ -55,7 +55,7 @@ class GenerateSymlink():
         if not os.path.exists(igvnav_dirname_dst): os.mkdir(igvnav_dirname_dst)
         try:
             symlinks = (('variants','.vep.vcf'),('bams','nodups.bam'), ('bams','nodups.bam.bai'),
-                        ('bams','clipoverlap.bam'), ('bams','clipoverlap.bam.bai'), ('variants','.vep.vcf'), ('cnv', '.bedGraph'), ('variants', '.bedGraph'),
+                        ('bams','clipoverlap.bam'), ('bams','clipoverlap.bai'), ('variants','.vep.vcf'), ('cnv', '.bedGraph'), ('variants', '.bedGraph'),
                       ('svs/igv','.mut'), ('svs','.gtf'), ('svs','.bam'), ('svs','.bai'), ('', 'igvnav-input.txt')) + args
             for each_input in symlinks:
                 dir_name = os.path.join(src_dir,each_input[0])
