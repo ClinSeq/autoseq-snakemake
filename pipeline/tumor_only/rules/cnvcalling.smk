@@ -50,7 +50,7 @@ rule jumblerun_cnv:
     shell:
         "source activate jumble-env && "
         "jumble-run.R -r {input.reference} "
-        " -b {input.tumor_bam} " 
+        " -b {input.bam} " 
         " -o {params.outdir} 2> {log} "
 
 
