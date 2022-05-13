@@ -159,14 +159,16 @@ def launch(context, ref, samples, outdir, libdir,
     if pipeline == 'tumor_only' and normal_bam:
         nClip_bam = os.path.join(normal_bam, normal_barcode[0] + "_clipoverlap.bam")
         nNodups_bam = os.path.join(normal_bam , normal_barcode[0] + "_nodups.bam")
-        for bam in [nClip_bam, nNodups_bam]:
+        nClip_idx = os.path.join(normal_bam, normal_barcode[0] + "_clipoverlap.bai")
+        nNodups_idx = os.path.join(normal_bam , normal_barcode[0] + "_nodups.bam.bai")
+        for bam in [nClip_bam, nNodups_bam, nClip_idx, nNodups_idx]:
             if os.path.isfile(bam):
                 Log.info(f"Normal sample bam file - {bam}")
             else:
                 Log.error(f"{bam} does not exist")
                 raise click.Abort()
 
-        config_dict['normal_bams'] = [nClip_bam, nNodups_bam]
+        config_dict['normal_bams'] = [nClip_bam, nNodups_bam, nClip_idx, nNodups_idx]
         
 
     out_configpath = os.path.join(normpath(outdir), f"config_{sample_str}.yml")

@@ -18,7 +18,7 @@ outdir: tests
 
 steps: ALL
 
-gnomAD: "/nfs/PROBIO/gnomad/r2.1/genomes/gnomad.genomes.r2.1.sites.noVEP.vcf.gz"
+gnomAD: "tests/dummy_genome/gnomad.genomes.r2.1.sites.noVEP.vcf.gz"
 
 params:
     scratch: /tmp
