@@ -119,13 +119,14 @@ sum_by_bg <- targets[,sum(count),by=background]
 
 background[,raw_count:=counts$background_count]
 background[,count:=raw_count][sum_by_bg$background,count:=raw_count-sum_by_bg$V1]
+background[count<0,count:=0]
 
 # same, short
 targets[,count_short:=counts$target_short]
 sum_by_bg <- targets[,sum(count_short),by=background]
 background[,raw_short:=counts$background_short]
 background[,count_short:=raw_short][sum_by_bg$background,count_short:=raw_short-sum_by_bg$V1]
-
+background[count_short<0,count_short:=0]
 
 # median correct to backbone and set raw log ratio
 targets[,rawLR:=log2(count+1)][,rawLR:=rawLR-median(rawLR[is_backbone]),by=sample]
@@ -147,7 +148,7 @@ background_ranges <- makeGRangesFromDataFrame(background)
 # Noise correction ------------------------------------------------------------
 
 # correct using reference
-jcorrect <- function(temp,train_ix=NULL) {
+jcorrect <- function(temp,train_ix=NULL,gc=NULL) {
     
     if (is.null(train_ix)) train_ix <- rep(TRUE,nrow(temp))
     
@@ -156,10 +157,12 @@ jcorrect <- function(temp,train_ix=NULL) {
                      family="symmetric", control = loess.control(surface = "direct"))
     temp[,lr:=lr-predict(loess_temp,temp)]
     
+    # if (!is.null(gc)) { 
     # loess_temp=loess(lr ~ gc, data = temp,
     #                  subset = train_ix,
     #                  family="symmetric", control = loess.control(surface = "direct"))
     # temp[,lr:=lr-predict(loess_temp,temp)]
+    # }
     
     if (F) for (i in 1:(ncol(temp)-1)) {
         temp$thispc=temp[[paste0('PC',i)]]
@@ -171,11 +174,11 @@ jcorrect <- function(temp,train_ix=NULL) {
 }
 
 # standard
-temp <- cbind(data.table(lr=targets$rawLR),reference$targets_ref)
+temp <- cbind(data.table(lr=targets$rawLR),reference$targets_ref,gc=targets$gc)
 targets[,log2:=jcorrect(temp,targets$is_backbone)]
 
 # short
-temp <- cbind(data.table(lr=targets$rawLR_short),reference$targets_ref_short)
+temp <- cbind(data.table(lr=targets$rawLR_short),reference$targets_ref_short,gc=targets$gc)
 targets[,log2_short:=jcorrect(temp,targets$is_backbone)]
 
 # standard bg
@@ -688,6 +691,8 @@ if (T) {
     t <- bins[chromosome==13 & str_detect(gene,'RB1')]$target; bins[target %in% min(t):max(t),gene:='RB1']
     bins[,label:=NA][gene %in% c('AR','ATM','BRCA2','PTEN','RB1','NTRK3','ERG','CDK12','TMPRSS2'),label:=gene]
     bins[,smooth_log2:=runmed(log2,k=21),by=chromosome]
+    ylims <- c(min(.5,min(2^bins$smooth_log2)),max(2,max(2^bins$smooth_log2)))
+    if (ylims[1]<.1) ylims[1] <- .1
 
     if (snp_allele_ratio) { 
         bins[allele_ratio>.95 | allele_ratio<.05,allele_ratio:=NA]
@@ -730,7 +735,7 @@ if (T) {
     p$pos_log2 <- ggplot(bins) + xlab('Genomic position') + ylab('Corrected depth') +
         geom_point(data=bins[is.na(label)],mapping = aes(x=gpos,y=2^log2),fill='#60606070',col='#20202070',shape=21,size=1) +
         geom_point(data=bins[!is.na(label)],mapping = aes(x=gpos,y=2^log2,fill=label),shape=21,col='#00000050',size=1) +
-        scale_fill_hue() + scale_y_log10(limits=c(min(.5,min(2^bins$smooth_log2)),max(2,max(2^bins$smooth_log2)))) +
+        scale_fill_hue() + scale_y_log10(limits=ylims) +
         geom_segment(data=segments,col='green',size=1,
                      mapping = aes(x=gstart,xend=gstop,y=2^mean,yend=2^mean)) +
         scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
@@ -770,7 +775,7 @@ if (T) {
     p$order_log2 <- ggplot(bins) + xlab('Order of genomic position') + ylab('Corrected depth') +
         geom_point(data=bins[is.na(label)],mapping = aes(x=bin,y=2^log2),fill='#60606070',col='#20202070',shape=21,size=1) +
         geom_point(data=bins[!is.na(label)],mapping = aes(x=bin,y=2^log2,fill=label),shape=21,col='#00000050',size=1) +
-        scale_fill_hue() + scale_y_log10(limits=c(min(.5,min(2^bins$smooth_log2)),max(2,max(2^bins$smooth_log2)))) +
+        scale_fill_hue() + scale_y_log10(limits=ylims) +
         geom_segment(data=segments,col='green',size=1,
                      mapping = aes(x=start,xend=end,y=2^mean,yend=2^mean)) +
         scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
@@ -784,7 +789,7 @@ if (T) {
     p$gc_log2 <- ggplot(bins) + xlab('Target GC content') + ylab('Corrected depth') +
         geom_point(data=bins[is.na(label)],mapping = aes(x=gc,y=2^log2),fill='#60606040',col='#20202040',shape=21,size=1) +
         geom_smooth(data=bins[!is.na(label)],mapping = aes(x=gc,y=2^log2,col=label),size=.5,se=F,show.legend = F) +
-        scale_fill_hue() + scale_y_log10(limits=c(min(.5,min(2^bins$smooth_log2)),max(2,max(2^bins$smooth_log2)))) 
+        scale_fill_hue() + scale_y_log10(limits=ylims) 
     m <- bins[!is.na(target),median(count*160/width)]
     if (snp_allele_ratio) {
         # allele ratio by order 
@@ -879,6 +884,6 @@ dev.off()
 
 p$bins <- bins
 p$segments <- segments
-saveRDS(counts,paste0(opt$output_dir,'/',clinbarcode,'.plots.RDS'))
+saveRDS(p,paste0(opt$output_dir,'/',clinbarcode,'.plots.RDS'))
 
 
