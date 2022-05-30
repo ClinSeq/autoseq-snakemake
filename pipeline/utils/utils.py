@@ -193,6 +193,9 @@ def get_targets(wildcards, reference, key):
     """
     unique_capture = extract_unique_capture(wildcards.sample)
     targets = get_capture_name(unique_capture.capture_kit_id)
+
+    if unique_capture.capture_kit_id in ["P2", "S2", "B2"]:
+        return reference['small-design'][targets][key]
     
     return reference['targets'][targets][key]
 
@@ -248,7 +251,10 @@ def get_capture_name(capture_kit_code):
                             "C3": "probio_comprehensive3",
                             "C4": "probio_comprehensive4",
                             "PN": "pancancer2",
-                            "PE": "pancancer2_enzymatic"
+                            "PE": "pancancer2_enzymatic",
+                            "P2": "probio_biomarkersignature2",
+                            "S2": "probio_snvindel2",
+                            "B2": "probio_baseline2"
                             }
 
     if capture_kit_code == 'WG':
