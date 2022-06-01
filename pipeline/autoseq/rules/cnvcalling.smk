@@ -60,7 +60,7 @@ rule jumblerun_cnv:
     output:
         cns = outdir + "/cnv/{sample}.cns",
         cnr = outdir + "/cnv/{sample}.cnr",
-        seg = outdir + "/cnv/{sample}.seg"
+        seg = outdir + "/cnv/{sample}_dnacopy.seg"
     params:
         outdir = outdir + "/cnv/"
     threads: params['jumble']['threads']
