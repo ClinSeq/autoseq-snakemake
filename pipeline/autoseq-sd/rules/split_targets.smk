@@ -2,7 +2,7 @@
 
 rule split_target_1:
     input:
-        target = reference['small-design'][capture_p2]['targets-bed']
+        target = reference['small_design'][capture_p2]['targets-bed']
     output:
         expand(outdir + "/bams/split_targets/target.p2.{chr}.bed", chr = p2_chromo)
     params: 
@@ -17,7 +17,7 @@ rule split_target_1:
 
 rule split_target_2:
     input:
-        target = reference['small-design'][capture_s2]['targets-bed']
+        target = reference['small_design'][capture_s2]['targets-bed']
     output:
         expand(outdir + "/bams/split_targets/target.s2.{chr}.bed", chr = s2_chromo)
     params: 

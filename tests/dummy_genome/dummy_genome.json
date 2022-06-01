@@ -24,7 +24,7 @@
     "pondir":"pondir",
     "no_chr":"genome/human_g1k_v37_decoy_non_chr.bed",
     "gene_track": "gene_track_output.csv",
-    "small-design": {
+    "small_design": {
         "probio_biomarkersignature2": {
             "targets-bed": "intervals/targets/probio_biomarkersignature2.bed",
             "targets-bed-gz": "intervals/targets/probio_biomarkersignature2.bed.gz",

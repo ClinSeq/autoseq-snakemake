@@ -41,12 +41,15 @@ CANCER_SAMPLE_STR = compose_sample_str(CANCER_CAPTURE)
 # Extract chromosome from target capture bed
 capture_p2 = get_capture_name(CANCER_CAPTURE.capture_kit_id)
 capture_s2 = get_capture_name("S2")
+capture_b2 = get_capture_name("B2")
 
-targets_p2 = reference['small-design'][capture_p2]['targets-bed']
+targets_p2 = reference['small_design'][capture_p2]['targets-bed']
 p2_chromo = list(get_chromosomes(targets_p2))
-targets_s2 = reference['small-design'][capture_s2]['targets-bed']
+targets_s2 = reference['small_design'][capture_s2]['targets-bed']
 s2_chromo = list(get_chromosomes(targets_s2))
 
+samples_of_interest = [compose_lib_capture_str(unique_capture) 
+                            for unique_capture in [NORMAL_CAPTURE, CANCER_CAPTURE]]
 
 capture_to_results = collections.defaultdict(SinglePanelResults)
 OUTPUT = list()
@@ -65,15 +68,21 @@ capture_to_results[CANCER_CAPTURE].umibam = get_capture_bam(CANCER_CAPTURE, UMIB
 # 2. QC
 
 FASTQC = expand(outdir + "/qc/fastqc/{sample}/", sample=all_clinseq_barcodes)
-# OUTPUT.append(FASTQC)
+OUTPUT.append(FASTQC)
 
 PICARD_QC = list()
 PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-insertsize.txt", 
                         sample=all_clinseq_barcodes))
 PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-oxog.txt",
                         sample=all_clinseq_barcodes))
-PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-hsmetrics.txt",
+PICARD_QC.append(expand(outdir + "/qc/picard/{sample}_clipoverlap.picard-hsmetrics.txt",
                         sample=all_clinseq_barcodes))
+PICARD_QC.append(expand(outdir + "/qc/picard/{sample}_nodups.picard-hsmetrics.txt",
+                        sample=all_clinseq_barcodes))
+QC_overview = "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest))
+OUTPUT.append(QC_overview)
+
+# 3. Variant calling
 
 VARIANTS = list()
 VARIANTS.append("{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR))
@@ -90,8 +99,8 @@ IGV.append("{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL
 IGV.append("{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR))
 IGV.append("{}/variants/{}-and-{}.germline-variants-somatic-afs.bedGraph".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 
-# OUTPUT.append(VARIANTS)
-# OUTPUT.append(IGV)
+OUTPUT.append(VARIANTS)
+OUTPUT.append(IGV)
 
 
 wildcard_constraints:
@@ -104,12 +113,29 @@ wildcard_constraints:
 
 rule all:
     input: 
-        OUTPUT,
-        outdir + "/bams/intermediate_bamfiles.removed"
+        "{}/IGVnav/igv_session_sv.xml".format(outdir),
+        "{}/IGVnav/igv_session_snps.xml".format(outdir)
     output:
         outdir + "/analysis_finished"
     shell:
         "date +'%Y-%m-%d T%T %:z' > {output}"
+
+
+rule generate_symlinks:
+    input:
+        OUTPUT,
+        outdir + "/bams/intermediate_bamfiles.removed"
+    output:
+        "{}/IGVnav/igv_session_sv.xml".format(outdir),
+        "{}/IGVnav/igv_session_snps.xml".format(outdir)
+    params:
+        outdir = outdir,
+        target_bed = targets
+    log:
+        "{}/logs/generate_symlinks.log".format(outdir)
+    shell:
+        "generate_symlinks.py --targets {params.target_bed} --outdir {params.outdir}  2> {log} " 
+
 
 include: "rules/split_targets.smk"
 include: "../autoseq/rules/pre_processing.smk"
@@ -117,6 +143,7 @@ if umi:
     include: "rules/umi_processing.smk"
 else:
     include: "../autoseq/rules/alignment.smk"
-
-# include: "../autoseq/rules/qc.smk"
-# include: "../autoseq/rules/structuralvariants.smk" 
+include: "rules/qc.smk"
+include: "rules/variant_calling.smk"
+include: "../autoseq/rules/vep.smk"
+include: "../autoseq/rules/structuralvariants.smk" 

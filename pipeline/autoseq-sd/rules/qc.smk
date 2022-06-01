@@ -65,10 +65,8 @@ rule picard_collecthsmetrics_nodups:
     input:
         bam = outdir + "/bams/{sample}_nodups.bam",
         reference_genome = reference['reference_genome'],
-        target_region = lambda wildcards: get_targets(wildcards, reference,
-                                                      'targets-interval_list'),
-        bait_regions = lambda wildcards: get_targets(wildcards, reference,
-                                                      'targets-interval_list')
+        target_region = reference['small_design'][capture_b2]["targets-interval_list"],
+        bait_regions = reference['small_design'][capture_b2]["targets-interval_list"]
     output:
         metrics = outdir + "/qc/picard/{sample}_nodups.picard-hsmetrics.txt"
     params:
@@ -78,7 +76,7 @@ rule picard_collecthsmetrics_nodups:
                                 "picard-hsmetrics-{}".format(str(uuid.uuid4())))
     threads: params['picard']['collecthsmetrics']['threads']
     log:
-        outdir + "/logs/picard/picard_hsmetrics_{sample}.log"
+        outdir + "/logs/picard/picard_hsmetrics_nodups_{sample}.log"
     shell:
         "picard {params.java_options}  -Djava.io.tmpdir={params.tmpdir} " 
             "CollectHsMetrics  "
@@ -95,12 +93,10 @@ rule picard_collecthsmetrics_clipoverlap:
     input:
         bam = outdir + "/bams/{sample}_clipoverlap.bam",
         reference_genome = reference['reference_genome'],
-        target_region = lambda wildcards: get_targets(wildcards, reference,
-                                                      'targets-interval_list'),
-        bait_regions = lambda wildcards: get_targets(wildcards, reference,
-                                                      'targets-interval_list')
+        target_region = reference['small_design'][capture_s2]["targets-interval_list"],
+        bait_regions = reference['small_design'][capture_s2]["targets-interval_list"]
     output:
-        metrics = outdir + "/qc/picard/{sample}_nodups.picard-hsmetrics.txt"
+        metrics = outdir + "/qc/picard/{sample}_clipoverlap.picard-hsmetrics.txt"
     params:
         bait_name = lambda wildcards: get_target_name(wildcards),
         java_options = params['picard']['collecthsmetrics']['java_options'],
@@ -134,8 +130,8 @@ rule samtools_flagstat:
 rule create_popvcf:
     input:
         popvcf = reference["swegene_common"],
-        normal_target = reference['targets'][get_capture_name(NORMAL_CAPTURE.capture_kit_id)]['targets-bed-slopped20'],
-        cancer_target = reference['targets'][get_capture_name(CANCER_CAPTURE.capture_kit_id)]['targets-bed-slopped20']
+        normal_target = reference['small_design'][get_capture_name(NORMAL_CAPTURE.capture_kit_id)]['targets-bed'],
+        cancer_target = reference['small_design'][get_capture_name(CANCER_CAPTURE.capture_kit_id)]['targets-bed']
     output:
         outdir + "/contamination/pop_vcf_{}-{}.vcf".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
@@ -238,8 +234,7 @@ rule overview_plot:
         expand(outdir + "/qc/samtools/{sample}-flagstats.json", sample = all_clinseq_barcodes),
         "{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR),
         "{}/contamination/{}.contest.txt".format(outdir, NORMAL_CAPTURE_STR),
-        "{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR),
-        msings_output
+        "{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR)
     output:
         "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest))
     params:
