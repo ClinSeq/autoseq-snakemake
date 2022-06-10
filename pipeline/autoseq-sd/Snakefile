@@ -40,6 +40,7 @@ CANCER_SAMPLE_STR = compose_sample_str(CANCER_CAPTURE)
 
 # Extract chromosome from target capture bed
 capture_p2 = get_capture_name(CANCER_CAPTURE.capture_kit_id)
+capture_name = capture_p2
 capture_s2 = get_capture_name("S2")
 capture_b2 = get_capture_name("B2")
 
