@@ -130,7 +130,7 @@ rule generate_symlinks:
         "{}/IGVnav/igv_session_snps.xml".format(outdir)
     params:
         outdir = outdir,
-        target_bed = targets
+        target_bed = targets_p2
     log:
         "{}/logs/generate_symlinks.log".format(outdir)
     shell:
