@@ -309,7 +309,7 @@ rule annotate_generateIGVnavInput:
         lumpy_len500 = "{}/svs/igv/{}-{}_lumpy_len500_SU24.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         lumpy_1k = "{}/svs/igv/{}-{}_lumpy_len1k_SU50.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         genes = reference["genes_bed"],
-        target_bed = reference['targets'][capture_name]['targets-bed-slopped20']
+        target_bed = reference['small_design'][capture_p2]['targets-bed']
         # gridss_somatic = "{}/svs/igv/{}_somatic_pass_gridss.mut".format(outdir, CANCER_CAPTURE_STR),
     output:
         "{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
