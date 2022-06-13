@@ -10,7 +10,7 @@ rule split_target_1:
     shell:
         "mkdir -p {params.outdir}/bams/split_targets/ && "
         "for chr in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y; do "
-        " grep -w $chr {input.target} > {params.outdir}/bams/split_targets/target.$chr.bed; "
+        " grep -w $chr {input.target} > {params.outdir}/bams/split_targets/target.p2.$chr.bed || true; "
         "done"
 
 
@@ -25,7 +25,7 @@ rule split_target_2:
     shell:
         "mkdir -p {params.outdir}/bams/split_targets/ && "
         "for chr in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y; do "
-        " grep -w $chr {input.target} > {params.outdir}/bams/split_targets/target.$chr.bed; "
+        " grep -w $chr {input.target} > {params.outdir}/bams/split_targets/target.s2.$chr.bed || true; "
         "done"
 
 
