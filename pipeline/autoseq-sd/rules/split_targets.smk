@@ -9,7 +9,7 @@ rule split_target_1:
         outdir = outdir
     shell:
         "mkdir -p {params.outdir}/bams/split_targets/ && "
-        "for chr in `cut -f 1 {input.target} | sort | uniq`; do "
+        "for chr in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y; do "
         " grep -w $chr {input.target} > {params.outdir}/bams/split_targets/target.$chr.bed; "
         "done"
 
@@ -24,7 +24,7 @@ rule split_target_2:
         outdir = outdir
     shell:
         "mkdir -p {params.outdir}/bams/split_targets/ && "
-        "for chr in `cut -f 1 {input.target} | sort | uniq`; do "
+        "for chr in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y; do "
         " grep -w $chr {input.target} > {params.outdir}/bams/split_targets/target.$chr.bed; "
         "done"
 
