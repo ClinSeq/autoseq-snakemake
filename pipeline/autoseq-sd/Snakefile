@@ -109,7 +109,7 @@ wildcard_constraints:
     sample = "|".join(all_clinseq_barcodes),
     events = "|".join(["DEL", "DUP", "INV", "TRA"]),
     p2_chr = "|".join(p2_chromo),
-    s2_chr = "|".join(s2_chromo)
+    s2_chr = "|".join(s2_chromo),
     chr = "|".join(all_chromosomes)
 
 
