@@ -110,6 +110,7 @@ wildcard_constraints:
     events = "|".join(["DEL", "DUP", "INV", "TRA"]),
     p2_chr = "|".join(p2_chromo),
     s2_chr = "|".join(s2_chromo)
+    chr = "|".join(all_chromosomes)
 
 
 rule all:
