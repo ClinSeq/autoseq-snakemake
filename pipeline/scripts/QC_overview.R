@@ -283,7 +283,7 @@ my_barplot = function(x, ybreaks, x_string, title_string) {
     geom_bar(aes(group = capture, fill = capture), width = 0.5, alpha = 0.7, color = "black") +
     geom_bar(data = subset(qc_merge, soi), width = 0.5, fill = "blue", show.legend = FALSE) + # the sample of interest
     geom_bar(data = subset(qc_merge, soi&doi), width = 0.5, fill = "red", show.legend = FALSE) + # the sample of interest
-    scale_fill_manual(values = c("antiquewhite", "aliceblue", "lightpink", "palegreen")) +
+    scale_fill_manual(values = c("antiquewhite", "aliceblue", "lightpink", "palegreen", "plum2")) +
     scale_y_continuous(breaks = ybreaks) +
     scale_x_discrete(name = x_string) +
     facet_wrap(~sample_type, ncol = 1) +
