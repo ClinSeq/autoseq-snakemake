@@ -60,7 +60,7 @@ opt <- parse_args(OptionParser(option_list = option_list))
 # Reference file ------------------------------------------------------------
 
 reference <- readRDS(opt$reference_file)
-counts_template <- reference[c("target_bed_file","chromlength","target_ranges","background_ranges")]
+counts_template <- reference[c("target_bed_file","chromlength","ranges")]
 
 
 
@@ -73,20 +73,20 @@ counts_template <- reference[c("target_bed_file","chromlength","target_ranges","
 countsFromBam <- function(counts,bampath) {
     counts$date_count <- date()
     counts$input_bam_file <- bampath
-    target_ranges <- counts$target_ranges
-    background_ranges <- counts$background_ranges
-    counts[['target_count']] <- bamCount(bampath, target_ranges, paired.end="midpoint",
+    ranges <- counts$ranges
+    #background_ranges <- counts$background_ranges
+    counts[['count']] <- bamCount(bampath, ranges, paired.end="midpoint",
                                          mapq=20, filteredFlag=1024, verbose=F)
-    counts[['target_short']] <- bamCount(bampath, target_ranges, paired.end="midpoint",
-                                         mapq=20, filteredFlag=1024, tlenFilter=c(0,160), verbose=F)
-    counts[['background_count']] <- bamCount(bampath, background_ranges, paired.end="midpoint",
-                                             mapq=20, filteredFlag=1024, verbose=F)
-    counts[['background_short']] <- bamCount(bampath, background_ranges, paired.end="midpoint",
-                                             mapq=20, filteredFlag=1024, tlenFilter=c(0,160), verbose=F)
+    counts[['count_short']] <- bamCount(bampath, ranges, paired.end="midpoint",
+                                         mapq=20, filteredFlag=1024, tlenFilter=c(0,150), verbose=F)
+    # counts[['background_count']] <- bamCount(bampath, background_ranges, paired.end="midpoint",
+    #                                          mapq=20, filteredFlag=1024, verbose=F)
+    # counts[['background_short']] <- bamCount(bampath, background_ranges, paired.end="midpoint",
+    #                                          mapq=20, filteredFlag=1024, tlenFilter=c(0,150), verbose=F)
     return(counts)
 }
 
-# parse main sample
+# parse this sample
 input <- opt$input_bam
 if (str_detect(input,'.RDS$')) {
     if (!file.exists(input)) stop(paste("Cannot find",input))
@@ -103,48 +103,48 @@ if (str_detect(input,'.RDS$')) {
 
 targets <- reference$targets
 
-background <- reference$background
-background$gene='Background'
+#background <- reference$background
+#background$gene='Background'
 
 name <- str_remove(opt$input_bam,'.*/')
 name <- str_remove(name,'\\.counts.RDS')
 
 targets$sample <- name
-background$sample <- name
+#background$sample <- name
 
 
 # Add counts
-targets[,count:=counts$target_count]
+targets[,count:=counts$count]
 #sum_by_bg <- targets[,sum(count),by=background]
 
-background[,count:=counts$background_count]
+#background[,count:=counts$background_count]
 #background[,count:=raw_count][sum_by_bg$background,count:=raw_count-sum_by_bg$V1]
 #background[count<0,count:=0]
 
 # same, short
-targets[,count_short:=counts$target_short]
+targets[,count_short:=counts$count_short]
 #sum_by_bg <- targets[,sum(count_short),by=background]
-background[,count_short:=counts$background_short]
+#background[,count_short:=counts$background_short]
 #background[,count_short:=raw_short][sum_by_bg$background,count_short:=raw_short-sum_by_bg$V1]
 #background[count_short<0,count_short:=0]
 
 
 # keep only bins "ok" in this reference set
-targets <- targets[reference$keep_targets]
-background <- background[reference$keep_background]
+targets <- targets[bin %in% reference$keep]
+#background <- background[reference$keep_background]
 
 
-target_ranges <- makeGRangesFromDataFrame(targets)
-background_ranges <- makeGRangesFromDataFrame(background)
+target_ranges <- makeGRangesFromDataFrame(targets[is_target==T])
+ranges <- makeGRangesFromDataFrame(targets)
 
 
 
 # SNP allele ratio ------------------------------------------------------------
-save.image('ws.Rdata')
+#save.image('ws.Rdata')
 
 snp_allele_ratio <- FALSE
 input <- opt$snp_vcf
-if (!is.null(input)) {
+if (F) if (!is.null(input)) {
     snp_allele_ratio <- TRUE
     if (!str_detect(input,'.[vV][cC][fF]$') & !str_detect(input,'.[vV][cC][fF].[gG][zZ]$')) stop("SNP vcf file appears incorrect")
     
@@ -196,6 +196,7 @@ if (!is.null(input)) {
     # Assign to correct targets
     overlaps <- findOverlaps(target_ranges,rowRanges(vcf))
     snp_table[subjectHits(overlaps)]$target_row <- queryHits(overlaps)
+    snp_table <- snp_table[!is.na(target_row)]
 
     # compute error factors by SNP type (in development, and paused...)
     if (FALSE) {
@@ -305,7 +306,7 @@ mapd <- function(data) {
     return(median(abs(diff(data))))
 } 
 
-targets$snp <- 'none'
+targets$snp <- ''
 targets$allele_ratio <- 0
 
 
@@ -354,33 +355,33 @@ if (snp_allele_ratio) {
 }
 
 # median correct to backbone
-targets[,rawLR:=rawLR-median(rawLR[is_backbone])]
-targets[,rawLR_short:=rawLR_short-median(rawLR_short[is_backbone])]
+targets[,rawLR:=rawLR-median(rawLR[is_backbone]),by='is_target']
+targets[,rawLR_short:=rawLR_short-median(rawLR_short[is_backbone]),by='is_target']
 
-# median correct by target
-targets[,rawLR:=rawLR-reference$targets_median]
-targets[,rawLR_short:=rawLR_short-reference$targets_median_short]
+# correct by reference median
+targets[,rawLR:=rawLR-reference$median]
+targets[,rawLR_short:=rawLR_short-reference$median_short]
 
 
 # background
-background[,rawLR:=log2(count+1)]
-background[,rawLR_short:=log2(count_short+1)]
-
-background[,rawLR:=rawLR-median(rawLR[is_backbone])]
-background[,rawLR_short:=rawLR_short-median(rawLR_short[is_backbone])]
-
-background[,rawLR:=rawLR-reference$background_median]
-background[,rawLR_short:=rawLR_short-reference$background_median_short]
+# background[,rawLR:=log2(count+1)]
+# background[,rawLR_short:=log2(count_short+1)]
+# 
+# background[,rawLR:=rawLR-median(rawLR[is_backbone])]
+# background[,rawLR_short:=rawLR_short-median(rawLR_short[is_backbone])]
+# 
+# background[,rawLR:=rawLR-reference$background_median]
+# background[,rawLR_short:=rawLR_short-reference$background_median_short]
 
 
 # Reference data correction ------------------------------------------------------------
 
 # correct using reference
-jcorrect <- function(temp,train_ix=NULL,gc=NULL) {
+jcorrect <- function(temp,train_ix=NULL) {
     
     if (is.null(train_ix)) train_ix <- rep(TRUE,nrow(temp))
     
-    loess_temp=loess(lr ~ PC1+PC2+PC3, data = temp,
+    loess_temp <- loess(lr ~ PC1+PC2+PC3, data = temp,
                      subset = train_ix,
                      family="symmetric", control = loess.control(surface = "direct"))
     temp[,lr:=lr-predict(loess_temp,temp)]
@@ -398,7 +399,7 @@ jcorrect <- function(temp,train_ix=NULL,gc=NULL) {
     for (i in 1:(ncol(temp)-2)) {
         
         temp$thispc=temp[[paste0('PC',i)]]
-        loess_temp=rlm(lr ~ thispc, data=temp,
+        loess_temp <- rlm(lr ~ thispc, data=temp,
                        subset = train_ix)
         temp[,lr:=lr-predict(loess_temp,temp)]
         
@@ -411,13 +412,20 @@ jcorrect <- function(temp,train_ix=NULL,gc=NULL) {
         }
         
     }
-    cat('ran ',runs,'/',ncol(temp)-3, ' times\n')
+    cat('ran ',runs,'/',ncol(temp)-2, ' times\n')
     return(best_lr)
 }
 
+
+targets[,log2:=rawLR]
+targets[,log2_short:=rawLR_short]
+
 # standard
-temp <- cbind(data.table(lr=targets$rawLR),reference$targets_ref,gc=targets$gc)
-targets[,log2:=jcorrect(temp,targets$is_backbone)]
+temp <- cbind(data.table(
+    lr=targets[is_target==T & chromosome!='Y']$rawLR),
+    gc=targets[is_target==T & chromosome!='Y']$gc,
+    reference$targets_ref)
+targets[is_target==T & chromosome!='Y',log2:=jcorrect(temp,targets[is_target==T & chromosome!='Y']$is_backbone)]
 
 # short
 temp <- cbind(data.table(lr=targets$rawLR_short),reference$targets_ref_short,gc=targets$gc)
@@ -548,8 +556,8 @@ if (!file.exists(paste0(opt$output_dir,'/',clinbarcode,'.counts.RDS')))
 #save.image(paste0(opt$output_dir,'/',clinbarcode,'.jumble_workspace.RDS'))
 
 
-bins$type <- 'Target'
-bins[gene=='Background']$type <- 'Background'
+bins$bins <- 'Target'
+bins[gene=='Background']$bins <- 'Background'
 
 
 
@@ -612,8 +620,9 @@ if (T) {
     }
     # logR by pos + segments (2nd left)
     p$pos_log2 <- ggplot(bins) + xlab('Genomic position') + ylab('Corrected depth') +
-        geom_point(data=bins[is.na(label)],mapping = aes(x=gpos,y=2^log2),fill='#60606070',col='#20202070',shape=21,size=1) +
+        geom_point(data=bins[is.na(label)],mapping = aes(x=gpos,y=2^log2,shape=bins),fill='#60606070',col='#20202070',shape=21,size=1) +
         geom_point(data=bins[!is.na(label)],mapping = aes(x=gpos,y=2^log2,fill=label),shape=21,col='#00000050',size=1) +
+        scale_shape_manual(values = c('Target'=21,'Background'=23)) +
         scale_fill_hue() + scale_y_log10(limits=ylims) +
         geom_segment(data=segments,col='green',size=1,
                      mapping = aes(x=gstart,xend=gstop,y=2^mean,yend=2^mean)) +
@@ -652,8 +661,9 @@ if (T) {
     }
     # logR by order
     p$order_log2 <- ggplot(bins) + xlab('Order of genomic position') + ylab('Corrected depth') +
-        geom_point(data=bins[is.na(label)],mapping = aes(x=bin,y=2^log2),fill='#60606070',col='#20202070',shape=21,size=1) +
+        geom_point(data=bins[is.na(label)],mapping = aes(x=bin,y=2^log2,shape=bins),fill='#60606070',col='#20202070',size=1) +
         geom_point(data=bins[!is.na(label)],mapping = aes(x=bin,y=2^log2,fill=label),shape=21,col='#00000050',size=1) +
+        scale_shape_manual(values = c('Target'=21,'Background'=23)) +
         scale_fill_hue() + scale_y_log10(limits=ylims) +
         geom_segment(data=segments,col='green',size=1,
                      mapping = aes(x=start,xend=end,y=2^mean,yend=2^mean)) +
