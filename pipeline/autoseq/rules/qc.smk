@@ -58,7 +58,7 @@ rule picard_collectoxog:
             "CollectOxoGMetrics "
             "I={input.bam} "
             "R={input.reference_genome} "
-            "O={output.metrics} "
+            "O={output.metrics} 2> {log} "
 
 
 rule picard_collecthsmetrics:
@@ -88,7 +88,7 @@ rule picard_collecthsmetrics:
             "TI={input.target_region}  "
             "BI={input.bait_regions} "
             "BAIT_SET_NAME={params.bait_name} "
-            "METRIC_ACCUMULATION_LEVEL=LIBRARY "
+            "METRIC_ACCUMULATION_LEVEL=LIBRARY 2> {log} "
 
 
 rule samtools_flagstat:
@@ -97,8 +97,10 @@ rule samtools_flagstat:
     output:
         outdir + "/qc/samtools/{sample}-flagstats.json"
     threads: params['samtools']['flagstat']['threads']
+    log:
+        outdir + "/logs/samtools/samtools_flagstat_{sample}.log"
     shell:
-        "samtools flagstat -@ {threads} -O json {input.bam} > {output} "
+        "samtools flagstat -@ {threads} -O json {input.bam} > {output} 2> {log} "
 
 
 rule create_popvcf:
@@ -118,7 +120,7 @@ rule create_popvcf:
             " {input.cancer_target} "
             " {input.popvcf}  "
             " --tmpdir {params.tmpdir}  "
-            " --output-filename {output} "
+            " --output-filename {output} 2> {log} "
 
 
 rule gatk3_contest_cancer:
@@ -143,7 +145,7 @@ rule gatk3_contest_cancer:
             "-I:genotype {input.normal_bam} "
             "--popfile {input.popvcf}  "
             "--min_genotype_ratio {params.min_genotype_ratio}  "
-            " -o {output} "
+            " -o {output} 2> {log} "
 
 
 rule gatk3_contest_normal:
@@ -168,7 +170,7 @@ rule gatk3_contest_normal:
             "-I:genotype {input.cancer_bam} "
             "--popfile {input.popvcf}  "
             "--min_genotype_ratio {params.min_genotype_ratio}  "
-            " -o {output} "
+            " -o {output} 2> {log} "
 
 
 rule contam_caveat:
@@ -178,10 +180,10 @@ rule contam_caveat:
         "{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR)
     threads: params['contam_caveat']['threads']
     log:
-        "{}/contamination/{}-contam-caveat.log".format(outdir, CANCER_CAPTURE_STR)
+        "{}/logs/contamination/{}-contam-caveat.log".format(outdir, CANCER_CAPTURE_STR)
     shell:
         "contest_to_contam_caveat.py  "
-        " {input}  > {output}"
+        " {input}  > {output} 2> {log} "
 
 
 rule purecn:
@@ -200,6 +202,8 @@ rule purecn:
         maxnonclonal = params['purecn']['maxnonclonal'],
         outdir = "{}/purecn".format(outdir)
     threads: params['purecn']['threads']
+    log:
+        "{}/logs/{}-purecn.log".format(outdir, CANCER_CAPTURE_STR)
     shell:
         "source activate purecn-env && "
         "PureCN.R  --out {params.outdir} "
@@ -215,7 +219,7 @@ rule purecn:
         " touch {output.csv} "
         " {output.genes_csv} "
         " {output.variants_csv} "
-        " {output.loh_csv} "
+        " {output.loh_csv} 2> {log} "
 
 
 cancer_capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
@@ -235,6 +239,8 @@ rule msisensor:
         germline = "{}_germline".format(msisensor_prefix),
         somatic = "{}_somatic".format(msisensor_prefix)
     threads: params["msisensor"]["threads"]
+    log:
+        "{}/logs/msisensor-{}-{}.log".format(outdir,NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     shell:
         "msisensor msi " 
             "-d {input.msi_sites} "
@@ -243,7 +249,7 @@ rule msisensor:
             "-o {params.prefix} "
             "-b {threads} && "
             " cp {params.prefix} {output} && "
-            " rm {params.table} {params.dis} {params.germline} {params.somatic}"
+            " rm {params.table} {params.dis} {params.germline} {params.somatic} 2> {log} "
 
 
 bam_name = os.path.basename(capture_to_results[CANCER_CAPTURE].bamfile).split('.bam')[0]
@@ -261,12 +267,14 @@ rule msings:
         msings = msings_output
     params:
         prefix = msings_outdir
+    log:
+        "{}/logs/msings-{}-{}.log".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     shell:
         "run_msings.sh -b {input.msings_bed} "
         " -f {input.reference_genome} "
         " -i {input.msings_intervals} "
         " -n {input.msings_baseline} "
-        " -o {params.prefix}  {input.bam} "
+        " -o {params.prefix}  {input.bam} 2> {log} "
         
 
 rule multiqc:
@@ -279,12 +287,14 @@ rule multiqc:
         basefn = "{}-multiqc".format(CANCER_CAPTURE_STR),
         outdir = outdir,
     threads: params['multiqc']['threads']
+    log:
+        "{}/logs/multiqc-{}-{}.log".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     shell:
         "multiqc  {params.outdir} "
                "-o {output} "
                "-n {params.basefn} "
                "-k json " 
-               " --data-dir --zip-data-dir -v -f"
+               " --data-dir --zip-data-dir -v -f 2> {log} "
 
 
 rule overview_plot:
@@ -301,6 +311,8 @@ rule overview_plot:
         samples = ":".join(samples_of_interest),
         mainpath = dirname(dirname(outdir)),
         outdir = outdir
+    log:
+        "{}/logs/qc_overview-{}-{}.log".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     shell:
         "source activate purecn-env && "
         "QC_overview.R  -s {params.samples} "

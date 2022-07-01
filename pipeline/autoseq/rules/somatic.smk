@@ -46,7 +46,7 @@ rule vardict_somatic:
             " | vt decompose -s - |vt normalize  -r {input.reference} - "
             " | bcftools view --apply-filters .,PASS "
             " | vcfsorter.pl {input.reference_dict} /dev/stdin "
-            " | bgzip > {output} && tabix -p vcf {output}"
+            " | bgzip > {output} && tabix -p vcf {output} 2> {log} "
         
 
 somatic_vcf['vardict'] = "{}/variants/vardict/{}-{}.vardict-somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)

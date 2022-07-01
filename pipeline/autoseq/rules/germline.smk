@@ -72,7 +72,7 @@ rule gatk3_mergevcf:
         " -genotypeMergeOptions PRIORITIZE "
         " -priority haplotypecaller,strelka "
         " | bgzip > {output}  && "
-        " tabix -p vcf {output}"
+        " tabix -p vcf {output} 2> {log} "
     
 
 rule germline_generateIGVnav:

@@ -24,7 +24,7 @@ rule fgbio_fastqtobam:
             " --library {params.library} "
             " -r 3M2S+T 3M2S+T "
             " -s true "
-            " && rm -rf {params.tmpdir}"
+            " && rm -rf {params.tmpdir} 2> {log} "
 
 
 rule bwa_umialignment:
@@ -49,7 +49,7 @@ rule bwa_umialignment:
             " R={input.reference_genome} "
             " SO=coordinate ALIGNER_PROPER_PAIR_FLAGS=true "
             " MAX_GAPS=-1 ORIENTATIONS=FR CREATE_INDEX=true "
-            " TMP_DIR={params.tmpdir} && rm -rf {params.tmpdir} "
+            " TMP_DIR={params.tmpdir} && rm -rf {params.tmpdir} 2> {log} "
 
 
 rule gatk3_targetcreator_umi_1:
@@ -132,7 +132,7 @@ rule fgbio_groupreadsbyumi:
               " -o {output.bam} "
               " --strategy paired "
               " --family-size-histogram {output.histogram} "
-              " && rm -rf {params.tmpdir} "
+              " && rm -rf {params.tmpdir} 2> {log} "
 
 
 
@@ -154,7 +154,7 @@ rule fgbio_callduplexconsensus:
              " -o  {output.bam} "
              " --threads {threads} " 
              " {params.extra} "
-             " && rm -rf {params.tmpdir}"
+             " && rm -rf {params.tmpdir} 2> {log} "
 
 
 rule bwa_umialignment_2:
@@ -179,7 +179,7 @@ rule bwa_umialignment_2:
             " R={input.reference_genome} "
             " SO=coordinate ALIGNER_PROPER_PAIR_FLAGS=true "
             " MAX_GAPS=-1 ORIENTATIONS=FR CREATE_INDEX=true "
-            " TMP_DIR={params.tmpdir} && rm -rf {params.tmpdir} "
+            " TMP_DIR={params.tmpdir} && rm -rf {params.tmpdir} 2> {log} "
 
 
 rule gatk3_targetcreator_umi_2:
@@ -267,7 +267,7 @@ rule fgbio_filterconsensus:
             " --ref {input.reference_genome} "
             " {params.extra} "
             " {params.error_rate} "
-            " {params.base_quality} "
+            " {params.base_quality} 2> {log} "
 
 
 rule fgbio_clipbam:
@@ -290,7 +290,7 @@ rule fgbio_clipbam:
             " -o {output.bam}  "
             " -m  {output.metrics_txt} "
             " --ref {input.reference_genome} "
-            " --clip-overlapping-reads true "
+            " --clip-overlapping-reads true 2> {log} "
 
 
 rule picard_markdups:
@@ -329,7 +329,9 @@ rule rm_interbamfiles:
         expand(outdir + "/bams/{sample}_realigned-2.bam", sample=all_clinseq_barcodes),
         expand(outdir + "/bams/{sample}_consensus_filtered.bam", sample=all_clinseq_barcodes),
         expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=all_clinseq_barcodes),
-        expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes)
+        expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes),
+        expand(outdir + "/fastqs/{sample}_concatenated_1.fastq.gz", sample=all_clinseq_barcodes),
+        expand(outdir + "/fastqs/{sample}_concatenated_2.fastq.gz", sample=all_clinseq_barcodes)
     output:
         outdir + "/bams/intermediate_bamfiles.removed"
     run:

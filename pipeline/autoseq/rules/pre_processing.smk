@@ -92,6 +92,8 @@ rule skewer_trim_pe_normal:
         tmpdir = os.path.join(params['scratch'], "skewer-{}".format(str(uuid.uuid4()))),
         nout = outdir + "/fastqs/skewer/" + normal_barcode
     threads: 4
+    log:
+        outdir + "/logs/skewer/{prefix}-skewer.log"
     shell:
         " mkdir {params.tmpdir} && "
         " mkdir -p {params.nout} && "
@@ -100,7 +102,7 @@ rule skewer_trim_pe_normal:
         " {input.fq1} {input.fq2} && "
         " cp {params.tmpdir}/skewer-trimmed-pair1.fastq.gz {output.out_fq1} && "
         " cp {params.tmpdir}/skewer-trimmed-pair2.fastq.gz {output.out_fq2} && "
-        " rm -rf {params.tmpdir} "
+        " rm -rf {params.tmpdir} 2> {log} "
 
 
 rule skewer_trim_pe_tumor:
@@ -116,6 +118,8 @@ rule skewer_trim_pe_tumor:
         tmpdir = os.path.join(params['scratch'], "skewer-{}".format(str(uuid.uuid4()))),
         nout = outdir + "/fastqs/skewer/" + tumor_barcode
     threads: 4
+    log:
+        outdir + "/logs/skewer/{prefix}-skewer.log"
     shell:
         " mkdir {params.tmpdir} && "
         " mkdir -p {params.nout} && "
@@ -124,7 +128,7 @@ rule skewer_trim_pe_tumor:
         " {input.fq1} {input.fq2} && "
         " cp {params.tmpdir}/skewer-trimmed-pair1.fastq.gz {output.out_fq1} && "
         " cp {params.tmpdir}/skewer-trimmed-pair2.fastq.gz {output.out_fq2} && "
-        " rm -rf {params.tmpdir} "
+        " rm -rf {params.tmpdir} 2> {log} "
 
 
 rule cat_normal_fastq:
