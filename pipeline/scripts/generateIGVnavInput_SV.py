@@ -142,9 +142,9 @@ def parse_gtf(gtf, sdid, vcftype):
                     start_b = re.search(':(\d+)', gene_b).group(1)
                     end_b = re.search('-(\d+)', gene_b).group(1)
                     sv_length = int(end_b) - int(start_a)
-                    alt = svtype
+                    alt = gene_b
+                    
                     if chrom_a != chrom_b:
-                        alt = gene_b
                         sv_length = svtype
                     
                     if svtype == 'TRA':
@@ -152,7 +152,7 @@ def parse_gtf(gtf, sdid, vcftype):
                         event_2 = [chrom_b, start_b, end_b, sdid, igv_color_map[svtype], svtype, gene_a, support_reads]
                         events_list.extend([event_1, event_2])
                     else:
-                        event = [chrom_a, start_a, end_b, sdid, igv_color_map[svtype], svtype, alt, support_reads]
+                        event = [chrom_a, start_a, end_a, sdid, igv_color_map[svtype], svtype, alt, support_reads]
                         events_list.append(event)
                     
     return events_list

@@ -24,7 +24,8 @@ rule gatk4_haplotypecaller:
             " -O {output.vcf} && "
         " vt decompose -s {output.vcf} "
         " | vt normalize  -r {input.reference} - "
-        " | bgzip > {output.normalized_vcf} 2> {log}  "
+        " | bgzip > {output.normalized_vcf}  && "
+        " tabix -p vcf {output.normalized_vcf} 2> {log} "
 
 
 rule strelka_germline:

@@ -15,7 +15,7 @@ rule fgbio_fastqtobam:
         tmpdir = os.path.join(params['scratch'], 
                     "fgbio_fastqtobam-{}".format(str(uuid.uuid4())))
     threads: params['fgbio']['fastqtobam']['threads']
-    log: outdir + "/logs/fgbio/fastqtobam_{sample}.log"
+    log: outdir + "/logs/fgbio_fastqtobam_{sample}.log"
     shell:
         "fgbio {params.java_options} --tmp-dir {params.tmpdir} FastqToBam "
             " -i {input.fq1}  {input.fq2} " 
@@ -23,8 +23,8 @@ rule fgbio_fastqtobam:
             " --sample {params.sample} "
             " --library {params.library} "
             " -r 3M2S+T 3M2S+T "
-            " -s true "
-            " && rm -rf {params.tmpdir} 2> {log} "
+            " -s true 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule bwa_umialignment:
@@ -38,7 +38,7 @@ rule bwa_umialignment:
         tmpdir = os.path.join(params['scratch'], 
                     "bwa-umialignment-{}".format(str(uuid.uuid4())))
     threads: params['bwa']['threads']
-    log: outdir + "/logs/fgbio/bwa_umialignment_{sample}.log"
+    log: outdir + "/logs/bwa_umialignment_{sample}.log"
     shell:
         "picard SamToFastq I={input.bam} F=/dev/stdout INTERLEAVE=true TMP_DIR={params.tmpdir} "
             " | bwa mem -p -t {threads} {input.reference_genome} /dev/stdin " 
@@ -49,7 +49,7 @@ rule bwa_umialignment:
             " R={input.reference_genome} "
             " SO=coordinate ALIGNER_PROPER_PAIR_FLAGS=true "
             " MAX_GAPS=-1 ORIENTATIONS=FR CREATE_INDEX=true "
-            " TMP_DIR={params.tmpdir} && rm -rf {params.tmpdir} 2> {log} "
+            " TMP_DIR={params.tmpdir} 2> {log} && rm -rf {params.tmpdir} "
 
 
 rule gatk3_targetcreator_umi_1:
@@ -131,8 +131,8 @@ rule fgbio_groupreadsbyumi:
               " -i {input.bam} "
               " -o {output.bam} "
               " --strategy paired "
-              " --family-size-histogram {output.histogram} "
-              " && rm -rf {params.tmpdir} 2> {log} "
+              " --family-size-histogram {output.histogram} 2> {log} "
+              " && rm -rf {params.tmpdir} "
 
 
 
@@ -153,8 +153,8 @@ rule fgbio_callduplexconsensus:
              " -i {input.bam}  "
              " -o  {output.bam} "
              " --threads {threads} " 
-             " {params.extra} "
-             " && rm -rf {params.tmpdir} 2> {log} "
+             " {params.extra} 2> {log} "
+             " && rm -rf {params.tmpdir} "
 
 
 rule bwa_umialignment_2:
@@ -179,7 +179,7 @@ rule bwa_umialignment_2:
             " R={input.reference_genome} "
             " SO=coordinate ALIGNER_PROPER_PAIR_FLAGS=true "
             " MAX_GAPS=-1 ORIENTATIONS=FR CREATE_INDEX=true "
-            " TMP_DIR={params.tmpdir} && rm -rf {params.tmpdir} 2> {log} "
+            " TMP_DIR={params.tmpdir} 2> {log} && rm -rf {params.tmpdir} "
 
 
 rule gatk3_targetcreator_umi_2:
@@ -314,8 +314,8 @@ rule picard_markdups:
                 " METRICS_FILE={output.metrics} "
                 " {params.extra} "
                 " OUTPUT=/dev/stdout REMOVE_DUPLICATES={params.rmdups} "
-                " | samtools sort -@ {threads} -T {params.tmpdir} -o {output.bam} "
-                " && samtools index {output.bam} 2> {log}"
+                " | samtools sort -@ {threads} -T {params.tmpdir} -o {output.bam} 2> {log} "
+                " && samtools index {output.bam} "
 
 
 rule rm_interbamfiles:

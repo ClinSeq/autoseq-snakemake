@@ -12,7 +12,7 @@ import pipeline
 from pipeline.utils.utils import make_paths_absolute, Pipeline
 from pipeline.utils.clinseq_barcodes import data_available_for_clinseq_barcode, \
     extract_clinseq_barcodes, validate_clinseq_barcodes, convert_barcodes_to_sampledict, \
-    check_sampledata, normpath
+    check_sampledata, normpath, parse_project
 
 
 def console_autoseq():
@@ -127,6 +127,7 @@ def launch(context, ref, samples, outdir, libdir,
 
     normal_barcode = [i for i in all_clinseq_barcodes if '-N-' in i]
     tumor_barcode = [i for i in all_clinseq_barcodes if '-T-' in i or '-CFDNA-' in i]
+    project_id = parse_project(tumor_barcode)
 
     sample_str = "_".join(tumor_barcode + normal_barcode)
     outdir = os.path.join(outdir, sampledata['sdid'], sample_str)
@@ -193,7 +194,8 @@ def launch(context, ref, samples, outdir, libdir,
 
     autoseq = Pipeline(snakefile = snakefile, 
                       config = out_configpath, 
-                      sdid = sdid, 
+                      sdid = sdid,
+                      project_id = project_id,
                       workdir = outdir, 
                       dryrun = dryrun, 
                       profile = profile,
