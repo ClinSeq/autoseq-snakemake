@@ -127,7 +127,7 @@ def launch(context, ref, samples, outdir, libdir,
 
     normal_barcode = [i for i in all_clinseq_barcodes if '-N-' in i]
     tumor_barcode = [i for i in all_clinseq_barcodes if '-T-' in i or '-CFDNA-' in i]
-    project_id = parse_project(tumor_barcode)
+    project_id = parse_project(tumor_barcode[0])
 
     sample_str = "_".join(tumor_barcode + normal_barcode)
     outdir = os.path.join(outdir, sampledata['sdid'], sample_str)
