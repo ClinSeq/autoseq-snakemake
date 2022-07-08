@@ -247,9 +247,9 @@ rule msisensor:
             "-n {input.normal_bam} "
             "-t {input.tumor_bam} "
             "-o {params.prefix} "
-            "-b {threads} && "
+            "-b {threads} 2> {log}&& "
             " cp {params.prefix} {output} && "
-            " rm {params.table} {params.dis} {params.germline} {params.somatic} 2> {log} "
+            " rm {params.table} {params.dis} {params.germline} {params.somatic} "
 
 
 bam_name = os.path.basename(capture_to_results[CANCER_CAPTURE].bamfile).split('.bam')[0]
@@ -318,5 +318,5 @@ rule overview_plot:
         "QC_overview.R  -s {params.samples} "
                         "-d {params.outdir} "
                         "-o {output} "
-                        "-m {params.mainpath} "
+                        "-m {params.mainpath} 2> {log} "
 

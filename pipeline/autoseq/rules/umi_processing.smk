@@ -168,7 +168,7 @@ rule bwa_umialignment_2:
         tmpdir = os.path.join(params['scratch'], 
                     "bwa-umialignment-{}".format(str(uuid.uuid4())))
     threads: params['bwa']['threads']
-    log: outdir + "/logs/fgbio/bwa_umialignment_2_{sample}.log"
+    log: outdir + "/logs/bwa_umialignment_2_{sample}.log"
     shell:
         "picard SamToFastq I={input.bam} F=/dev/stdout INTERLEAVE=true TMP_DIR={params.tmpdir} "
             " | bwa mem -p -t {threads} {input.reference_genome} /dev/stdin " 
@@ -334,10 +334,12 @@ rule rm_interbamfiles:
         expand(outdir + "/fastqs/{sample}_concatenated_2.fastq.gz", sample=all_clinseq_barcodes)
     output:
         outdir + "/bams/intermediate_bamfiles.removed"
+    log:
+        outdir + "/logs/remove_intermediate_{sample}.log".format(sample=all_clinseq_barcodes)
     run:
         del_bam = [bam for bam in input if 'clipoverlap' not in bam and 'nodups' not in bam]
         bamfiles = " ".join(del_bam)
-        shell("rm {bamfiles} ")
+        shell("rm {bamfiles} 2> {log} ")
         shell("touch {output} ")
         
         

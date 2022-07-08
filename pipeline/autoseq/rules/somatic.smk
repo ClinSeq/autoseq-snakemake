@@ -46,7 +46,7 @@ rule vardict_somatic:
             " | vt decompose -s - |vt normalize  -r {input.reference} - "
             " | bcftools view --apply-filters .,PASS "
             " | vcfsorter.pl {input.reference_dict} /dev/stdin "
-            " | bgzip > {output} && tabix -p vcf {output} 2> {log} "
+            " | bgzip > {output} 2> {log} && tabix -p vcf {output} "
         
 
 somatic_vcf['vardict'] = "{}/variants/vardict/{}-{}.vardict-somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
@@ -78,14 +78,14 @@ rule strelka_somatic:
         " zcat {params.rundir}/results/variants/somatic.snvs.vcf.gz | "
         " awk 'BEGIN {{ OFS = \"\t\"}} /^#/ {{ print $0 }} {{if($7==\"PASS\") print $0 }}' "
         " | vt decompose -s - | vt normalize  -r {input.reference} - "
-        " | bgzip > {output.snvs_vcf} && "
+        " | bgzip > {output.snvs_vcf} 2> {log} && "
         " tabix -p vcf {output.snvs_vcf} && "
         " zcat {params.rundir}/results/variants/somatic.indels.vcf.gz | "
         " awk 'BEGIN {{ OFS = \"\t\"}} /^#/ {{ print $0 }} {{if($7==\"PASS\") print $0 }}' "
         " | vt decompose -s - | vt normalize  -r {input.reference} - "
         " | bgzip > {output.indels_vcf} && "
         " tabix -p vcf {output.indels_vcf} && "
-        " rm -rf {params.rundir} 2> {log} "
+        " rm -rf {params.rundir}  "
 
 
 somatic_vcf['strelka_snvs'] = "{}/variants/{}-{}-strelka-somatic.passed.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
@@ -120,14 +120,14 @@ rule gatk4_mutect2:
         " -normal {params.normalid} " 
         " -L {input.interval_list} " 
         " --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter "
-        " -bamout {output.bam} -O {output.vcf} && "
+        " -bamout {output.bam} -O {output.vcf} 2> {log} && "
         " gatk --java-options '-Xmx10g -Djava.io.tmpdir={params.tmpdir}' "
         " FilterMutectCalls  -R {input.reference} "
         " -V {output.vcf}  "
-        " -O {output.filtered_vcf} && "
+        " -O {output.filtered_vcf} 2>> {log} && "
         " vt decompose -s {output.filtered_vcf} "
         " | vt normalize  -r {input.reference} - "
-        " | bgzip > {output.normalized_vcf} 2> {log} "
+        " | bgzip > {output.normalized_vcf} 2>> {log} "
 
 
 somatic_vcf['mutect2'] = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered-normalized.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
@@ -164,11 +164,11 @@ rule varscan_somatic:
         " {output.normal_pileup} {output.tumor_pileup} "
         " --output-snp {output.snp_vcf} "
         " --output-indel {output.indel_vcf} "
-        " {params.extra} --output-vcf 1 && "
+        " {params.extra} --output-vcf 1 2> {log} && "
         " varscan {params.java_options} -Djava.io.tmpdir={params.tmpdir} processSomatic {output.snp_vcf} && "
         " varscan {params.java_options} -Djava.io.tmpdir={params.tmpdir} processSomatic {output.indel_vcf} && "
         " vt decompose -s {output.somatic_snp} | vt normalize  -r {input.reference} -  > {output.normalized_snp} && "
-        " vt decompose -s {output.somatic_indel} | vt normalize  -r {input.reference} -  > {output.normalized_indel} 2> {log} "
+        " vt decompose -s {output.somatic_indel} | vt normalize  -r {input.reference} -  > {output.normalized_indel}  "
 
 
 somatic_vcf['varscan_snvs'] = "{}/variants/varscan/{}-{}-varscan.snp.Somatic.normalized.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
