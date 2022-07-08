@@ -3,6 +3,7 @@
 Snakemake SLURM submit script.
 """
 import warnings  # use warnings.warn() rather than print() to output info in this script
+import json
 
 from snakemake.utils import read_job_properties
 
@@ -68,6 +69,17 @@ for o in ("output", "error"):
 jobid = slurm_utils.submit_job(jobscript, **sbatch_options)
 
 with open(slurm_args.jobdb, "a") as fh:
-    fh.write(f"{jobid}\n")
+    jobdb = json.load(fh)
+
+    curr_rule = list()
+    rule_name  = job_properties["rule"] + job_properties["jobid"]
+    input_files = job_properties["input"]
+    output_files = job_properties["output"]
+    log = job_properties["log"]
+    curr_rule = {rule_name: {"input": input_files, "output": output_files, "log": log, "jobid": jobid}}
+
+    jobdb.update(curr_rule)
+    fh.seek(0)
+    json.dump(jobdb, fh, indent = 4)
 
 print(jobid)

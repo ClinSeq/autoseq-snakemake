@@ -171,7 +171,7 @@ def launch(context, ref, samples, outdir, libdir,
         
 
     out_configpath = os.path.join(normpath(outdir), f"config_{sample_str}.yml")
-    jobdb = os.path.join(normpath(outdir), f"{sample_str}.jobdb")
+    jobdb = os.path.join(normpath(outdir), f"{sample_str}_jobdb.json")
 
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
