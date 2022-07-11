@@ -5,6 +5,7 @@ import argparse
 import os
 import glob
 import re
+import json
 import pandas as pd
 
 
@@ -234,12 +235,11 @@ def load_bed(bed_file):
     return genes
 
 
-def gene_annotation(chrom, start, end, genes, design):
+def gene_annotation(chrom, start, end, genes):
     """
     Return gene name for given  SV event
     """
     gene = ''
-    in_gene = ''
 
     try:
         # annotate gene name
@@ -247,31 +247,38 @@ def gene_annotation(chrom, start, end, genes, design):
             if int(ranges[0]) - 20 <= int(start) <= int(ranges[1]) + 20 or int(ranges[0]) - 20 <= int(end) <= int(ranges[1]) + 20:
                 gene = gene_name
                 break
+        
         if not gene:
             gene = 'None'
 
-        # annotate pancancer info
-        for pan_ranges, gene_name in design[chrom].items():
-            if int(pan_ranges[0]) <= int(start) <= int(pan_ranges[1]) or int(pan_ranges[0]) <= int(end) <= int(pan_ranges[1]):
-                in_gene = 'YES'
-                break
-        if not in_gene:
-            in_gene = 'NO'
-
-        return (gene, in_gene)
+        return gene
     except KeyError:
-        return ('NA', 'NA')
         print("Warning! chromosome {chrom} is not valid".format(chrom=chrom))
+        return 'NA'
+        
+
+def check_targets(chrom, start, end, gene, targets):
+    """
+    function to filter out SVs using target intervals
+    """
+    if gene not in targets:
+        return False
+
+    for i in targets[gene]:
+        if int(i["START"]) <= int(start) <= int(i["END"]) or int(i["START"]) <= int(end) <= int(i["END"]):
+            return True
+
+    return False
 
 
-def annotate_combined_sv(combined_file, genes, pancancer, output):
+def annotate_combined_sv(combined_file, genes, targets, output):
     """
     Parsing combined sv list and apply gene annotation for each SV
     """
     # output_file = open(output, 'w')
     summary_columns = ['CHROM_A', 'START_A', 'END_A', 'CHROM_B', 'START_B', 'END_B',
                        'IGV_COORD', 'SVTYPE', 'SV_LENGTH', 'SUPPORT_READS', 'TOOL', 'SDID', 'SAMPLE',
-                       'GENE_A', 'IN_DESIGN_A', 'GENE_B', 'IN_DESIGN_B', "GENE_A-GENE_B-sorted"]
+                       'GENE_A', 'GENE_B', "GENE_A-GENE_B-sorted", "CURATOR"]
     summary_sv = list()
     with open(combined_file, 'r') as fh:
         header = fh.readline()
@@ -305,21 +312,32 @@ def annotate_combined_sv(combined_file, genes, pancancer, output):
                 end_b = 'NA'
 
             igv_coord = ' '.join([igv_coord_a, igv_coord_b])
-            gene_a, in_gene_a = gene_annotation(chrom_a, start_a, end_a, genes, pancancer)
+            gene_a = gene_annotation(chrom_a, start_a, end_a, genes)
 
             if chrom_b != 'NA':
-                gene_b, in_gene_b = gene_annotation(chrom_b, start_b, end_b, genes, pancancer)
+                gene_b = gene_annotation(chrom_b, start_b, end_b, genes)
             else:
-                gene_b, in_gene_b = 'NA', 'NA'
+                gene_b = 'NA'
 
+            if tool == "svcaller":
+                curator = "YES"
+            else:
+                if check_targets(chrom_a, start_a, end_a, gene_a, targets) or \
+                        check_targets(chrom_b, start_b, end_b, gene_b, targets):
+                    curator = "YES"
+                else:
+                    curator = "NO"
+        
             gene_a_b = [gene_a, gene_b]
             gene_a_b.sort()
             gene_a_b_sorted = ",".join(gene_a_b)
-            summary_sv.append([chrom_a, start_a, end_a, chrom_b, start_b, end_b, igv_coord, svtype, int(end_a)-int(start_a), sup_reads, tool, sdid, sample, gene_a, in_gene_a, gene_b, in_gene_b, gene_a_b_sorted])
+
+            summary_sv.append([chrom_a, start_a, end_a, chrom_b, start_b, end_b, igv_coord, svtype,
+                                int(end_a)-int(start_a), sup_reads, tool, sdid, sample, gene_a, 
+                                gene_b, gene_a_b_sorted, curator])
         summary_sv_df = pd.DataFrame(summary_sv, columns = summary_columns)
-        summary_sv_df_sorted = summary_sv_df.sort_values(["IN_DESIGN_A", "IN_DESIGN_B", "GENE_A-GENE_B-sorted",
-                                                        "CHROM_A", "START_A", "CHROM_B", "START_B", "TOOL"], 
-                                                        ascending=[False, False, True, True, True, True, True, True])
+        summary_sv_df_sorted = summary_sv_df.sort_values(["GENE_A-GENE_B-sorted", "CHROM_A", "START_A", "CHROM_B", "START_B", "TOOL"], 
+                                                        ascending=[True, True, True, True, True, True])
         summary_sv_df_sorted.to_csv(output, sep = "\t", encoding = 'utf-8', index = False)
 
 
@@ -338,7 +356,8 @@ if __name__ == "__main__":
     parser.add_argument('--input', required=True, help="Input VCF or tab-delimited file")
     parser.add_argument('--annotBed', help="UCSC hg19 genes bed file with chrom, start, \
                         end and genesymbol")
-    parser.add_argument('--targetBed', help="Bed file to annotate targets eg: pancancer")
+    parser.add_argument('--target', help="capture kit ID and json file contains list of target genes interval",
+                        nargs=2)
     parser.add_argument('--sdid', help="SDID from analysis")
     parser.add_argument('--vcftype', help="somatic (or) germline vcf (only for svaba)")
     parser.add_argument('--tool', help="Tool name - Variant callers")
@@ -352,7 +371,7 @@ if __name__ == "__main__":
     sv_caller = args.tool
     sdid = args.sdid
     output = args.output
-    target_bed = args.targetBed
+    capture_kit, target_json = args.target
 
     output_dir = os.path.dirname(output)
 
@@ -368,6 +387,7 @@ if __name__ == "__main__":
     if annotBed:
         combined_input = combine_mut(input_file, output_dir)
         genes = load_bed(annotBed)
-        targets = load_bed(target_bed)
-        annotate_combined_sv(combined_input, genes, targets, output)
+        fh = open(target_json, 'r')
+        targets = json.load(fh)
+        annotate_combined_sv(combined_input, genes, targets[capture_kit], output)
 
