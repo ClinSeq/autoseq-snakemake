@@ -67,19 +67,23 @@ for o in ("output", "error"):
 
 # submit job and echo id back to Snakemake (must be the only stdout)
 jobid = slurm_utils.submit_job(jobscript, **sbatch_options)
+log = job_properties["log"]
 
 with open(slurm_args.jobdb, "a") as fh:
-    jobdb = json.load(fh)
+    fh.write(f"{jobid}\t{log}\n")
 
-    curr_rule = list()
-    rule_name  = job_properties["rule"] + job_properties["jobid"]
-    input_files = job_properties["input"]
-    output_files = job_properties["output"]
-    log = job_properties["log"]
-    curr_rule = {rule_name: {"input": input_files, "output": output_files, "log": log, "jobid": jobid}}
+# with open(slurm_args.jobdb, "a") as fh:
+#     jobdb = json.load(fh)
 
-    jobdb.update(curr_rule)
-    fh.seek(0)
-    json.dump(jobdb, fh, indent = 4)
+#     curr_rule = list()
+#     rule_name  = job_properties["rule"] + job_properties["jobid"]
+#     input_files = job_properties["input"]
+#     output_files = job_properties["output"]
+#     log = job_properties["log"]
+#     curr_rule = {rule_name: {"input": input_files, "output": output_files, "log": log, "jobid": jobid}}
+
+#     jobdb.update(curr_rule)
+#     fh.seek(0)
+#     json.dump(jobdb, fh, indent = 4)
 
 print(jobid)
