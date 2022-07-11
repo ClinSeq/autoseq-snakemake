@@ -3,6 +3,8 @@ samples: tests/test_liqbio_sample.json
 
 reference: tests/dummy_genome/dummy_genome.json
 
+normal_bams: ["tests/dummy_normal/LB-P-NA12877-N-03098850-TD1-C31_nodups.bam", "tests/dummy_normal/LB-P-NA12877-N-03098850-TD1-C31_clipoverlap.bam"]
+
 libdir: tests/libraries
 
 umi: True
