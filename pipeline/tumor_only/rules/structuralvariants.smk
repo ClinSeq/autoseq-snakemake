@@ -83,5 +83,5 @@ rule annotate_generateIGVnavInput:
         outdir + "/logs/generateIGVnavInput_annotate-{}.log".format(CANCER_CAPTURE_STR)
     shell:        
         "generateIGVnavInput_SV.py --input {params.svs_dir} "
-                " --annotBed {input.genes} --target {params.capture_kit_id} {input.target_bed} "
+                " --annotBed {input.genes} --target {params.capture_kit_id} {input.targets} "
                 " --output {output} 2> {log} "
