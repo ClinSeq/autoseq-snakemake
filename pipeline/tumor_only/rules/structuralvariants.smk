@@ -71,12 +71,13 @@ rule annotate_generateIGVnavInput:
     input:
         svcaller_tumor = "{}/svs/igv/{}_svcaller.mut".format(outdir, CANCER_CAPTURE_STR),
         genes = reference["genes_bed"],
-        target_bed = reference['targets'][capture_name]['targets-bed-slopped20']
+        targets = reference['sv_filter']
     output:
         "{}/svs/igv/{}-sv-annotated.txt".format(outdir, CANCER_CAPTURE_STR)
     params:
-        svs_dir = "{}/svs/igv/".format(outdir)
+        svs_dir = "{}/svs/igv/".format(outdir),
+        capture_kit_id = CANCER_CAPTURE.capture_kit_id
     shell:        
         "generateIGVnavInput_SV.py --input {params.svs_dir} "
-                " --annotBed {input.genes} --targetBed {input.target_bed} "
+                " --annotBed {input.genes} --target {params.capture_kit_id} {input.target_bed} "
                 " --output {output} "
