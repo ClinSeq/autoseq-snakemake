@@ -371,7 +371,8 @@ if __name__ == "__main__":
     sv_caller = args.tool
     sdid = args.sdid
     output = args.output
-    capture_kit, target_json = args.target
+    if args.target:
+        capture_kit, target_json = args.target
 
     output_dir = os.path.dirname(output)
 

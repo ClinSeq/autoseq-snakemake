@@ -335,7 +335,7 @@ rule rm_interbamfiles:
     output:
         outdir + "/bams/intermediate_bamfiles.removed"
     log:
-        outdir + "/logs/remove_intermediate_{sample}.log".format(sample=all_clinseq_barcodes)
+        outdir + "/logs/remove_intermediate_{sample}.log".format(sample="_".join(all_clinseq_barcodes))
     run:
         del_bam = [bam for bam in input if 'clipoverlap' not in bam and 'nodups' not in bam]
         bamfiles = " ".join(del_bam)
