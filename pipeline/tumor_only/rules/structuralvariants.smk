@@ -65,3 +65,18 @@ rule generateIGVnavInput_svcaller:
                         " --tool svcaller " 
                         " --vcftype somatic " 
                         " --output {params.igvout} "
+
+
+rule annotate_generateIGVnavInput:
+    input:
+        svcaller_tumor = "{}/svs/igv/{}_svcaller.mut".format(outdir, CANCER_CAPTURE_STR),
+        genes = reference["genes_bed"],
+        target_bed = reference['targets'][capture_name]['targets-bed-slopped20']
+    output:
+        "{}/svs/igv/{}-sv-annotated.txt".format(outdir, CANCER_CAPTURE_STR)
+    params:
+        svs_dir = "{}/svs/igv/".format(outdir)
+    shell:        
+        "generateIGVnavInput_SV.py --input {params.svs_dir} "
+                " --annotBed {input.genes} --targetBed {input.target_bed} "
+                " --output {output} "
