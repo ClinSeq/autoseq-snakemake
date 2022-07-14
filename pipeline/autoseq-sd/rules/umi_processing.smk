@@ -251,7 +251,7 @@ rule fgbio_filterconsensus:
         java_options = params['fgbio']['filterconsensus']['java_options'],
         error_rate = params['fgbio']['filterconsensus']['error_rate'],
         base_quality = params['fgbio']['filterconsensus']['base_quality'],
-        extra = " --min-reads 2 1 0 --reverse-per-base-tags true --require-single-strand-agreement true ",
+        extra = " --min-reads 1 1 0 --reverse-per-base-tags true --require-single-strand-agreement true ",
         tmpdir = os.path.join(params['scratch'], 
                                 "fgbio-filterconsensus-{}".format(str(uuid.uuid4())))
     threads: params['fgbio']['filterconsensus']['threads']
