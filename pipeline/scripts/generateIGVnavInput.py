@@ -115,7 +115,7 @@ except Exception as e:
 # output file headers 
 
 if vcftype == "somatic":
-    output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'IMPACT', 'CONSEQUENCE', 'TRANSCRIPT', 'HGVSc', 'HGVSp', 'T_DP', 'T_ALT', 'T_VAF', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'gnomAD', 'BRCAEx', 'OncoKB', 'NUM_TOOLS']) + "\n")
+    output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'IMPACT', 'CONSEQUENCE', 'TRANSCRIPT', 'HGVSc', 'HGVSp', 'T_DP', 'T_ALT', 'T_VAF', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID', 'gnomAD', 'BRCAEx', 'OncoKB', 'NUM_TOOLS']) + "\n")
 elif vcftype == "germline":
     output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'IMPACT', 'CONSEQUENCE', 'TRANSCRIPT', 'HGVSc','HGVSp', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID', 'gnomAD', 'BRCAEx', 'OncoKB']) + "\n")
 
@@ -161,6 +161,7 @@ for record in vcf_reader:
         tumor_vaf = tumor['VAF']
 
         num_tools = int(record.INFO['NUM_TOOLS'])
+        rsid = canonical_trans['Existing_variation']
 
         if (filter_col == 'PASS' or filter_col == 'LowQual') and (impact == 'HIGH' or impact == 'MODERATE'):
             # forming variant string to remove duplicates
@@ -172,7 +173,7 @@ for record in vcf_reader:
                                                   impact, canonical_trans['Consequence'], canonical_trans['Feature'],
                                                   canonical_trans['HGVSc'], canonical_trans['HGVSp'], tumor_dp, tumor_alt, 
                                                   tumor_vaf, normal_dp, normal_alt, normal_vaf, 
-                                                  clinsig, gnomAD, brcaEx, oncogenicity, num_tools])) + "\n")
+                                                  clinsig, rsid, gnomAD, brcaEx, oncogenicity, num_tools])) + "\n")
     
     elif vcftype == "germline":
         normal = record.samples[0]

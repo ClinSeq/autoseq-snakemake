@@ -244,7 +244,8 @@ def gene_annotation(chrom, start, end, genes):
     try:
         # annotate gene name
         for ranges, gene_name in genes[chrom].items():
-            if int(ranges[0]) - 20 <= int(start) <= int(ranges[1]) + 20 or int(ranges[0]) - 20 <= int(end) <= int(ranges[1]) + 20:
+            if int(ranges[0]) - 20 <= int(start) <= int(ranges[1]) + 20 \
+                or int(ranges[0]) - 20 <= int(end) <= int(ranges[1]) + 20:
                 gene = gene_name
                 break
         
@@ -265,7 +266,8 @@ def check_targets(chrom, start, end, gene, targets):
         return False
 
     for i in targets[gene]:
-        if int(i["START"]) <= int(start) <= int(i["END"]) or int(i["START"]) <= int(end) <= int(i["END"]):
+        if int(i["START"]) <= int(start) <= int(i["END"]) \
+            or int(i["START"]) <= int(end) <= int(i["END"]):
             return True
 
     return False
@@ -294,6 +296,7 @@ def annotate_combined_sv(combined_file, genes, targets, output):
             sdid = data[5].split('_')[0]
             sample = data[6]
             sup_reads = data[8] if len(data) == 9 else '.'
+            svlength = 'NA'
 
             if ':' in data[7]:
                 chrom_b = ''.join(list(filter(str.isdigit, data[7].split(':')[0])))
@@ -315,6 +318,7 @@ def annotate_combined_sv(combined_file, genes, targets, output):
             gene_a = gene_annotation(chrom_a, start_a, end_a, genes)
 
             if chrom_b != 'NA':
+                svlength = abs(int(end_b)-int(start_a)) if chrom_a == chrom_b else 'NA'
                 gene_b = gene_annotation(chrom_b, start_b, end_b, genes)
             else:
                 gene_b = 'NA'
@@ -327,13 +331,16 @@ def annotate_combined_sv(combined_file, genes, targets, output):
                     curator = "YES"
                 else:
                     curator = "NO"
-        
+            
+            if tool == 'lumpy' and chrom_b == 'NA':
+                svlength = abs(int(end_a)-int(start_a))
+
             gene_a_b = [gene_a, gene_b]
             gene_a_b.sort()
             gene_a_b_sorted = ",".join(gene_a_b)
 
             summary_sv.append([chrom_a, start_a, end_a, chrom_b, start_b, end_b, igv_coord, svtype,
-                                int(end_a)-int(start_a), sup_reads, tool, sdid, sample, gene_a, 
+                                svlength, sup_reads, tool, sdid, sample, gene_a, 
                                 gene_b, gene_a_b_sorted, curator])
         summary_sv_df = pd.DataFrame(summary_sv, columns = summary_columns)
         summary_sv_df_sorted = summary_sv_df.sort_values(["GENE_A-GENE_B-sorted", "CHROM_A", "START_A", "CHROM_B", "START_B", "TOOL"], 
