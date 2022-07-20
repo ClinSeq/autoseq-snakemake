@@ -1,8 +1,9 @@
 
+bamfile = capture_to_results[NORMAL_CAPTURE].umibam if umi else capture_to_results[NORMAL_CAPTURE].bamfile
 
 rule gatk4_haplotypecaller:
     input:
-        bam = capture_to_results[NORMAL_CAPTURE].umibam,
+        bam = bamfile,
         reference = reference['reference_genome'],
         dbsnp = reference["dbSNP"],
         interval_list = reference['targets'][get_capture_name(NORMAL_CAPTURE.capture_kit_id)]['targets-interval_list-slopped20'],
@@ -30,7 +31,7 @@ rule gatk4_haplotypecaller:
 
 rule strelka_germline:
     input:
-        bam = capture_to_results[NORMAL_CAPTURE].umibam,
+        bam = bamfile,
         reference = reference['reference_genome'],
         call_region = reference['targets'][get_capture_name(NORMAL_CAPTURE.capture_kit_id)]['targets-bed-slopped20-gz'],
     output:

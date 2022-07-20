@@ -4,14 +4,16 @@ import uuid
 
 capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
 somatic_vcf = dict()
+normalBam = capture_to_results[NORMAL_CAPTURE].umibam if umi else capture_to_results[NORMAL_CAPTURE].bamfile
+cancerBam = capture_to_results[CANCER_CAPTURE].umibam if umi else capture_to_results[CANCER_CAPTURE].bamfile
 
 
 rule vardict_somatic:
     input:
         reference = reference['reference_genome'],
         reference_dict = reference["reference_dict"],
-        normal_bam = capture_to_results[NORMAL_CAPTURE].umibam,
-        cancer_bam = capture_to_results[CANCER_CAPTURE].umibam,
+        normal_bam = normalBam,
+        cancer_bam = cancerBam,
         target_bed = reference['targets'][capture_name]['targets-bed-slopped20']
     output:
         "{}/variants/vardict/{}-{}.vardict-somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
@@ -55,8 +57,8 @@ somatic_vcf['vardict'] = "{}/variants/vardict/{}-{}.vardict-somatic.vcf.gz".form
 rule strelka_somatic:
     input:
         reference = reference['reference_genome'],
-        normal_bam = capture_to_results[NORMAL_CAPTURE].umibam,
-        tumor_bam = capture_to_results[CANCER_CAPTURE].umibam,
+        normal_bam = normalBam,
+        tumor_bam = cancerBam,
         target_bed = reference['targets'][capture_name]['targets-bed-slopped20-gz']
     output:
         snvs_vcf = "{}/variants/{}-{}-strelka-somatic.passed.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
@@ -95,8 +97,8 @@ somatic_vcf['strelka_indels'] = "{}/variants/{}-{}-strelka-somatic.passed.indels
 rule gatk4_mutect2:
     input:
         reference = reference['reference_genome'],
-        normal_bam = capture_to_results[NORMAL_CAPTURE].umibam,
-        tumor_bam = capture_to_results[CANCER_CAPTURE].umibam,
+        normal_bam = normalBam,
+        tumor_bam = cancerBam,
         interval_list = reference['targets'][capture_name]['targets-interval_list-slopped20']
     output:
         bam = "{}/variants/mutect/{}-{}-mutect.bam".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
@@ -136,8 +138,8 @@ somatic_vcf['mutect2'] = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered-
 rule varscan_somatic:
     input:
         reference = reference['reference_genome'],
-        normal_bam = capture_to_results[NORMAL_CAPTURE].umibam,
-        tumor_bam = capture_to_results[CANCER_CAPTURE].umibam,
+        normal_bam = normalBam,
+        tumor_bam = cancerBam,
         target_bed = reference['targets'][capture_name]['targets-bed-slopped20-gz']
     output:
         normal_pileup = "{}/variants/varscan/{}.pileup".format(outdir, NORMAL_CAPTURE_STR),
@@ -179,8 +181,8 @@ rule somaticseq_merge:
     input:
         **somatic_vcf,
         reference = reference['reference_genome'],
-        normal_bam = capture_to_results[NORMAL_CAPTURE].umibam,
-        tumor_bam = capture_to_results[CANCER_CAPTURE].umibam
+        normal_bam = normalBam,
+        tumor_bam = cancerBam
     output:
         rundir = directory("{}/variants/{}-{}-somaticseq".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)),
         consensus_snv = "{}/variants/{}-{}-somaticseq/Consensus.sSNV.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
@@ -217,8 +219,8 @@ rule vardict_purecn:
         reference = reference['reference_genome'],
         reference_dict = reference["reference_dict"],
         dbsnp = reference["dbSNP"],
-        normal_bam = capture_to_results[NORMAL_CAPTURE].umibam,
-        cancer_bam = capture_to_results[CANCER_CAPTURE].umibam,
+        normal_bam = normalBam,
+        cancer_bam = cancerBam,
         target_bed = reference['targets'][capture_name]['targets-bed-slopped20']
     output:
         "{}/variants/{}-{}.vardict-somatic-purecn.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
@@ -258,7 +260,7 @@ rule vardict_purecn:
 rule vcf_add_sample:
     input:
         germline_vcf = "{}/variants/{}-all.germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
-        tumor_bam = capture_to_results[CANCER_CAPTURE].umibam
+        tumor_bam = cancerBam
     output:
         vcf = "{}/variants/{}-and-{}.germline-variants-with-somatic-afs.vcf.gz".format(
             outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
