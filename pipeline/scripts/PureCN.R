@@ -240,7 +240,8 @@ if (file.exists(file.rds) && !opt$force) {
         BPPARAM <- bpparam()
         flog.info("Using default BiocParallel backend. You can change the default in your ~/.Rprofile file.") 
     }
-    ret <- runAbsoluteCN(normal.coverage.file = normal.coverage.file,
+    tryCatch({
+        ret <- runAbsoluteCN(normal.coverage.file = normal.coverage.file,
             tumor.coverage.file = tumor.coverage.file, vcf.file = opt$vcf,
             sampleid = sampleid, plot.cnv = TRUE,
             interval.file = opt$intervals,
@@ -272,11 +273,16 @@ if (file.exists(file.rds) && !opt$force) {
             post.optimize = opt$postoptimize,
             speedup.heuristics = opt$speedupheuristics,
             BPPARAM = BPPARAM)
-    dev.off()
-    if (opt$bootstrapn > 0) {
-        ret <- bootstrapResults(ret, n = opt$bootstrapn) 
-    }
-    saveRDS(ret, file = file.rds)
+        dev.off()
+        if (opt$bootstrapn > 0) {
+            ret <- bootstrapResults(ret, n = opt$bootstrapn) 
+        }
+        saveRDS(ret, file = file.rds)
+    }, error = function(err) {
+        print(err)
+        quit()
+    })
+
 }
 
 ### Create output files -------------------------------------------------------
