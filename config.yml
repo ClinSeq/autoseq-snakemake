@@ -56,6 +56,9 @@ params:
         collecthsmetrics:
             java_options: " -XX:ParallelGCThreads=8 "
             threads: 1
+        collectwgsmetrics:
+            java_options: " -XX:ParallelGCThreads=1 "
+            threads: 1
     samtools:
         flagstat: 
             threads: 8
