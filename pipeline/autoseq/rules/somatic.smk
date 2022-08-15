@@ -4,14 +4,16 @@ import uuid
 
 capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
 somatic_vcf = dict()
+normalBam = capture_to_results[NORMAL_CAPTURE].umibam if umi else capture_to_results[NORMAL_CAPTURE].bamfile
+cancerBam = capture_to_results[CANCER_CAPTURE].umibam if umi else capture_to_results[CANCER_CAPTURE].bamfile
 
 
 rule vardict_somatic:
     input:
         reference = reference['reference_genome'],
         reference_dict = reference["reference_dict"],
-        normal_bam = capture_to_results[NORMAL_CAPTURE].umibam,
-        cancer_bam = capture_to_results[CANCER_CAPTURE].umibam,
+        normal_bam = normalBam,
+        cancer_bam = cancerBam,
         target_bed = reference['targets'][capture_name]['targets-bed-slopped20']
     output:
         "{}/variants/vardict/{}-{}.vardict-somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
@@ -46,7 +48,7 @@ rule vardict_somatic:
             " | vt decompose -s - |vt normalize  -r {input.reference} - "
             " | bcftools view --apply-filters .,PASS "
             " | vcfsorter.pl {input.reference_dict} /dev/stdin "
-            " | bgzip > {output} && tabix -p vcf {output}"
+            " | bgzip > {output} 2> {log} && tabix -p vcf {output} "
         
 
 somatic_vcf['vardict'] = "{}/variants/vardict/{}-{}.vardict-somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
@@ -55,13 +57,14 @@ somatic_vcf['vardict'] = "{}/variants/vardict/{}-{}.vardict-somatic.vcf.gz".form
 rule strelka_somatic:
     input:
         reference = reference['reference_genome'],
-        normal_bam = capture_to_results[NORMAL_CAPTURE].umibam,
-        tumor_bam = capture_to_results[CANCER_CAPTURE].umibam,
+        normal_bam = normalBam,
+        tumor_bam = cancerBam,
         target_bed = reference['targets'][capture_name]['targets-bed-slopped20-gz']
     output:
+        snvs_vcf = "{}/variants/{}-{}-strelka-somatic.passed.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        indels_vcf = "{}/variants/{}-{}-strelka-somatic.passed.indels.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    params:
         rundir = directory("{}/variants/{}-{}-strelka-somatic".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)),
-        snvs_vcf= "{}/variants/{}-{}-strelka-somatic/results/variants/somatic.passed.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-        indels_vcf= "{}/variants/{}-{}-strelka-somatic/results/variants/somatic.passed.indels.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: params['strelka']['threads']
     log:
         "{}/logs/variants/{}-{}-strelka-somatic.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
@@ -72,32 +75,36 @@ rule strelka_somatic:
         " --tumorBam {input.tumor_bam} "
         " --ref {input.reference} "
         " --callRegions {input.target_bed} "
-        " --runDir {output.rundir} && "
-        " {output.rundir}/runWorkflow.py -m local -j {threads} && "
-        " zcat {output.rundir}/results/variants/somatic.snvs.vcf.gz | "
+        " --runDir {params.rundir} && "
+        " {params.rundir}/runWorkflow.py -m local -j {threads} && "
+        " zcat {params.rundir}/results/variants/somatic.snvs.vcf.gz | "
         " awk 'BEGIN {{ OFS = \"\t\"}} /^#/ {{ print $0 }} {{if($7==\"PASS\") print $0 }}' "
-        " | bgzip > {output.snvs_vcf} && "
+        " | vt decompose -s - | vt normalize  -r {input.reference} - "
+        " | bgzip > {output.snvs_vcf} 2> {log} && "
         " tabix -p vcf {output.snvs_vcf} && "
-        " zcat {output.rundir}/results/variants/somatic.indels.vcf.gz | "
+        " zcat {params.rundir}/results/variants/somatic.indels.vcf.gz | "
         " awk 'BEGIN {{ OFS = \"\t\"}} /^#/ {{ print $0 }} {{if($7==\"PASS\") print $0 }}' "
+        " | vt decompose -s - | vt normalize  -r {input.reference} - "
         " | bgzip > {output.indels_vcf} && "
-        " tabix -p vcf {output.indels_vcf}"
+        " tabix -p vcf {output.indels_vcf} && "
+        " rm -rf {params.rundir}  "
 
 
-somatic_vcf['strelka_snvs'] = "{}/variants/{}-{}-strelka-somatic/results/variants/somatic.passed.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-somatic_vcf['strelka_indels'] = "{}/variants/{}-{}-strelka-somatic/results/variants/somatic.passed.indels.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+somatic_vcf['strelka_snvs'] = "{}/variants/{}-{}-strelka-somatic.passed.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+somatic_vcf['strelka_indels'] = "{}/variants/{}-{}-strelka-somatic.passed.indels.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
 
 
 rule gatk4_mutect2:
     input:
         reference = reference['reference_genome'],
-        normal_bam = capture_to_results[NORMAL_CAPTURE].umibam,
-        tumor_bam = capture_to_results[CANCER_CAPTURE].umibam,
+        normal_bam = normalBam,
+        tumor_bam = cancerBam,
         interval_list = reference['targets'][capture_name]['targets-interval_list-slopped20']
     output:
         bam = "{}/variants/mutect/{}-{}-mutect.bam".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         vcf = "{}/variants/mutect/{}-{}-gatk-mutect-somatic.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         filtered_vcf = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        normalized_vcf = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered-normalized.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
         java_options = params['gatk4']['mutect2']['java_options'],
         normalid = compose_sample_str(NORMAL_CAPTURE),
@@ -115,21 +122,24 @@ rule gatk4_mutect2:
         " -normal {params.normalid} " 
         " -L {input.interval_list} " 
         " --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter "
-        " -bamout {output.bam} -O {output.vcf} && "
+        " -bamout {output.bam} -O {output.vcf} 2> {log} && "
         " gatk --java-options '-Xmx10g -Djava.io.tmpdir={params.tmpdir}' "
         " FilterMutectCalls  -R {input.reference} "
         " -V {output.vcf}  "
-        " -O {output.filtered_vcf} "
+        " -O {output.filtered_vcf} 2>> {log} && "
+        " vt decompose -s {output.filtered_vcf} "
+        " | vt normalize  -r {input.reference} - "
+        " | bgzip > {output.normalized_vcf} 2>> {log} "
 
 
-somatic_vcf['mutect2'] = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+somatic_vcf['mutect2'] = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered-normalized.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
 
 
 rule varscan_somatic:
     input:
         reference = reference['reference_genome'],
-        normal_bam = capture_to_results[NORMAL_CAPTURE].umibam,
-        tumor_bam = capture_to_results[CANCER_CAPTURE].umibam,
+        normal_bam = normalBam,
+        tumor_bam = cancerBam,
         target_bed = reference['targets'][capture_name]['targets-bed-slopped20-gz']
     output:
         normal_pileup = "{}/variants/varscan/{}.pileup".format(outdir, NORMAL_CAPTURE_STR),
@@ -138,6 +148,8 @@ rule varscan_somatic:
         indel_vcf = "{}/variants/varscan/{}-{}-varscan.indel.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         somatic_snp = "{}/variants/varscan/{}-{}-varscan.snp.Somatic.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         somatic_indel = "{}/variants/varscan/{}-{}-varscan.indel.Somatic.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        normalized_snp = "{}/variants/varscan/{}-{}-varscan.snp.Somatic.normalized.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        normalized_indel = "{}/variants/varscan/{}-{}-varscan.indel.Somatic.normalized.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
     params:
         java_options = params['varscan']['java_options'],
         extra = params['varscan']['extra'],
@@ -154,21 +166,23 @@ rule varscan_somatic:
         " {output.normal_pileup} {output.tumor_pileup} "
         " --output-snp {output.snp_vcf} "
         " --output-indel {output.indel_vcf} "
-        " {params.extra} --output-vcf 1 && "
+        " {params.extra} --output-vcf 1 2> {log} && "
         " varscan {params.java_options} -Djava.io.tmpdir={params.tmpdir} processSomatic {output.snp_vcf} && "
-        " varscan {params.java_options} -Djava.io.tmpdir={params.tmpdir} processSomatic {output.indel_vcf} "
+        " varscan {params.java_options} -Djava.io.tmpdir={params.tmpdir} processSomatic {output.indel_vcf} && "
+        " vt decompose -s {output.somatic_snp} | vt normalize  -r {input.reference} -  > {output.normalized_snp} && "
+        " vt decompose -s {output.somatic_indel} | vt normalize  -r {input.reference} -  > {output.normalized_indel}  "
 
 
-somatic_vcf['varscan_snvs'] = "{}/variants/varscan/{}-{}-varscan.snp.Somatic.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
-somatic_vcf['varscan_indels'] = "{}/variants/varscan/{}-{}-varscan.indel.Somatic.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+somatic_vcf['varscan_snvs'] = "{}/variants/varscan/{}-{}-varscan.snp.Somatic.normalized.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+somatic_vcf['varscan_indels'] = "{}/variants/varscan/{}-{}-varscan.indel.Somatic.normalized.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
 
 
 rule somaticseq_merge:
     input:
         **somatic_vcf,
         reference = reference['reference_genome'],
-        normal_bam = capture_to_results[NORMAL_CAPTURE].umibam,
-        tumor_bam = capture_to_results[CANCER_CAPTURE].umibam
+        normal_bam = normalBam,
+        tumor_bam = cancerBam
     output:
         rundir = directory("{}/variants/{}-{}-somaticseq".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)),
         consensus_snv = "{}/variants/{}-{}-somaticseq/Consensus.sSNV.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
@@ -197,7 +211,7 @@ rule somaticseq_merge:
         " --variant {output.consensus_indel} " 
         " --assumeIdenticalSamples  | bgzip > {output.all_somatic} && "
         " source deactivate && "
-        " tabix -p vcf {output.all_somatic} "
+        " tabix -p vcf {output.all_somatic} 2> {log} "
 
 
 rule vardict_purecn:
@@ -205,8 +219,8 @@ rule vardict_purecn:
         reference = reference['reference_genome'],
         reference_dict = reference["reference_dict"],
         dbsnp = reference["dbSNP"],
-        normal_bam = capture_to_results[NORMAL_CAPTURE].umibam,
-        cancer_bam = capture_to_results[CANCER_CAPTURE].umibam,
+        normal_bam = normalBam,
+        cancer_bam = cancerBam,
         target_bed = reference['targets'][capture_name]['targets-bed-slopped20']
     output:
         "{}/variants/{}-{}.vardict-somatic-purecn.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
@@ -246,7 +260,7 @@ rule vardict_purecn:
 rule vcf_add_sample:
     input:
         germline_vcf = "{}/variants/{}-all.germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
-        tumor_bam = capture_to_results[CANCER_CAPTURE].umibam
+        tumor_bam = cancerBam
     output:
         vcf = "{}/variants/{}-and-{}.germline-variants-with-somatic-afs.vcf.gz".format(
             outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)

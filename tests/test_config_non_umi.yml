@@ -6,7 +6,7 @@ normal_bams: ["tests/dummy_normal/LB-P-NA12877-N-03098850-TD1-C31_nodups.bam", "
 
 libdir: tests/libraries
 
-umi: True
+umi: False
 
 container: 
     base: False
@@ -135,6 +135,4 @@ params:
     msisensor:
         threads: 8
     multiqc:
-        threads: 1
-    jumble: 
         threads: 1

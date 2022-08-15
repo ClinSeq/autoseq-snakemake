@@ -1,13 +1,15 @@
 
+bamfile = capture_to_results[NORMAL_CAPTURE].umibam if umi else capture_to_results[NORMAL_CAPTURE].bamfile
 
 rule gatk4_haplotypecaller:
     input:
-        bam = capture_to_results[NORMAL_CAPTURE].umibam,
+        bam = bamfile,
         reference = reference['reference_genome'],
         dbsnp = reference["dbSNP"],
         interval_list = reference['targets'][get_capture_name(NORMAL_CAPTURE.capture_kit_id)]['targets-interval_list-slopped20'],
     output:
-        vcf = "{}/variants/haplotypecaller/{}.haplotypecaller-germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
+        vcf = "{}/variants/haplotypecaller/{}.haplotypecaller-germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
+        normalized_vcf = "{}/variants/haplotypecaller/{}.haplotypecaller-germline-normalized.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
     params:
         java_options = params["gatk4"]["haplotypecaller"]["java_options"]
     threads: params["gatk4"]["threads"]
@@ -20,17 +22,22 @@ rule gatk4_haplotypecaller:
             " -I {input.bam}  "
             " -L {input.interval_list} "
             " --dbsnp {input.dbsnp} "
-            " -O {output.vcf} "
+            " -O {output.vcf} && "
+        " vt decompose -s {output.vcf} "
+        " | vt normalize  -r {input.reference} - "
+        " | bgzip > {output.normalized_vcf}  && "
+        " tabix -p vcf {output.normalized_vcf} 2> {log} "
 
 
 rule strelka_germline:
     input:
-        bam = capture_to_results[NORMAL_CAPTURE].umibam,
+        bam = bamfile,
         reference = reference['reference_genome'],
         call_region = reference['targets'][get_capture_name(NORMAL_CAPTURE.capture_kit_id)]['targets-bed-slopped20-gz'],
     output:
-        rundir = directory("{}/variants/{}-strelka-germline".format(outdir, NORMAL_CAPTURE_STR)),
-        vcf = "{}/variants/{}-strelka-germline/results/variants/{}-strelka.passed.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        vcf = "{}/variants/{}-strelka-germline.passed.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
+    params:
+        rundir = directory("{}/variants/{}-strelka-germline".format(outdir, NORMAL_CAPTURE_STR))
     threads: params["strelka"]["threads"]
     log:
         "{}/logs/variants/{}.strelka-germline.log".format(outdir, NORMAL_CAPTURE_STR)
@@ -39,19 +46,20 @@ rule strelka_germline:
         "configureStrelkaGermlineWorkflow.py  --bam {input.bam} "
         " --ref {input.reference} --targeted "
         " --callRegions {input.call_region} "
-        " --runDir {output.rundir} && "
-        " {output.rundir}/runWorkflow.py -m local -j {threads} && "
-        "zcat {output.rundir}/results/variants/variants.vcf.gz "
+        " --runDir {params.rundir} && "
+        " {params.rundir}/runWorkflow.py -m local -j {threads} && "
+        "zcat {params.rundir}/results/variants/variants.vcf.gz "
         " | awk 'BEGIN {{ OFS = \"\t\"}} /^#/ {{ print $0 }} {{if($7==\"PASS\") print $0 }}' "
+        " | vt decompose -s - | vt normalize  -r {input.reference} - "
         " | bgzip > {output.vcf} && "
-        " tabix -p vcf {output.vcf} "
+        " tabix -p vcf {output.vcf} && rm -rf {params.rundir} 2> {log} "
 
 
 rule gatk3_mergevcf:
     input:
         reference = reference['reference_genome'],
-        haplotypecaller = "{}/variants/haplotypecaller/{}.haplotypecaller-germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
-        strelka = "{}/variants/{}-strelka-germline/results/variants/{}-strelka.passed.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        haplotypecaller = "{}/variants/haplotypecaller/{}.haplotypecaller-germline-normalized.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
+        strelka = "{}/variants/{}-strelka-germline.passed.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
     output:
         "{}/variants/{}-all.germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
     threads: params['gatk3']['threads']
@@ -66,7 +74,7 @@ rule gatk3_mergevcf:
         " -genotypeMergeOptions PRIORITIZE "
         " -priority haplotypecaller,strelka "
         " | bgzip > {output}  && "
-        " tabix -p vcf {output}"
+        " tabix -p vcf {output} 2> {log} "
     
 
 rule germline_generateIGVnav:
