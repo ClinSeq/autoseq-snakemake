@@ -104,7 +104,6 @@ rule gatk3_targetcreator:
     input:
         bam = outdir + "/bams/split_targets/bam/{sample}.{chr}.bam",
         reference_genome = reference['reference_genome'],
-        target_region = outdir + "/bams/split_targets/target.{chr}.bed",
         known_1kg = reference["1KG"],
         known_mills_gs = reference["Mills_and_1KG_gold_standard"],
     output:
@@ -134,7 +133,6 @@ rule gatk3_indelrealigner:
     input:
         bam = outdir + outdir + "/bams/split_targets/bam/{sample}.{chr}.bam",
         reference_genome = reference['reference_genome'],
-        target_region = outdir + "/bams/split_targets/target.{chr}.bed",
         known_1kg = reference["1KG"],
         known_mills_gs = reference["Mills_and_1KG_gold_standard"],
         target_intervals = outdir + "/bams/split_targets/{sample}_{chr}.intervals"

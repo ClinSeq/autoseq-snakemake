@@ -19,11 +19,11 @@ rule gatk4_haplotypecaller:
             " -R {input.reference}  "
             " -I {input.bam}  "
             " --dbsnp {input.dbsnp} "
-            " -O {output.vcf} && "
+            " -O {output.vcf} 2> {log} && "
         " vt decompose -s {output.vcf} "
         " | vt normalize  -r {input.reference} - "
-        " | bgzip > {output.normalized_vcf}  && "
-        " tabix -p vcf {output.normalized_vcf} 2> {log} "
+        " | bgzip > {output.normalized_vcf} 2>> {log} && "
+        " tabix -p vcf {output.normalized_vcf} 2>> {log} "
 
 
 rule strelka_germline:
@@ -69,8 +69,8 @@ rule gatk3_mergevcf:
         " --variant:strelka {input.strelka} "
         " -genotypeMergeOptions PRIORITIZE "
         " -priority haplotypecaller,strelka "
-        " | bgzip > {output}  && "
-        " tabix -p vcf {output} 2> {log} "
+        " | bgzip > {output} 2> {log} && "
+        " tabix -p vcf {output} 2>> {log} "
     
 
 rule germline_generateIGVnav:
