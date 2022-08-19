@@ -87,3 +87,102 @@ rule picard_wgsmetrics:
             "R={input.reference_genome} "
             "O={output.metrics} 2> {log} "
 
+
+
+rule gatk3_contest_cancer:
+    input:
+        reference_genome = reference['reference_genome'],
+        normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
+        cancer_bam = capture_to_results[CANCER_CAPTURE].bamfile,
+        popvcf = reference["swegene_common"]
+    output:
+        "{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR)
+    params:
+        tmpdir = params['scratch'],
+        min_genotype_ratio = params['contest_cancer']['min_genotype_ratio']
+    threads: params['contest_cancer']['threads']
+    log:
+        outdir + "/logs/contamination/contest-{}.log".format(CANCER_CAPTURE_STR)
+    shell:
+        "source activate gatk_3 && "
+        "gatk3 -Xmx15g -Djava.io.tmpdir={params.tmpdir} -T ContEst  "
+            "-R {input.reference_genome}  "
+            "-I:eval {input.cancer_bam}  "
+            "-I:genotype {input.normal_bam} "
+            "--popfile {input.popvcf}  "
+            "--min_genotype_ratio {params.min_genotype_ratio}  "
+            " -o {output} 2> {log} "
+
+
+rule gatk3_contest_normal:
+    input:
+        reference_genome = reference['reference_genome'],
+        normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
+        cancer_bam = capture_to_results[CANCER_CAPTURE].bamfile,
+        popvcf = reference["swegene_common"]
+    output:
+        "{}/contamination/{}.contest.txt".format(outdir, NORMAL_CAPTURE_STR)
+    params:
+        tmpdir = params['scratch'],
+        min_genotype_ratio = params['contest_cancer']['min_genotype_ratio']
+    threads: params['contest_cancer']['threads']
+    log:
+        outdir + "/logs/contamination/contest-{}.log".format(NORMAL_CAPTURE_STR)
+    shell:
+        "source activate gatk_3 && "
+        "gatk3 -Xmx15g -Djava.io.tmpdir={params.tmpdir} -T ContEst  "
+            "-R {input.reference_genome}  "
+            "-I:eval  {input.normal_bam} "
+            "-I:genotype {input.cancer_bam} "
+            "--popfile {input.popvcf}  "
+            "--min_genotype_ratio {params.min_genotype_ratio}  "
+            " -o {output} 2> {log} "
+
+
+rule contam_caveat:
+    input:
+        "{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR)
+    output:
+        "{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR)
+    threads: params['contam_caveat']['threads']
+    log:
+        "{}/logs/contamination/{}-contam-caveat.log".format(outdir, CANCER_CAPTURE_STR)
+    shell:
+        "contest_to_contam_caveat.py  "
+        " {input}  > {output} 2> {log} "
+
+
+rule purecn:
+    input:
+        cnr = capture_to_results[CANCER_CAPTURE].cnr,
+        seg = capture_to_results[CANCER_CAPTURE].seg,
+        vardict_vcf = "{}/variants/{}-{}.vardict-somatic-purecn.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    output:
+        csv = "{}/purecn/{}.csv".format(outdir, CANCER_CAPTURE_STR),
+        genes_csv = "{}/purecn/{}_genes.csv".format(outdir, CANCER_CAPTURE_STR),
+        variants_csv = "{}/purecn/{}_variants.csv".format(outdir, CANCER_CAPTURE_STR),
+        loh_csv = "{}/purecn/{}_loh.csv".format(outdir, CANCER_CAPTURE_STR)
+    params:
+        tumorid = CANCER_CAPTURE_STR,
+        minaf = params['purecn']['minaf'],
+        maxnonclonal = params['purecn']['maxnonclonal'],
+        outdir = "{}/purecn".format(outdir)
+    threads: params['purecn']['threads']
+    log:
+        "{}/logs/{}-purecn.log".format(outdir, CANCER_CAPTURE_STR)
+    shell:
+        "source activate purecn-env && "
+        "PureCN.R  --out {params.outdir} "
+        " --sampleid {params.tumorid} "
+        " --segfile {input.seg} "
+        " --tumor {input.cnr} "
+        " --vcf {input.vardict_vcf} "
+        " --genome hg19  --funsegmentation none "
+        " --minpurity 0.05  --hzdev 0.1  {params.maxnonclonal} "
+        " {params.minaf}  --error 0.0005 "
+        " --postoptimize &&  "
+        " conda deactivate && "
+        " touch {output.csv} "
+        " {output.genes_csv} "
+        " {output.variants_csv} "
+        " {output.loh_csv} 2> {log} "
