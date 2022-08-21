@@ -120,8 +120,8 @@ rule cat_normal_fastq:
 
 rule cat_tumor_fastq:
     input:
-        expand(tskewer_outdir + "/{prefix}" + ns1, prefix=tfq_prefix),
-        expand(tskewer_outdir + "/{prefix}" + ns2, prefix=tfq_prefix)
+        expand(tskewer_outdir + "/{prefix}" + ts1, prefix=tfq_prefix),
+        expand(tskewer_outdir + "/{prefix}" + ts2, prefix=tfq_prefix)
     output:
         fq1 = outdir + "/fastqs/{}_concatenated_1.fastq.gz".format(tumor_barcode),
         fq2 = outdir + "/fastqs/{}_concatenated_2.fastq.gz".format(tumor_barcode)
