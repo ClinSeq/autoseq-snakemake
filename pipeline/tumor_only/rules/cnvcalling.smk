@@ -54,18 +54,18 @@ rule jumblerun_cnv:
         " -o {params.outdir} 2> {log} "
 
 
-rule cnvkit_tracks:
+rule cnv_tracks:
     input:
         cns = outdir + "/cnv/{sample}.cns",
         cnr = outdir + "/cnv/{sample}.cnr"        
     output:
         profile_bedgraph = outdir + "/cnv/{sample}_profile.bedGraph",
         segments_bedgraph = outdir + "/cnv/{sample}_segments.bedGraph",
-    threads: params['cnvkit_tracks']['threads']
+    threads: params['cnv_tracks']['threads']
     shell:
-        "awk '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$5}}' "
+        "awk -F$'\\t' -v OFS='\\t' '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$5}}' "
         " {input.cnr} > {output.profile_bedgraph} "
-        " && awk '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$5}}' "
+        " && awk -F$'\\t' -v OFS='\\t' '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$5}}' "
         " {input.cns} > {output.segments_bedgraph} "
 
 
