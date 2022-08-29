@@ -186,3 +186,46 @@ rule purecn:
         " {output.genes_csv} "
         " {output.variants_csv} "
         " {output.loh_csv} 2> {log} "
+
+
+rule multiqc:
+    input:
+        PICARD_QC,
+        "{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR)
+    output:
+        directory("{}/multiqc".format(outdir))
+    params:
+        basefn = "{}-multiqc".format(CANCER_CAPTURE_STR),
+        outdir = outdir,
+    threads: params['multiqc']['threads']
+    log:
+        "{}/logs/multiqc-{}-{}.log".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    shell:
+        "multiqc  {params.outdir} "
+               "-o {output} "
+               "-n {params.basefn} "
+               "-k json " 
+               " --data-dir --zip-data-dir -v -f 2> {log} "
+
+
+rule overview_plot:
+    input:
+        PICARD_QC,
+        expand(outdir + "/qc/samtools/{sample}-flagstats.json", sample = all_clinseq_barcodes),
+        "{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR),
+        "{}/contamination/{}.contest.txt".format(outdir, NORMAL_CAPTURE_STR),
+        "{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR)
+    output:
+        "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest))
+    params:
+        samples = ":".join(samples_of_interest),
+        mainpath = dirname(dirname(outdir)),
+        outdir = outdir
+    log:
+        "{}/logs/qc_overview-{}-{}.log".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    shell:
+        "source activate purecn-env && "
+        "QC_overview.R  -s {params.samples} "
+                        "-d {params.outdir} "
+                        "-o {output} "
+                        "-m {params.mainpath} 2> {log} "
