@@ -190,7 +190,9 @@ rule remove_bamfiles:
         expand(outdir + "/bams/{sample}_realigned-2.bam", sample=cancer_sample),
         expand(outdir + "/bams/{sample}_consensus_filtered.bam", sample=cancer_sample),
         expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=cancer_sample),
-        expand(outdir + "/bams/{sample}_nodups.bam", sample=cancer_sample)
+        expand(outdir + "/bams/{sample}_nodups.bam", sample=cancer_sample),
+        expand(outdir + "/fastqs/{sample}_concatenated_1.fastq.gz", sample=cancer_sample),
+        expand(outdir + "/fastqs/{sample}_concatenated_2.fastq.gz", sample=cancer_sample)
     output:
         outdir + "/bams/intermediate_bam_files.removed"
     run:
