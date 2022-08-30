@@ -358,11 +358,13 @@ if __name__ == "__main__":
     """
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--targets', required=True, help="Target bed file - capture kit id")
+    parser.add_argument('--targets', help="Target bed file - capture kit id")
     parser.add_argument('--outdir', required=True, help="project output dir")
     parser.add_argument('--script-dir', help="script dir for IGV session xml files")
     args = parser.parse_args()
-    targets = args.targets
+    targets = ''
+    if args.targets:
+        targets = args.targets
     
     if not args.script_dir:
         script_dir = os.path.dirname(os.path.abspath(__file__))

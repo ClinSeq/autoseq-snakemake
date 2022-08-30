@@ -207,11 +207,16 @@ def get_readgroup(wildcards):
     """
     return readgroup for alignments
     """
-    library_id = parse_prep_id(wildcards.sample)
-    sample_string = compose_sample_str(extract_unique_capture(wildcards.sample))
+    try:
+        sample = wildcards.sample
+    except AttributeError:
+        sample = wildcards
+
+    library_id = parse_prep_id(sample)
+    sample_string = compose_sample_str(extract_unique_capture(sample))
 
     readgroup = "\"@RG\\tID:{rg_id}\\tSM:{rg_sm}\\tLB:{rg_lb}\\tPL:ILLUMINA\"".format(\
-        rg_id=wildcards.sample, rg_sm=sample_string, rg_lb=library_id)
+        rg_id=sample, rg_sm=sample_string, rg_lb=library_id)
     
     return readgroup
 

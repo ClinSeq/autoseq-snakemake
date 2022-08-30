@@ -3,7 +3,7 @@
 rule cnvkit:
     input:
         bam = outdir + "/bams/{sample}_nodups.bam",
-        reference = lambda wildcards: get_cnvkitref(wildcards, reference)
+        reference_genome = reference['reference_genome']
     output:
         cns = outdir + "/cnv/{sample}.cns",
         cnr = outdir + "/cnv/{sample}.cnr"
@@ -16,7 +16,7 @@ rule cnvkit:
         outdir + "/logs/{sample}_cnvkit.log"
     shell:
         "mkdir -p {params.tmpdir} && "
-        "cnvkit.py batch {input.bam}  -r {input.reference} "
+        "cnvkit.py batch {input.bam}  -p {threads} --fasta {input.reference_genome} "
         " -d {params.tmpdir} 2> {log} "
         " && cp {params.tmpdir}/{params.prefix}.cns {output.cns}  "
         " && cp {params.tmpdir}/{params.prefix}.cnr {output.cnr}  "
@@ -83,7 +83,7 @@ rule liqbiocna_plot:
         tumor_tra = capture_to_results[CANCER_CAPTURE].svs['TRA'],
     threads: params['liqbiocna']['threads']
     log:
-        outdir + "/logs/{sample}_liqbiocna_plot.log"
+        outdir + "/logs/{}-{}_liqbiocna_plot.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     run:
         shell("source activate franken && " 
         "liqbioCNA_Interactive_plots.R  --tumor_cnr {input.tumor_cnr} "

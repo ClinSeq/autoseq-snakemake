@@ -6,11 +6,11 @@ rule bwa_mem_alignment_normal:
         fq2 = os.path.join(nskewer_outdir, "{prefix}" + ns2),
         bwa_index = reference['bwaIndex']
     output:
-        bamfile = outdir + "/bams/{normal_barcode}/{prefix}.bam"
+        bamfile = outdir + "/bams/"+ normal_barcode + "/{prefix}.bam"
     wildcard_constraints:
         prefix = "|".join(nfq_prefix)
     params:
-        readgroup = lambda wildcards: get_readgroup(wildcards),
+        readgroup = get_readgroup(normal_barcode),
         remove_duplicates = params['samblaster']['rm_dup'],
         tmpprefix = os.path.join(params['scratch'], 
                                 "samtools-{}".format(str(uuid.uuid4())))
@@ -33,11 +33,11 @@ rule bwa_mem_alignment_tumor:
         fq2 = os.path.join(tskewer_outdir, "{prefix}" + ts2),
         bwa_index = reference['bwaIndex']
     output:
-        bamfile = outdir + "/bams/{tumor_barcode}/{prefix}.bam"
+        bamfile = outdir + "/bams/" + tumor_barcode + "/{prefix}.bam"
     wildcard_constraints:
         prefix = "|".join(tfq_prefix)
     params:
-        readgroup = lambda wildcards: get_readgroup(wildcards),
+        readgroup = get_readgroup(tumor_barcode),
         remove_duplicates = params['samblaster']['rm_dup'],
         tmpprefix = os.path.join(params['scratch'], 
                                 "samtools-{}".format(str(uuid.uuid4())))
@@ -58,7 +58,7 @@ rule samtools_merge_normal:
     input:
         expand(outdir + "/bams/" + normal_barcode + "/{prefix}.bam", prefix = nfq_prefix)
     output:
-        outdir + "/bams/{normal_barcode}.bam"
+        outdir + "/bams/{}.bam".format(normal_barcode)
     run:
         bamfiles = " ".join(input)
         shell("samtools merge -c -p {output} {bamfiles}")
@@ -70,7 +70,7 @@ rule samtools_merge_tumor:
     input:
         expand(outdir + "/bams/" + tumor_barcode + "/{prefix}.bam", prefix = tfq_prefix)
     output:
-        outdir + "/bams/{tumor_barcode}.bam"
+        outdir + "/bams/{}.bam".format(tumor_barcode)
     run:
         bamfiles = " ".join(input)
         shell("samtools merge -c -p {output} {bamfiles}")
@@ -123,7 +123,6 @@ rule gatk3_targetcreator:
             " -R {input.reference_genome} "
             " -known {input.known_1kg} "
             " {params.extra} "
-            " -L {input.target_region} "
             " -known {input.known_mills_gs} "
             " -I {input.bam} "
             " -o {output.target_intervals} 2> {log} "
@@ -131,13 +130,13 @@ rule gatk3_targetcreator:
 
 rule gatk3_indelrealigner:
     input:
-        bam = outdir + outdir + "/bams/split_targets/bam/{sample}.{chr}.bam",
+        bam = outdir + "/bams/split_targets/bam/{sample}.{chr}.bam",
         reference_genome = reference['reference_genome'],
         known_1kg = reference["1KG"],
         known_mills_gs = reference["Mills_and_1KG_gold_standard"],
         target_intervals = outdir + "/bams/split_targets/{sample}_{chr}.intervals"
     output:
-        bam = outdir + "/bams/{sample}_realigned.{chr}.bam",
+        bam = outdir + "/bams/split_targets/bam/{sample}_realigned.{chr}.bam",
     params:
         java_options = params['gatk3']['indel_realigner']['java_options'],
         extra = params['gatk3']['indel_realigner']['extra'],
@@ -163,7 +162,7 @@ rule gatk3_indelrealigner:
 rule samtools_merge_realign:
     input:
         expand(outdir + "/bams/split_targets/bam/{{sample}}_realigned.{chr}.bam", chr = all_chromosomes),
-        outdir + "/bams/split_targets/bam/{sample}_umimapped.nochr.bam"
+        outdir + "/bams/split_targets/bam/{sample}.nochr.bam"
     output:
         outdir + "/bams/{sample}_realigned.bam"
     run:

@@ -1,4 +1,4 @@
-bamfile = capture_to_results[NORMAL_CAPTURE].umibam if umi else capture_to_results[NORMAL_CAPTURE].bamfile
+bamfile = capture_to_results[NORMAL_CAPTURE].bamfile
 
 rule gatk4_haplotypecaller:
     input:
@@ -40,8 +40,7 @@ rule strelka_germline:
     shell:
         "source activate gatk_3 && "
         "configureStrelkaGermlineWorkflow.py  --bam {input.bam} "
-        " --ref {input.reference} --targeted "
-        " --callRegions {input.call_region} "
+        " --ref {input.reference} "
         " --runDir {params.rundir} && "
         " {params.rundir}/runWorkflow.py -m local -j {threads} 2> {log} && "
         "zcat {params.rundir}/results/variants/variants.vcf.gz "

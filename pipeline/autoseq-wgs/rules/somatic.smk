@@ -1,6 +1,5 @@
 
 
-capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
 somatic_vcf = dict()
 normalBam = capture_to_results[NORMAL_CAPTURE].bamfile
 cancerBam = capture_to_results[CANCER_CAPTURE].bamfile
@@ -19,7 +18,6 @@ rule vardict_somatic:
         tumorid = compose_sample_str(CANCER_CAPTURE),
         min_alt_frac = params['vardict']['min_alt_frac'],
         min_num_reads = params['vardict']['min_num_reads'],
-        blacklist_bed = reference["targets"][capture_name]["blacklist-bed"],
         pyexe = "/opt/conda/bin/python" if config['container']['base'] != ' ' else sys.executable
     threads: params['vardict']['threads']
     log:
@@ -288,7 +286,6 @@ rule make_allelic_fraction_track:
 rule somatic_generateIGVnav:
     input:
         somatic = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-        vardict_vcf = "{}/variants/vardict/{}-{}.vardict-somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
         oncokb = reference['oncokb']
     output:
         "{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
