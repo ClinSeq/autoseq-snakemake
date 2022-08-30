@@ -1,4 +1,13 @@
 
+## read chrsize file for target regions in indelrealigner
+
+chrsizes = dict()
+fchrsizes = reference['chrsizes'] 
+
+with open(fchrsizes, 'r') as fh:
+    for line in fh.readlines():
+        data = line.strip().split()
+        chrsizes[data[0]] = "-".join(['1', str(data[1])])
 
 rule bwa_mem_alignment_normal:
     input:
@@ -111,6 +120,7 @@ rule gatk3_targetcreator:
     params:
         java_options = params['gatk3']['target_creator']['java_options'],
         extra = params['gatk3']['target_creator']['extra'],
+        target_region = lambda wildcards: get_target_region(wildcards, chrsizes),
         tmpdir = os.path.join(params['scratch'], 
                                 "realignerTC-{}".format(str(uuid.uuid4())))
     threads: params['gatk3']['target_creator']['threads']
@@ -122,6 +132,7 @@ rule gatk3_targetcreator:
             " -T RealignerTargetCreator "
             " -R {input.reference_genome} "
             " -known {input.known_1kg} "
+            " -L {params.target_region} "
             " {params.extra} "
             " -known {input.known_mills_gs} "
             " -I {input.bam} "

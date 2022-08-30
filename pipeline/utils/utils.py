@@ -253,6 +253,20 @@ def get_chromosomes(targets):
     return chromos
             
 
+def get_target_region(wildcards, chrsizes):
+    """
+    utility function to pass target region param to indelrealigner
+    
+    return: target_region eg: 1:1-122121212
+    """
+    
+    chromo = wildcards.chr
+
+    if chromo in chrsizes:
+        return ":".join([chromo, chrsizes[chromo]])
+
+    raise KeyError(chromo)
+
 
 def get_capture_name(capture_kit_code):
     """
