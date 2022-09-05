@@ -150,7 +150,7 @@ rule gatk3_indelrealigner:
         bam = outdir + "/bams/split_targets/bam/{sample}_realigned.{chr}.bam",
     params:
         java_options = params['gatk3']['indel_realigner']['java_options'],
-        extra = params['gatk3']['indel_realigner']['extra'],
+        extra = params['gatk3']['indel_realigner']['wgs'],
         tmpdir = os.path.join(params['scratch'], 
                                 "indelrealigner-{}".format(str(uuid.uuid4())))
     threads: params['gatk3']['indel_realigner']['threads']
@@ -195,7 +195,7 @@ rule picard_markdups:
         extra = params['picard']['markdup']['extra'],
         tmpdir = os.path.join(params['scratch'], 
                                 "picard-markdups-{}".format(str(uuid.uuid4())))
-    threads: params['picard']['markdup']['threads']
+    threads: 8
     log: outdir + "/logs/picard_markdups_{sample}.log"
     shell:
         "picard {params.java_options} -Djava.io.tmpdir={params.tmpdir} "
@@ -204,7 +204,7 @@ rule picard_markdups:
                 " METRICS_FILE={output.metrics} "
                 " {params.extra} "
                 " OUTPUT=/dev/stdout REMOVE_DUPLICATES={params.rmdups} "
-                " | samtools sort -@ {threads} -T {params.tmpdir} -o {output.bam} 2> {log}"
+                " | samtools sort -m 2G -@ {threads} -T {params.tmpdir} -o {output.bam} 2> {log}"
                 " && samtools index {output.bam} "
 
 
