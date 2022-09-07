@@ -143,17 +143,17 @@ def parse_gtf(gtf, sdid, vcftype):
                     start_b = re.search(':(\d+)', gene_b).group(1)
                     end_b = re.search('-(\d+)', gene_b).group(1)
                     sv_length = int(end_b) - int(start_a)
-                    alt = gene_b
+                    alt = ",".join([gene_a, gene_b])
                     
                     if chrom_a != chrom_b:
                         sv_length = svtype
                     
                     if svtype == 'TRA':
-                        event_1 = [chrom_a, start_a, end_a, sdid, igv_color_map[svtype], svtype, alt, support_reads]
+                        event_1 = [chrom_a, start_a, end_a, sdid, igv_color_map[svtype], svtype, gene_b, support_reads]
                         event_2 = [chrom_b, start_b, end_b, sdid, igv_color_map[svtype], svtype, gene_a, support_reads]
                         events_list.extend([event_1, event_2])
                     else:
-                        event = [chrom_a, start_a, end_a, sdid, igv_color_map[svtype], svtype, alt, support_reads]
+                        event = [chrom_a, start_a, end_b, sdid, igv_color_map[svtype], svtype, alt, support_reads]
                         events_list.append(event)
                     
     return events_list
@@ -184,9 +184,12 @@ def combine_mut(input_dir, output_dir):
     files = glob.glob(input_dir + "/*.mut")
     cmd = []
 
-    if not os.path.exists(output_dir + "/annotate_combined_sv.txt"):
-        header2 = "echo \"CHROM\tSTART\tEND\tSVTYPE\tTOOL\tSDID\tSAMPLE\tALT\tSUPPORT_READS\"" + " >> " + output_dir + "/annotate_combined_sv.txt"
-        subprocess.call(header2, shell=True)
+    if os.path.exists(output_dir + "/annotate_combined_sv.txt"):
+        print("annotate_combined_sv.txt file already exists!")
+        return output_dir + "/annotate_combined_sv.txt"
+    
+    header2 = "echo \"CHROM\tSTART\tEND\tSVTYPE\tTOOL\tSDID\tSAMPLE\tALT\tSUPPORT_READS\"" + " >> " + output_dir + "/annotate_combined_sv.txt"
+    subprocess.call(header2, shell=True)
 
     for file in files:
         vcftype = ''
@@ -304,10 +307,19 @@ def annotate_combined_sv(combined_file, genes, targets, output):
                 end_b = int(start_b) + 1
                 
                 if tool == "svcaller":
-                    chrom_b = data[7].split(':')[0]
-                    start_b = data[7].split(':')[1].split('-')[0]
-                    end_b = data[7].split(':')[1].split('-')[1]
-                
+                    bps = data[7].split(",")
+                    if len(bps) == 2:
+                        bp_a, bp_b = bps
+                        start_a = bp_a.split(':')[1].split('-')[0]
+                        end_a = bp_a.split(':')[1].split('-')[1]
+                        chrom_b = bp_b.split(':')[0]
+                        start_b = bp_b.split(':')[1].split('-')[0]
+                        end_b = bp_b.split(':')[1].split('-')[1]
+                    else:
+                        chrom_b = bps[0].split(':')[0]
+                        start_b = bps[0].split(':')[1].split('-')[0]
+                        end_b = bps[0].split(':')[1].split('-')[1]
+
                 igv_coord_b = chrom_b + ':' + str(start_b)
             else:
                 chrom_b = 'NA'
@@ -323,14 +335,12 @@ def annotate_combined_sv(combined_file, genes, targets, output):
             else:
                 gene_b = 'NA'
 
-            if tool == "svcaller":
+            
+            if check_targets(chrom_a, start_a, end_a, gene_a, targets) or \
+                    check_targets(chrom_b, start_b, end_b, gene_b, targets):
                 curator = "YES"
             else:
-                if check_targets(chrom_a, start_a, end_a, gene_a, targets) or \
-                        check_targets(chrom_b, start_b, end_b, gene_b, targets):
-                    curator = "YES"
-                else:
-                    curator = "NO"
+                curator = "NO"
             
             if tool == 'lumpy' and chrom_b == 'NA':
                 svlength = abs(int(end_a)-int(start_a))

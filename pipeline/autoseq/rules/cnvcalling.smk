@@ -82,7 +82,7 @@ rule cnv_tracks:
         segments_bedgraph = outdir + "/cnv/{sample}_segments.bedGraph",
     threads: params['cnv_tracks']['threads']
     shell:
-        "awk -F$'\\t' -v OFS='\\t' '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$5}}' "
+        "awk -F$'\\t' -v OFS='\\t' '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$6}}' "
         " {input.cnr} > {output.profile_bedgraph} "
         " && awk -F$'\\t' -v OFS='\\t' '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$5}}' "
         " {input.cns} > {output.segments_bedgraph} "
