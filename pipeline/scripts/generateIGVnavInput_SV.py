@@ -269,8 +269,8 @@ def check_targets(chrom, start, end, targets):
         return False
 
     for i in targets[chrom]:
-        if int(i["START"]) <= int(start) <= int(i["END"]) \
-            or int(i["START"]) <= int(end) <= int(i["END"]):
+        if int(i["START"]) - 150 <= int(start) <= int(i["END"]) + 150 \
+            or int(i["START"]) - 150 <= int(end) <= int(i["END"]) + 150:
             return True
 
     return False
