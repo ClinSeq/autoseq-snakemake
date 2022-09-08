@@ -261,14 +261,14 @@ def gene_annotation(chrom, start, end, genes):
         return 'NA'
         
 
-def check_targets(chrom, start, end, gene, targets):
+def check_targets(chrom, start, end, targets):
     """
     function to filter out SVs using target intervals
     """
-    if gene not in targets:
+    if chrom not in targets:
         return False
 
-    for i in targets[gene]:
+    for i in targets[chrom]:
         if int(i["START"]) <= int(start) <= int(i["END"]) \
             or int(i["START"]) <= int(end) <= int(i["END"]):
             return True
@@ -336,8 +336,8 @@ def annotate_combined_sv(combined_file, genes, targets, output):
                 gene_b = 'NA'
 
             
-            if check_targets(chrom_a, start_a, end_a, gene_a, targets) or \
-                    check_targets(chrom_b, start_b, end_b, gene_b, targets):
+            if check_targets(chrom_a, start_a, end_a, targets) or \
+                    check_targets(chrom_b, start_b, end_b, targets):
                 curator = "YES"
             else:
                 curator = "NO"
