@@ -1,26 +1,28 @@
 import os
 import uuid 
 
+capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
+cancer_sample = [_ for _ in all_clinseq_barcodes if '-T-' in _ or '-CFDNA-' in _]
 
-rule cnvkit:
-    input:
-        bam = outdir + "/bams/{sample}_nodups.bam",
-        reference = lambda wildcards: get_cnvkitref(wildcards, reference)
-    output:
-        cns = outdir + "/cnv/{sample}.cns",
-        cnr = outdir + "/cnv/{sample}.cnr"
-    params:
-        prefix = os.path.basename(outdir + "/bams/{sample}_nodups"),
-        tmpdir = os.path.join(params['scratch'], 
-                    "cnvkit-{}".format(str(uuid.uuid4())))
-    threads: params['cnvkit']['threads']
-    shell:
-        "mkdir -p {params.tmpdir} && "
-        "cnvkit.py batch {input.bam}  -r {input.reference} "
-        " -d {params.tmpdir} "
-        " && cp {params.tmpdir}/{params.prefix}.cns {output.cns}  "
-        " && cp {params.tmpdir}/{params.prefix}.cnr {output.cnr}  "
-        " && rm -r {params.tmpdir}"
+# rule cnvkit:
+#     input:
+#         bam = outdir + "/bams/{sample}_nodups.bam",
+#         reference = lambda wildcards: get_cnvkitref(wildcards, reference)
+#     output:
+#         cns = outdir + "/cnv/{sample}.cns",
+#         cnr = outdir + "/cnv/{sample}.cnr"
+#     params:
+#         prefix = os.path.basename(outdir + "/bams/{sample}_nodups"),
+#         tmpdir = os.path.join(params['scratch'], 
+#                     "cnvkit-{}".format(str(uuid.uuid4())))
+#     threads: params['cnvkit']['threads']
+#     shell:
+#         "mkdir -p {params.tmpdir} && "
+#         "cnvkit.py batch {input.bam}  -r {input.reference} "
+#         " -d {params.tmpdir} "
+#         " && cp {params.tmpdir}/{params.prefix}.cns {output.cns}  "
+#         " && cp {params.tmpdir}/{params.prefix}.cnr {output.cnr}  "
+#         " && rm -r {params.tmpdir}"
 
 
 # need to discuss
@@ -41,28 +43,48 @@ rule cnvkit:
 #         " --output-cns {output.cns} "
 
 
-rule cnvkit_cnstoseg:
+# rule cnvkit_cnstoseg:
+#     input:
+#         cns = outdir + "/cnv/{sample}.cns",
+#     output:
+#         seg = outdir + "/cnv/{sample}.seg",
+#     threads: params['cnstoseg']['threads']
+#     shell:
+#         "cnvkit.py export seg  -o {output.seg}  {input.cns}"
+
+
+rule jumblerun_cnv:
     input:
-        cns = outdir + "/cnv/{sample}.cns",
+        bam = outdir + "/bams/{sample}_nodups.bam",
+        reference = reference['targets'][capture_name]['jumble-ref']
     output:
-        seg = outdir + "/cnv/{sample}.seg",
-    threads: params['cnstoseg']['threads']
+        cns = outdir + "/cnv/{sample}.cns",
+        cnr = outdir + "/cnv/{sample}.cnr",
+        seg = outdir + "/cnv/{sample}_dnacopy.seg"
+    params:
+        outdir = outdir + "/cnv/"
+    threads: params['jumble']['threads']
+    log:
+        outdir + "/logs/variants/{sample}-jumblerun-cnv.log"
     shell:
-        "cnvkit.py export seg  -o {output.seg}  {input.cns}"
+        "source activate jumble-env && "
+        "jumble-run.R -r {input.reference} "
+        " -b {input.bam} " 
+        " -o {params.outdir} 2> {log} "
 
 
-rule cnvkit_tracks:
+rule cnv_tracks:
     input:
         cns = outdir + "/cnv/{sample}.cns",
         cnr = outdir + "/cnv/{sample}.cnr"        
     output:
         profile_bedgraph = outdir + "/cnv/{sample}_profile.bedGraph",
         segments_bedgraph = outdir + "/cnv/{sample}_segments.bedGraph",
-    threads: params['cnvkit_tracks']['threads']
+    threads: params['cnv_tracks']['threads']
     shell:
-        "awk '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$5}}' "
+        "awk -F$'\\t' -v OFS='\\t' '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$6}}' "
         " {input.cnr} > {output.profile_bedgraph} "
-        " && awk '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$5}}' "
+        " && awk -F$'\\t' -v OFS='\\t' '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$5}}' "
         " {input.cns} > {output.segments_bedgraph} "
 
 

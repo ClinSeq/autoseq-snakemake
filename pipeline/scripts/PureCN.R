@@ -282,7 +282,6 @@ if (file.exists(file.rds) && !opt$force) {
         print(err)
         quit()
     })
-
 }
 
 ### Create output files -------------------------------------------------------
