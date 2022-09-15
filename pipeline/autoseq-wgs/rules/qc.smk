@@ -94,7 +94,7 @@ rule gatk3_contest_cancer:
         reference_genome = reference['reference_genome'],
         normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
         cancer_bam = capture_to_results[CANCER_CAPTURE].bamfile,
-        popvcf = reference["swegene_common"]
+        popvcf = reference["pop_vcf"]
     output:
         "{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR)
     params:
@@ -119,7 +119,7 @@ rule gatk3_contest_normal:
         reference_genome = reference['reference_genome'],
         normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
         cancer_bam = capture_to_results[CANCER_CAPTURE].bamfile,
-        popvcf = reference["swegene_common"]
+        popvcf = reference["pop_vcf"]
     output:
         "{}/contamination/{}.contest.txt".format(outdir, NORMAL_CAPTURE_STR)
     params:

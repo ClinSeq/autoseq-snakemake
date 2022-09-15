@@ -24,6 +24,8 @@ params:
     scratch: /tmp
     bwa:
         threads: 8
+    bcftools:
+        threads: 4
     samblaster:
         rm_dup: " --removeDups "
         threads: 8
@@ -141,3 +143,5 @@ params:
         threads: 8
     multiqc:
         threads: 1
+    sage:
+        threads: 8

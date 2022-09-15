@@ -273,7 +273,7 @@ def check_targets(chrom, start, end, gene, targets):
     return False
 
 
-def annotate_combined_sv(combined_file, genes, targets, output):
+def annotate_combined_sv(combined_file, genes, targets, capture, output):
     """
     Parsing combined sv list and apply gene annotation for each SV
     """
@@ -322,8 +322,8 @@ def annotate_combined_sv(combined_file, genes, targets, output):
                 gene_b = gene_annotation(chrom_b, start_b, end_b, genes)
             else:
                 gene_b = 'NA'
-
-            if tool == "svcaller":
+            
+            if capture == "WG":
                 curator = "YES"
             else:
                 if check_targets(chrom_a, start_a, end_a, gene_a, targets) or \
@@ -397,5 +397,7 @@ if __name__ == "__main__":
         genes = load_bed(annotBed)
         fh = open(target_json, 'r')
         targets = json.load(fh)
-        annotate_combined_sv(combined_input, genes, targets[capture_kit], output)
+        if capture_kit in targets:
+            targets = targets[capture_kit]
+        annotate_combined_sv(combined_input, genes, targets, capture_kit, output)
 

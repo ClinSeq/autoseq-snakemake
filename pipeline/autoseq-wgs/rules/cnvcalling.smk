@@ -3,7 +3,7 @@
 rule cnvkit:
     input:
         bam = outdir + "/bams/{sample}_nodups.bam",
-        reference_genome = reference['reference_genome']
+        reference = reference['wgs']['cnvkit-ref']
     output:
         cns = outdir + "/cnv/{sample}.cns",
         cnr = outdir + "/cnv/{sample}.cnr"
@@ -16,7 +16,7 @@ rule cnvkit:
         outdir + "/logs/{sample}_cnvkit.log"
     shell:
         "mkdir -p {params.tmpdir} && "
-        "cnvkit.py batch {input.bam}  -p {threads} --fasta {input.reference_genome} "
+        "cnvkit.py batch {input.bam} -m wgs -r {input.reference}  -p {threads} "
         " -d {params.tmpdir} 2> {log} "
         " && cp {params.tmpdir}/{params.prefix}.cns {output.cns}  "
         " && cp {params.tmpdir}/{params.prefix}.cnr {output.cnr}  "

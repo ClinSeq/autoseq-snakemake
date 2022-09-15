@@ -1,29 +1,50 @@
 bamfile = capture_to_results[NORMAL_CAPTURE].bamfile
 
+haplotype_vcf_prefix = "{}/variants/haplotypecaller/{}.haplotypecaller-germline".format(outdir, NORMAL_CAPTURE_STR)
+haplotype_log_prefix = "{}/logs/variants/haplotypecaller/{}.haplotypecaller-germline".format(outdir, NORMAL_CAPTURE_STR)
+
 rule gatk4_haplotypecaller:
     input:
         bam = bamfile,
         reference = reference['reference_genome'],
-        dbsnp = reference["dbSNP"]
+        dbsnp = reference["dbSNP"],
+        interval_list = intervals_dir + "human_g1k_v37_decoy.{suf}.interval_list"
     output:
-        vcf = "{}/variants/haplotypecaller/{}.haplotypecaller-germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
-        normalized_vcf = "{}/variants/haplotypecaller/{}.haplotypecaller-germline-normalized.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
+        vcf = haplotype_vcf_prefix + ".{suf}.vcf.gz",
+        normalized_vcf = haplotype_vcf_prefix + "-normalized.{suf}.vcf.gz"
+    wildcard_constraints:
+        suf = "|".join(suffix)
     params:
         java_options = params["gatk4"]["haplotypecaller"]["java_options"]
     threads: params["gatk4"]["threads"]
     log:
-        "{}/logs/variants/haplotypecaller/{}.haplotypecaller-germline.log".format(outdir, NORMAL_CAPTURE_STR)
+        haplotype_log_prefix + ".{suf}.log"
     shell:
         "gatk --java-options '{params.java_options}' "
-            " HaplotypeCaller   "
-            " -R {input.reference}  "
-            " -I {input.bam}  "
-            " --dbsnp {input.dbsnp} "
-            " -O {output.vcf} 2> {log} && "
+        " HaplotypeCaller   "
+        " -R {input.reference}  "
+        " -I {input.bam}  "
+        " -L {input.interval_list} "
+        " --dbsnp {input.dbsnp} "
+        " -O {output.vcf} 2> {log} && "
         " vt decompose -s {output.vcf} "
         " | vt normalize  -r {input.reference} - "
         " | bgzip > {output.normalized_vcf} 2>> {log} && "
         " tabix -p vcf {output.normalized_vcf} 2>> {log} "
+
+
+rule haplotypecaller_vcfmerge:
+    input:
+        expand(haplotype_vcf_prefix + "-normalized.{suf}.vcf.gz", suf=suffix)
+    output:
+        haplotype_vcf_prefix + "-normalized.vcf.gz"     
+    threads: params['bcftools']['threads']
+    log:
+        "{}/logs/variants/{}-haplotypecaller-germline-merge.log".format(outdir, NORMAL_CAPTURE_STR)
+    shell:
+        "bcftools concat --threads {threads} -a "
+        " -O z {input} > {output} 2> {log} && "
+        " tabix -p vcf {output} "
 
 
 rule strelka_germline:
@@ -45,7 +66,7 @@ rule strelka_germline:
         " {params.rundir}/runWorkflow.py -m local -j {threads} 2> {log} && "
         "zcat {params.rundir}/results/variants/variants.vcf.gz "
         " | awk 'BEGIN {{ OFS = \"\t\"}} /^#/ {{ print $0 }} {{if($7==\"PASS\") print $0 }}' "
-        " | vt decompose -s - | vt normalize  -r {input.reference} - "
+        " | vt decompose -s - | vt normalize -n -r {input.reference} - "
         " | bgzip > {output.vcf} && "
         " tabix -p vcf {output.vcf} && rm -rf {params.rundir} 2>> {log} "
 
