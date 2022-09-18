@@ -250,6 +250,7 @@ rule gridss_svcalling_somatic:
     log:
         outdir + "/logs/svs/gridss-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     shell:
+        "source activate gridss-env && "
         "gridss --reference {input.reference} "
         " --jvmheap {params.jvmheap} "
         " --jar {params.gridss_jar} "
@@ -263,38 +264,35 @@ rule gridss_somatic_filter:
     input:
         vcf = "{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     output:
-        vcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf.bgz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+        vcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
         pondir = reference["pondir"],
-        script_dir = " -s /opt/gridss -c /opt/gridss ",
-        plotdir = "{}/svs/gridss/".format(outdir),
-        outvcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+        script_dir = os.environ.get('GRIDSS_SCRIPT'),
+        plotdir = "{}/svs/gridss/".format(outdir)
     threads: params["gridss_filter"]["threads"]
+    log:
+        outdir + "/logs/svs/gridss-somatic-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     shell:
-        "gridss_somatic_filter -p {params.pondir} "
+        "source activate gridss-env && "
+        "Rscript {params.script_dir}gridss_somatic_filter -p {params.pondir} "
         " -i {input.vcf} "
-        " -o {params.outvcf} "
-        " --plotdir {params.plotdir} {params.script_dir}"
+        " -o {output.vcf} "
+        " --plotdir {params.plotdir} -s {params.script_dir} 2> {log} && "
+        " bgzip -d {output.vcf}.bgz "
 
 
-# rule generateIGVnavInput_gridss:
-#     input:
-#         normal_vcf = "{}/svs/gridss/{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
-#         tumor_vcf = "{}/svs/gridss/{}-gridss.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
-#     output:
-#         normal_mut = "{}/svs/igv/{}_normal_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR),
-#         somatic_mut = "{}/svs/igv/{}_somatic_pass_gridss.mut".format(outdir, CANCER_CAPTURE_STR)
-#     params:
-#         nprefix = outdir + "/svs/igv/{}".format(NORMAL_CAPTURE_STR),
-#         tprefix = outdir + "/svs/igv/{}".format(CANCER_CAPTURE_STR),
-#         sdid = "-".join(NORMAL_CAPTURE_STR.split("-")[1:3])
-#     shell:
-#         "generateIGVnavInput_SV.py --input {input.normal_vcf} "
-#                 " --sdid {params.sdid} --tool gridss " 
-#                 " --vcftype normal --output {params.nprefix} && "
-#         "generateIGVnavInput_SV.py --input {input.tumor_vcf} "
-#                 " --sdid {params.sdid} --tool gridss " 
-#                 " --vcftype somatic --output {params.tprefix} "
+rule generateIGVnavInput_gridss:
+    input:
+        vcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    output:
+        somatic_mut = "{}/svs/igv/{}_somatic_pass_gridss.mut".format(outdir, CANCER_CAPTURE_STR)
+    params:
+        tprefix = outdir + "/svs/igv/{}".format(CANCER_CAPTURE_STR),
+        sdid = "-".join(CANCER_CAPTURE_STR.split("-")[1:3])
+    shell:
+        "generateIGVnavInput_SV.py --input {input.vcf} "
+                " --sdid {params.sdid} --tool gridss " 
+                " --vcftype somatic --output {params.tprefix} "
 
 
 rule annotate_generateIGVnavInput:
@@ -306,8 +304,8 @@ rule annotate_generateIGVnavInput:
         lumpy_len500 = "{}/svs/igv/{}-{}_lumpy_len500_SU24.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         lumpy_1k = "{}/svs/igv/{}-{}_lumpy_len1k_SU50.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         genes = reference["genes_bed"],
-        targets = reference['sv_filter']
-        # gridss_somatic = "{}/svs/igv/{}_somatic_pass_gridss.mut".format(outdir, CANCER_CAPTURE_STR),
+        targets = reference['sv_filter'],
+        gridss_somatic = "{}/svs/igv/{}_somatic_pass_gridss.mut".format(outdir, CANCER_CAPTURE_STR),
     output:
         "{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:

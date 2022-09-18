@@ -227,5 +227,5 @@ rule overview_plot:
         "source activate purecn-env && "
         "QC_overview.R  -s {params.samples} "
                         "-d {params.outdir} "
-                        "-o {output} "
+                        "-o {output} --wgs "
                         "-m {params.mainpath} 2> {log} "
