@@ -168,7 +168,7 @@ data2_exon <- data2[data2$Feature == 'exon',]
         alf$ai_n=2*abs(alf$n-0.5)
         
         # require presence and heteroz in normal
-        alf <- alf[nd > 15 & td > 50 & n > .45 & n < .55]
+        alf <- alf[nd > 15 & td > 50 & n > 0.3 & n < 0.7]
         
     }
 }
