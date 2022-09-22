@@ -76,8 +76,7 @@ if 'ALL' in steps or 'qc' in steps:
 
     OUTPUT.append(CONTEST)
     QC_overview = "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest))
-    
-    # OUTPUT.append(QC_overview)
+    OUTPUT.append(QC_overview)
 
 if 'ALL' in steps or 'variants' in steps:
     CNV_OUTPUT = list()
@@ -125,8 +124,8 @@ if 'ALL' in steps or 'variants' in steps:
     VARIANTS.append("{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 
     IGV = list()
-    # IGV.append("{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
-    # IGV.append("{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR))
+    IGV.append("{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
+    IGV.append("{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR))
     IGV.append("{}/variants/{}-and-{}.germline-variants-somatic-afs.bedGraph".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
     OUTPUT.append(VARIANTS)
     OUTPUT.append(IGV)

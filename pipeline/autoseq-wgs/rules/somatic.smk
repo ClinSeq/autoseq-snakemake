@@ -272,34 +272,95 @@ rule somaticseq_merge:
         " tabix -p vcf {output.all_somatic} 2> {log} "
 
 
-rule vcf_add_sample:
+# rule vcf_add_sample:
+#     input:
+#         germline_vcf = "{}/variants/{}-all.germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
+#         tumor_bam = cancerBam
+#     output:
+#         vcf = "{}/variants/{}-and-{}.germline-variants-with-somatic-afs.vcf.gz".format(
+#             outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+#     params:
+#         tumorid = CANCER_SAMPLE_STR,
+#         tmpdir = os.path.join(params['scratch'], 
+#                     "vcfaddsample-{}".format(str(uuid.uuid4())))
+#     threads: params['vcfaddsample']['threads']
+#     log:
+#        "{}/logs/{}-{}.vcf_add_sample.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR) 
+#     shell:
+#         "vcf_filter.py --no-filtered  {input.germline_vcf} "
+#         " sq --site-quality 5 | bgzip > {params.tmpdir}.vcf.gz && "
+#         " vcf_add_sample.py --filter_hom --samplename {params.tumorid}  " 
+#         " {params.tmpdir}.vcf.gz  {input.tumor_bam} "
+#         " | bgzip > {output.vcf} 2> {log} && "
+#         " tabix -p vcf {output.vcf} && " 
+#         " rm {params.tmpdir}.vcf.gz "
+
+
+
+rule somatic_generateIGVnav:
     input:
-        germline_vcf = "{}/variants/{}-all.germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
-        tumor_bam = cancerBam
+        somatic = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        oncokb = reference['oncokb']
     output:
-        vcf = "{}/variants/{}-and-{}.germline-variants-with-somatic-afs.vcf.gz".format(
-            outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+        "{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     params:
-        tumorid = CANCER_SAMPLE_STR,
-        tmpdir = os.path.join(params['scratch'], 
-                    "vcfaddsample-{}".format(str(uuid.uuid4())))
-    threads: params['vcfaddsample']['threads']
+        vcftype = "somatic"
     log:
-       "{}/logs/{}-{}.vcf_add_sample.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR) 
+        "{}/logs/{}-{}.somatic_generate_igvnav.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR) 
     shell:
-        "vcf_filter.py --no-filtered  {input.germline_vcf} "
-        " sq --site-quality 5 | bgzip > {params.tmpdir}.vcf.gz && "
-        " vcf_add_sample.py --filter_hom --samplename {params.tumorid}  " 
-        " {params.tmpdir}.vcf.gz  {input.tumor_bam} "
-        " | bgzip > {output.vcf} 2> {log} && "
-        " tabix -p vcf {output.vcf} && " 
-        " rm {params.tmpdir}.vcf.gz "
+        "generateIGVnavInput.py {input.somatic} {input.oncokb} {params.vcftype} --output {output} 2> {log} "
+
+
+haplotype_jc_vcf_pre = "{}/variants/haplotypecaller/{}-{}.haplotypecaller-joint-calling".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+haplotype_jc_log_prefix = "{}/logs/variants/haplotypecaller/{}-{}.haplotypecaller-joint-calling".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+
+
+rule gatk4_haplotypecaller_jc:
+    input:
+        normal_bam = normalBam,
+        tumor_bam = cancerBam,
+        reference = reference['reference_genome'],
+        dbsnp = reference["dbSNP"],
+        interval_list = intervals_dir + "human_g1k_v37_decoy.{suf}.interval_list"
+    output:
+        vcf = haplotype_jc_vcf_prefix + ".{suf}.vcf.gz",
+    wildcard_constraints:
+        suf = "|".join(suffix)
+    params:
+        java_options = params["gatk4"]["haplotypecaller"]["java_options"]
+    threads: params["gatk4"]["threads"]
+    log:
+        haplotype_jc_log_prefix + ".{suf}.log"
+    shell:
+        "gatk --java-options '{params.java_options}' "
+        " HaplotypeCaller   "
+        " -R {input.reference}  "
+        " -I {input.normal_bam}  "
+        " -I {input.tumor_bam} "
+        " -L {input.interval_list} "
+        " --dbsnp {input.dbsnp} "
+        " -O {output.vcf} 2> {log} "
+
+
+rule picard_vcfmerge:
+    input:
+        expand(haplotype_jc_vcf_prefix + ".{suf}.vcf.gz", suf = suffix)
+    output:
+        vcf = haplotype_jc_vcf_prefix + ".vcf.gz"
+    params:
+        java_options = params["gatk4"]["haplotypecaller"]["java_options"]
+    threads: params["gatk4"]["threads"]
+    log:
+        haplotype_jc_log_prefix + ".log"
+    run:
+        input_bams = ["I="+i for i in input]
+        ibams = " ".join(input_bams)
+        shell("picard MergeVcfs {ibams} O={output.vcf} 2> {log}")
 
 
 rule make_allelic_fraction_track:
     input:
-        vcf = "{}/variants/{}-and-{}.germline-variants-with-somatic-afs.vcf.gz".format(
-            outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+        vcf = haplotype_jc_vcf_prefix + ".vcf.gz"
     output:
         "{}/variants/{}-and-{}.germline-variants-somatic-afs.bedGraph".format(
             outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
@@ -308,16 +369,3 @@ rule make_allelic_fraction_track:
     shell:
         "generate_allelic_fraction_bedGraph.py  --output {output}  {input.vcf} 2> {log} "
 
-
-# rule somatic_generateIGVnav:
-#     input:
-#         somatic = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-#         oncokb = reference['oncokb']
-#     output:
-#         "{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
-#     params:
-#         vcftype = "somatic"
-#     log:
-#         "{}/logs/{}-{}.somatic_generate_igvnav.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR) 
-#     shell:
-#         "generateIGVnavInput.py {input.somatic} {input.oncokb} {params.vcftype} --output {output} 2> {log} "

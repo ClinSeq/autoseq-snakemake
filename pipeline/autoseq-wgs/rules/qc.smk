@@ -156,7 +156,7 @@ rule purecn:
     input:
         cnr = capture_to_results[CANCER_CAPTURE].cnr,
         seg = capture_to_results[CANCER_CAPTURE].seg,
-        vardict_vcf = "{}/variants/{}-{}.vardict-somatic-purecn.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        vardict_vcf = "{}/variants/vardict/{}-{}.vardict-somatic-purecn.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     output:
         csv = "{}/purecn/{}.csv".format(outdir, CANCER_CAPTURE_STR),
         genes_csv = "{}/purecn/{}_genes.csv".format(outdir, CANCER_CAPTURE_STR),
