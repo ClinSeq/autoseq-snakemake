@@ -99,7 +99,7 @@ params:
         threads: 1
     cnstoseg:
         threads: 1
-    cnvkit_tracks:
+    cnv_tracks:
         threads: 1
     gatk4:
         threads: 1
@@ -145,3 +145,5 @@ params:
         threads: 1
     sage:
         threads: 8
+    jumble:
+        threads: 1

@@ -1,6 +1,8 @@
 import os
 import uuid 
 
+capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
+cancer_sample = [_ for _ in all_clinseq_barcodes if '-T-' in _ or '-CFDNA-' in _]
 
 rule cnvkit:
     input:
@@ -45,24 +47,44 @@ rule cnvkit_cnstoseg:
     input:
         cns = outdir + "/cnv/{sample}.cns",
     output:
-        seg = outdir + "/cnv/{sample}.seg",
+        seg = outdir + "/cnv/{sample}_dnacopy.seg",
     threads: params['cnstoseg']['threads']
     shell:
         "cnvkit.py export seg  -o {output.seg}  {input.cns}"
 
 
-rule cnvkit_tracks:
+# rule jumblerun_cnv:
+#     input:
+#         bam = outdir + "/bams/{sample}_nodups.bam",
+#         reference = reference['targets'][capture_name]['jumble-ref']
+#     output:
+#         cns = outdir + "/cnv/{sample}.cns",
+#         cnr = outdir + "/cnv/{sample}.cnr",
+#         seg = outdir + "/cnv/{sample}_dnacopy.seg"
+#     params:
+#         outdir = outdir + "/cnv/"
+#     threads: params['jumble']['threads']
+#     log:
+#         outdir + "/logs/variants/{sample}-jumblerun-cnv.log"
+#     shell:
+#         "source activate jumble-env && "
+#         "jumble-run.R -r {input.reference} "
+#         " -b {input.bam} " 
+#         " -o {params.outdir} 2> {log} "
+
+
+rule cnv_tracks:
     input:
         cns = outdir + "/cnv/{sample}.cns",
         cnr = outdir + "/cnv/{sample}.cnr"        
     output:
         profile_bedgraph = outdir + "/cnv/{sample}_profile.bedGraph",
         segments_bedgraph = outdir + "/cnv/{sample}_segments.bedGraph",
-    threads: params['cnvkit_tracks']['threads']
+    threads: params['cnv_tracks']['threads']
     shell:
-        "awk '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$5}}' "
+        "awk -F$'\\t' -v OFS='\\t' '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$6}}' "
         " {input.cnr} > {output.profile_bedgraph} "
-        " && awk '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$5}}' "
+        " && awk -F$'\\t' -v OFS='\\t' '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$5}}' "
         " {input.cns} > {output.segments_bedgraph} "
 
 
