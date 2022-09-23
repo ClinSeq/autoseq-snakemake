@@ -2,3 +2,4 @@
 __pycache__
 autoseq.egg-info/
 tools/
+.DS_Store
