@@ -18,7 +18,7 @@ rule fastqc:
         
         shell("mkdir -p {output}")
         for fq in fq_files:
-            shell("fastqc -o {output} --nogroup {fq}")
+            shell("fastqc -t {threads} -o {output} --nogroup {fq}")
 
 
 rule picard_collectinsertsize:

@@ -28,7 +28,7 @@ params:
         rm_dup: " --removeDups "
         threads: 8
     fastqc:
-        threads: 1
+        threads: 8
     gatk3:
         threads: 1
         target_creator:
