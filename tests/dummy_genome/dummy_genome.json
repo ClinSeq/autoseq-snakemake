@@ -43,7 +43,8 @@
             "targets-bed-slopped20": "intervals/targets/probio_comprehensive3.slopped20.bed", 
             "targets-bed-slopped20-gz": "intervals/targets/probio_comprehensive3.slopped20.bed.gz", 
             "targets-interval_list": "intervals/targets/probio_comprehensive3.interval_list", 
-            "targets-interval_list-slopped20": "intervals/targets/probio_comprehensive3.slopped20.interval_list"
+            "targets-interval_list-slopped20": "intervals/targets/probio_comprehensive3.slopped20.interval_list",
+            "jumble-ref": "intervals/targets/comprehensive3_baits_twist.bed.reference.RDS"
         }
     }, 
     "ts_regions": "intervals/ts_regions.bed", 
