@@ -34,7 +34,7 @@ cat("Find all available qc files...\n")
 hsmetrics_files = dir(Sys.glob(paste0(main_path, "/*/*/qc/picard")), 
                 pattern = "picard-hsmetrics.txt$", recursive = TRUE, full.names = TRUE)
 markduplicates_files = dir(Sys.glob(paste0(main_path, "/*/*/qc/picard")), 
-                           pattern = "markdup.metrics.txt$", recursive = TRUE, full.names = TRUE)
+                           pattern = "markdup.*metrics.txt$", recursive = TRUE, full.names = TRUE)
 insertsize_files = dir(Sys.glob(paste0(main_path, "/*/*/qc/picard")), 
                            pattern = "picard-insertsize.txt$", recursive = TRUE, full.names = TRUE)
 contest_files = dir(Sys.glob(paste0(main_path, "/*/*/contamination")), 
@@ -66,9 +66,16 @@ for (f in hsmetrics_files) {
   tryCatch({
     SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
     DIR = dirname(dirname(dirname(f)))
-    HsMetrics = rbind(HsMetrics, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
-                                                        header = TRUE, stringsAsFactors = FALSE), 
-                                                        stringsAsFactors = FALSE))
+    tmp_df = read.table(f, skip = 6, nrow = 1, sep = "\t", 
+                        header = TRUE, stringsAsFactors = FALSE)
+    #for newer format files, remove additional columns, for compatibility with older format files
+    tmp_df = tmp_df[,which(! colnames(tmp_df) %in% c("MIN_TARGET_COVERAGE", "PCT_TARGET_BASES_250X", "PCT_TARGET_BASES_500X", 
+                                                     "PCT_TARGET_BASES_1000X", "PCT_TARGET_BASES_2500X", "PCT_TARGET_BASES_5000X", 
+                                                     "PCT_TARGET_BASES_10000X", "PCT_TARGET_BASES_25000X", "PCT_TARGET_BASES_50000X", 
+                                                     "PCT_TARGET_BASES_100000X"))]
+    #merge with overall df
+    HsMetrics = rbind(HsMetrics, cbind(SAMP, DIR, tmp_df, 
+                                       stringsAsFactors = FALSE))
   }, error = function(err) {
       print(paste("Sample: ", SAMP, " QC: HsMetrics"))
       print(paste("ERROR: ", err))
@@ -80,7 +87,7 @@ HsMetrics$FOLD_80_BASE_PENALTY = as.numeric(HsMetrics$FOLD_80_BASE_PENALTY)
 MarkDuplicates = data.frame()
 for (f in markduplicates_files) {
     tryCatch({
-        SAMP = sub("-picard-markdup.metrics.txt", "", basename(f))
+        SAMP = sub("-markdups-metrics.txt", "", sub("-picard-markdup.metrics.txt", "", basename(f)))  # remove both old and new style file name pattern
         DIR = dirname(dirname(dirname(f)))
         MarkDuplicates = rbind(MarkDuplicates, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
                                                                     header = TRUE, stringsAsFactors = FALSE), 
