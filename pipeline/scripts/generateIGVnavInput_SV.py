@@ -336,7 +336,7 @@ def annotate_combined_sv(combined_file, genes, targets, capture, output):
                 gene_b = 'NA'
             
             if capture == "WG":
-                curator = "YES
+                curator = "YES"
             else:
                 if check_targets(chrom_a, start_a, end_a, targets) or \
                         check_targets(chrom_b, start_b, end_b, targets):

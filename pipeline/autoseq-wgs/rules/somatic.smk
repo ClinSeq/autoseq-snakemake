@@ -196,7 +196,7 @@ rule sage_somatic:
         high_confi_bed = reference['wgs']['hartwig']['NA12878-highconf-bed'],
         ensembl_dir = reference['wgs']['hartwig']['ensembl-dir']
     output:
-        "{}/variants/mutect/{}-{}-hartwig-sage-somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        "{}/variants/{}-{}-hartwig-sage-somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     params:
         normalid = compose_sample_str(NORMAL_CAPTURE),
         tumorid = compose_sample_str(CANCER_CAPTURE),
@@ -220,10 +220,10 @@ rule sage_somatic:
 
 rule sage_splitvcf:
     input:
-        "{}/variants/mutect/{}-{}-hartwig-sage-somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        "{}/variants/{}-{}-hartwig-sage-somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     output:
-        snv = "{}/variants/mutect/{}-{}-hartwig-sage-somatic.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-        indel =  "{}/variants/mutect/{}-{}-hartwig-sage-somatic.indels.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        snv = "{}/variants/{}-{}-hartwig-sage-somatic.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        indel =  "{}/variants/{}-{}-hartwig-sage-somatic.indels.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: 1
     log:
         "{}/logs/variants/{}-{}-sage-somatic-splitvcf.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
@@ -232,8 +232,8 @@ rule sage_splitvcf:
         "splitVcf.py -infile {input} -snv {output.snv} -indel {output.indel}"
 
 
-somatic_vcf['sage_snv'] = "{}/variants/mutect/{}-{}-hartwig-sage-somatic.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
-somatic_vcf['sage_indel'] = "{}/variants/mutect/{}-{}-hartwig-sage-somatic.indels.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+somatic_vcf['sage_snv'] = "{}/variants/{}-{}-hartwig-sage-somatic.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+somatic_vcf['sage_indel'] = "{}/variants/{}-{}-hartwig-sage-somatic.indels.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
 
 
 rule somaticseq_merge:
@@ -311,7 +311,7 @@ rule somatic_generateIGVnav:
         "generateIGVnavInput.py {input.somatic} {input.oncokb} {params.vcftype} --output {output} 2> {log} "
 
 
-haplotype_jc_vcf_pre = "{}/variants/haplotypecaller/{}-{}.haplotypecaller-joint-calling".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+haplotype_jc_vcf_prefix = "{}/variants/haplotypecaller/{}-{}.haplotypecaller-joint-calling".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
 haplotype_jc_log_prefix = "{}/logs/variants/haplotypecaller/{}-{}.haplotypecaller-joint-calling".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
 
 

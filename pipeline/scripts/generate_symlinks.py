@@ -178,7 +178,7 @@ class GenerateSymlink():
         basename = os.path.basename(self.outputdirname).split("_")
 
         capture_id = basename[0].split('-')[6]
-        target_name = capture_kit_loopkup[capture_id[0:2]]
+        # target_name = capture_kit_loopkup[capture_id[0:2]]
         target_bed = self.targets
 
         #session file for snps

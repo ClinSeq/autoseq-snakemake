@@ -42,7 +42,7 @@ rule cnvkit_tracks:
     output:
         profile_bedgraph = outdir + "/cnv/{sample}_profile.bedGraph",
         segments_bedgraph = outdir + "/cnv/{sample}_segments.bedGraph",
-    threads: params['cnvkit_tracks']['threads']
+    threads: params['cnv_tracks']['threads']
     shell:
         "awk '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$5}}' "
         " {input.cnr} > {output.profile_bedgraph} "
@@ -60,7 +60,7 @@ rule liqbiocna_plot:
         tumor_cnr = capture_to_results[CANCER_CAPTURE].cnr,
         normal_cns = capture_to_results[NORMAL_CAPTURE].cns,
         normal_cnr = capture_to_results[NORMAL_CAPTURE].cnr,
-        vcf_add_sample = "{}/variants/haplotypecaller/{}-{}.haplotypecaller-joint-calling.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+        vcf_add_sample = "{}/variants/haplotypecaller/{}-{}.haplotypecaller-joint-calling.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         purecn_csv = "{}/purecn/{}.csv".format(outdir, CANCER_CAPTURE_STR),
         purecn_genes_csv = "{}/purecn/{}_genes.csv".format(outdir, CANCER_CAPTURE_STR),
         purecn_variants_csv = "{}/purecn/{}_variants.csv".format(outdir, CANCER_CAPTURE_STR),
@@ -85,7 +85,7 @@ rule liqbiocna_plot:
         outdir + "/logs/{}-{}_liqbiocna_plot.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     run:
         shell("source activate franken && " 
-        "liqbioCNA_Interactive_plots.R  --tumor_cnr {input.tumor_cnr} "
+        "liqbioCNA_Interactive_plots_WGS.R  --tumor_cnr {input.tumor_cnr} "
                     "  --tumor_cns {input.tumor_cns} "
                     "  --normal_cnr {input.normal_cnr} "
                     "  --normal_cns {input.normal_cns} "
