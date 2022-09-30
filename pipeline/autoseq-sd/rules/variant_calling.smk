@@ -99,7 +99,7 @@ rule vardict_somatic:
     params:
         normalid = compose_sample_str(NORMAL_CAPTURE),
         tumorid = compose_sample_str(CANCER_CAPTURE),
-        min_alt_frac = params['vardict']['min_alt_frac'],
+        min_alt_frac = params['vardict']['min_alt_frac_sd'],
         min_num_reads = params['vardict']['min_num_reads'],
         pyexe = "/opt/conda/bin/python" if config['container']['base'] != ' ' else sys.executable
     threads: params['vardict']['threads']
@@ -220,7 +220,7 @@ rule varscan_somatic:
         somatic_indel = "{}/variants/varscan/{}-{}-varscan.indel.Somatic.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
     params:
         java_options = params['varscan']['java_options'],
-        extra = params['varscan']['extra'],
+        extra = params['varscan']['extra_sd'],
         tmpdir = params['scratch']
     threads: params['varscan']['threads']
     log:
