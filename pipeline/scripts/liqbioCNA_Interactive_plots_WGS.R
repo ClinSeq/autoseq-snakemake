@@ -173,7 +173,7 @@ data2_exon <- data2[data2$Feature == 'exon',]
     }
 }
 
-save.image('ws.1.Rdata')
+#save.image('ws.1.Rdata')
 
 ### Read somatic point mutations #####
 {
@@ -288,7 +288,7 @@ save.image('ws.1.Rdata')
     # remove too few obs
     salf <- salf[AO.T > 3]
 }
-save.image('ws.2.Rdata')
+#save.image('ws.2.Rdata')
 
 ### Read germline point mutations ####
 {
@@ -412,7 +412,7 @@ save.image('ws.2.Rdata')
     
     
 }
-save.image('ws.3.Rdata')
+#save.image('ws.3.Rdata')
 
 ### Read CNVkit copy number data   #####
 { #tumor
@@ -537,7 +537,7 @@ save.image('ws.3.Rdata')
     }
 }
 
-save.image('ws.4.Rdata')
+#save.image('ws.4.Rdata')
 
 ### Read PureCN files #####
 {
@@ -580,7 +580,7 @@ save.image('ws.4.Rdata')
     }
 }
 
-save.image('ws.5.Rdata')
+#save.image('ws.5.Rdata')
 
 
 ### Purity  ####
