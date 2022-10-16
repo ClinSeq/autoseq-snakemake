@@ -1,38 +1,58 @@
 
 
-rule cnvkit:
+# rule cnvkit:
+#     input:
+#         bam = outdir + "/bams/{sample}_nodups.bam",
+#         reference = reference['wgs']['cnvkit-ref']
+#     output:
+#         cns = outdir + "/cnv/{sample}.cns",
+#         cnr = outdir + "/cnv/{sample}.cnr"
+#     params:
+#         prefix = os.path.basename(outdir + "/bams/{sample}_nodups"),
+#         tmpdir = os.path.join(params['scratch'], 
+#                     "cnvkit-{}".format(str(uuid.uuid4())))
+#     threads: params['cnvkit']['threads']
+#     log:
+#         outdir + "/logs/{sample}_cnvkit.log"
+#     shell:
+#         "mkdir -p {params.tmpdir} && "
+#         "cnvkit.py batch {input.bam} -m wgs -r {input.reference}  -p {threads} "
+#         " -d {params.tmpdir} 2> {log} "
+#         " && cp {params.tmpdir}/{params.prefix}.cns {output.cns}  "
+#         " && cp {params.tmpdir}/{params.prefix}.cnr {output.cnr}  "
+#         " && rm -r {params.tmpdir}"
+
+
+# rule cnvkit_cnstoseg:
+#     input:
+#         cns = outdir + "/cnv/{sample}.cns",
+#     output:
+#         seg = outdir + "/cnv/{sample}.seg",
+#     threads: params['cnstoseg']['threads']
+#     log:
+#         outdir + "/logs/{sample}_cnvkit_cnstoseg.log"
+#     shell:
+#         "cnvkit.py export seg  -o {output.seg}  {input.cns} 2> {log} "
+
+
+rule jumblerun_cnv:
     input:
         bam = outdir + "/bams/{sample}_nodups.bam",
-        reference = reference['wgs']['cnvkit-ref']
+        reference = reference['targets']['wgs']['jumble-ref']
     output:
         cns = outdir + "/cnv/{sample}.cns",
-        cnr = outdir + "/cnv/{sample}.cnr"
+        cnr = outdir + "/cnv/{sample}.cnr",
+        seg = outdir + "/cnv/{sample}_dnacopy.seg"
     params:
-        prefix = os.path.basename(outdir + "/bams/{sample}_nodups"),
-        tmpdir = os.path.join(params['scratch'], 
-                    "cnvkit-{}".format(str(uuid.uuid4())))
-    threads: params['cnvkit']['threads']
+        outdir = outdir + "/cnv/"
+    threads: params['jumble']['threads']
     log:
-        outdir + "/logs/{sample}_cnvkit.log"
+        outdir + "/logs/variants/{sample}-jumblerun-cnv.log"
     shell:
-        "mkdir -p {params.tmpdir} && "
-        "cnvkit.py batch {input.bam} -m wgs -r {input.reference}  -p {threads} "
-        " -d {params.tmpdir} 2> {log} "
-        " && cp {params.tmpdir}/{params.prefix}.cns {output.cns}  "
-        " && cp {params.tmpdir}/{params.prefix}.cnr {output.cnr}  "
-        " && rm -r {params.tmpdir}"
-
-
-rule cnvkit_cnstoseg:
-    input:
-        cns = outdir + "/cnv/{sample}.cns",
-    output:
-        seg = outdir + "/cnv/{sample}.seg",
-    threads: params['cnstoseg']['threads']
-    log:
-        outdir + "/logs/{sample}_cnvkit_cnstoseg.log"
-    shell:
-        "cnvkit.py export seg  -o {output.seg}  {input.cns} 2> {log} "
+        "source activate jumble-env && "
+        "jumble-run.R -r {input.reference} "
+        " -b {input.bam} " 
+        " -o {params.outdir} 2> {log} "
 
 
 rule cnvkit_tracks:

@@ -328,7 +328,7 @@ rule gatk4_haplotypecaller_jc:
         suf = "|".join(suffix)
     params:
         java_options = params["gatk4"]["haplotypecaller"]["java_options"]
-    threads: params["gatk4"]["threads"]
+    threads: 4
     log:
         haplotype_jc_log_prefix + ".{suf}.log"
     shell:

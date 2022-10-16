@@ -22,5 +22,8 @@
     },
     "vardict_somatic": {
         "time": "60:00:00"
+    },
+    "svcaller_run": {
+        "time": "60:00:00"
     }
 }
