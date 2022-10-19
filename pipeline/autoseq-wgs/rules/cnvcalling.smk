@@ -38,7 +38,7 @@
 rule jumblerun_cnv:
     input:
         bam = outdir + "/bams/{sample}_nodups.bam",
-        reference = reference['targets']['wgs']['jumble-ref']
+        reference = reference['wgs']['jumble-ref']
     output:
         cns = outdir + "/cnv/{sample}.cns",
         cnr = outdir + "/cnv/{sample}.cnr",

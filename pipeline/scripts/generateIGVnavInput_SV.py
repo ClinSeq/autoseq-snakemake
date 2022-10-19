@@ -101,7 +101,7 @@ def parse_gridss(input_vcf, SDID, output, vcftype):
     header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
                       " > " + output + "_" + vcftype + "_pass_gridss.mut.tmp"
 
-    gridss_cmd = "zless " + input_vcf  + " | vawk '{ if($7 == \"PASS\")  print $1, $2, $2+1, \""+ SDID + '_gridss_' + vcftype +"\", I$SVTYPE, $5, I$VF}' " \
+    gridss_cmd = "less " + input_vcf  + " | vawk '{ if($7 == \"PASS\")  print $1, $2, $2+1, \""+ SDID + '_gridss_' + vcftype +"\", I$SIMPLE_TYPE, $5, I$VF}' " \
                  " >> " + output + "_" + vcftype +"_pass_gridss.mut.tmp"
     
     tmp_mut = output + "_" + vcftype + "_pass_gridss.mut.tmp"
