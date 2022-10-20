@@ -12,8 +12,10 @@ import pandas as pd
 # structural variant color map for IGV SV representation
 igv_color_map = {"DEL": "Non-coding_Transcript",
                  "DUP": "Truncating",
+                 "INS": "Truncating",
                  "INV": "Indel",
                  "TRA": "Nonsense",
+                 "CTX": "Nonsense",
                  "BND": "Nonsense"
                  }
 
@@ -33,12 +35,14 @@ def get_igvcolortype(mutfile, tool):
         for line in fh:
             if line.startswith("CHROM"):
                 continue
-            data = line.strip().split()
+            data = line.strip().split('\t')
             chrom = data[0]
             start = data[1]
             end = data[2]
             sdid = data[3]
             svtype = data[4]
+            if svtype == '':
+                svtype = 'BND'
             igvtype = igv_color_map[svtype]
             alt = data[5]
             if tool == "svaba":
