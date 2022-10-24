@@ -1735,10 +1735,10 @@ save.image('ws.Rdata')
 # downsample bins and alf to 300,000
 
 set.seed(25)
-if (exists(bins)) if (!is.null(bins)) if (nrow(bins)>300e3) {
+if (exists('bins')) if (!is.null(bins)) if (nrow(bins)>300e3) {
     bins <- bins[order(rnorm(nrow(bins)))[1:300e3]]
 }
-if (exists(alf)) if (!is.null(alf)) if (nrow(alf)>300e3) {
+if (exists('alf')) if (!is.null(alf)) if (nrow(alf)>300e3) {
     alf <- alf[order(rnorm(nrow(alf)))[1:300e3]]
 }
 
