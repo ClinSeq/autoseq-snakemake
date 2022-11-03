@@ -114,8 +114,8 @@ for sample in all_clinseq_barcodes:
 
 if 'ALL' in steps or 'variants' in steps:
     VARIANTS = list()
-    VARIANTS.append("{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR))
-    VARIANTS.append("{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
+    VARIANTS.append("{}/variants/{}-all.germline.vep.vcf.gz".format(outdir, NORMAL_CAPTURE_STR))
+    VARIANTS.append("{}/variants/{}-{}-all.somatic.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
     VARIANTS.append(expand(outdir + "/svs/{sample}-{events}.gtf", sample=all_clinseq_barcodes, events=["DEL", "DUP", "INV", "TRA"]))
     VARIANTS.append(expand(outdir + "/svs/{sample}_effects.json", sample=all_clinseq_barcodes))
     VARIANTS.append("{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))

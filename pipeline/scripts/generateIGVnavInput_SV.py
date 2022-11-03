@@ -7,6 +7,7 @@ import glob
 import re
 import json
 import pandas as pd
+import vcf
 
 
 # structural variant color map for IGV SV representation
@@ -102,15 +103,46 @@ def parse_gridss(input_vcf, SDID, output, vcftype):
     """
     GRIDSS - vcf parsing 
     """
-    header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-                      " > " + output + "_" + vcftype + "_pass_gridss.mut.tmp"
+    # header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
+    #                   " > " + output + "_" + vcftype + "_pass_gridss.mut.tmp"
 
-    gridss_cmd = "less " + input_vcf  + " | vawk '{ if($7 == \"PASS\")  print $1, $2, $2+1, \""+ SDID + '_gridss_' + vcftype +"\", I$SIMPLE_TYPE, $5, I$VF}' " \
-                 " >> " + output + "_" + vcftype +"_pass_gridss.mut.tmp"
+    # gridss_cmd = "less " + input_vcf  + " | vawk '{ if($7 == \"PASS\")  print $1, $2, $2+1, \""+ SDID + '_gridss_' + vcftype +"\", I$SIMPLE_TYPE, $5, I$VF}' " \
+    #              " >> " + output + "_" + vcftype +"_pass_gridss.mut.tmp"
     
-    tmp_mut = output + "_" + vcftype + "_pass_gridss.mut.tmp"
-    subprocess.call(" && ".join([header, gridss_cmd]), shell=True)
-    get_igvcolortype(tmp_mut, "gridss")    
+    # tmp_mut = output + "_" + vcftype + "_pass_gridss.mut.tmp"
+    # subprocess.call(" && ".join([header, gridss_cmd]), shell=True)
+    # get_igvcolortype(tmp_mut, "gridss")
+    output_fname = "_".join([output, vcftype, "pass_gridss.mut"])
+    outfile = open(output_fname, "w")
+
+    outfile.write("\t".join(['CHROM','START','END','SDID','TYPE','SVTYPE','ALT','SUPPORT_READS']) + '\n')
+
+    vcf_reader = vcf.Reader(open(input_vcf, 'r'))
+    events = set()
+    sdid = SDID + '_gridss_' + vcftype
+    for record in vcf_reader:
+        if record.FILTER != []:
+            continue
+        curr_event = record.INFO['EVENT']
+        
+        if curr_event not in events \
+            and 'SIMPLE_TYPE' in record.INFO:
+
+            svtype = record.INFO['SIMPLE_TYPE']
+            chrom = record.CHROM
+            start = record.POS
+            end = record.POS + 1
+            alt = str(record.ALT[0])
+            
+            if svtype != 'TRA':
+                events.add(curr_event)
+                end = ''.join(list(filter(str.isdigit, alt.split(':')[1])))
+
+            support_reads = record.INFO['VF']
+
+            outfile.write("\t".join(map(str, [chrom, start, end, sdid, 
+                                     igv_color_map[svtype], svtype, alt, support_reads])) + "\n")
+    
 
 
 def parse_gtf(gtf, sdid, vcftype):
@@ -280,14 +312,14 @@ def check_targets(chrom, start, end, targets):
     return False
 
 
-def annotate_combined_sv(combined_file, genes, targets, capture, output):
+def annotate_combined_sv(combined_file, genes, targets, capture, varann, output):
     """
     Parsing combined sv list and apply gene annotation for each SV
     """
     # output_file = open(output, 'w')
     summary_columns = ['CHROM_A', 'START_A', 'END_A', 'CHROM_B', 'START_B', 'END_B',
                        'IGV_COORD', 'SVTYPE', 'SV_LENGTH', 'SUPPORT_READS', 'TOOL', 'SDID', 'SAMPLE',
-                       'GENE_A', 'GENE_B', "GENE_A-GENE_B-sorted", "CURATOR"]
+                       'GENE_A', 'GENE_B', "GENE_A-GENE_B-sorted", "SOURCES", "CURATOR"]
     summary_sv = list()
     with open(combined_file, 'r') as fh:
         header = fh.readline()
@@ -302,13 +334,19 @@ def annotate_combined_sv(combined_file, genes, targets, capture, output):
             tool = data[4]
             sdid = data[5].split('_')[0]
             sample = data[6]
+            alt = data[7]
             sup_reads = data[8] if len(data) == 9 else '.'
             svlength = 'NA'
 
-            if ':' in data[7]:
-                chrom_b = ''.join(list(filter(str.isdigit, data[7].split(':')[0])))
-                start_b = ''.join(list(filter(str.isdigit, data[7].split(':')[1])))
+            if ':' in alt:
+                chrom_b = ''.join(list(filter(str.isdigit, alt.split(':')[0])))
+                start_b = ''.join(list(filter(str.isdigit, alt.split(':')[1])))
                 end_b = int(start_b) + 1
+
+                if 'X' in alt:
+                    chrom_b = 'X'
+                elif 'Y' in alt:
+                    chrom_b = 'Y'
                 
                 if tool == "svcaller":
                     bps = data[7].split(",")
@@ -325,7 +363,8 @@ def annotate_combined_sv(combined_file, genes, targets, capture, output):
                         end_b = bps[0].split(':')[1].split('-')[1]
 
                 igv_coord_b = chrom_b + ':' + str(start_b)
-            else:
+
+            if svtype != 'TRA' and not tool == 'svcaller':
                 chrom_b = 'NA'
                 start_b = 'NA'
                 end_b = 'NA'
@@ -339,8 +378,17 @@ def annotate_combined_sv(combined_file, genes, targets, capture, output):
             else:
                 gene_b = 'NA'
             
+            sources = ''
             if capture == "WG":
-                curator = "YES"
+                curator = "NO"
+                if gene_a in varann['GSR']:
+                    sources += ",".join(varann['GSR'][gene_a]['source']) + ',' 
+                
+                if gene_b in varann['GSR']:
+                    sources += ",".join(varann['GSR'][gene_b]['source']) + ','
+                
+                if sources != '':
+                    curator = "YES"
             else:
                 if check_targets(chrom_a, start_a, end_a, targets) or \
                         check_targets(chrom_b, start_b, end_b, targets):
@@ -348,7 +396,7 @@ def annotate_combined_sv(combined_file, genes, targets, capture, output):
                 else:
                     curator = "NO"
             
-            if tool == 'lumpy' and chrom_b == 'NA':
+            if tool == 'gridss' and chrom_b == 'NA':
                 svlength = abs(int(end_a)-int(start_a))
 
             gene_a_b = [gene_a, gene_b]
@@ -357,7 +405,7 @@ def annotate_combined_sv(combined_file, genes, targets, capture, output):
 
             summary_sv.append([chrom_a, start_a, end_a, chrom_b, start_b, end_b, igv_coord, svtype,
                                 svlength, sup_reads, tool, sdid, sample, gene_a, 
-                                gene_b, gene_a_b_sorted, curator])
+                                gene_b, gene_a_b_sorted, sources, curator])
         summary_sv_df = pd.DataFrame(summary_sv, columns = summary_columns)
         summary_sv_df_sorted = summary_sv_df.sort_values(["GENE_A-GENE_B-sorted", "CHROM_A", "START_A", "CHROM_B", "START_B", "TOOL"], 
                                                         ascending=[True, True, True, True, True, True])
@@ -381,6 +429,7 @@ if __name__ == "__main__":
                         end and genesymbol")
     parser.add_argument('--target', help="capture kit ID and json file contains list of target genes interval",
                         nargs=2)
+    parser.add_argument('--varann', help="variant annotation from multiple resources like CGC, Oncokb")
     parser.add_argument('--sdid', help="SDID from analysis")
     parser.add_argument('--vcftype', help="somatic (or) germline vcf (only for svaba)")
     parser.add_argument('--tool', help="Tool name - Variant callers")
@@ -394,6 +443,7 @@ if __name__ == "__main__":
     sv_caller = args.tool
     sdid = args.sdid
     output = args.output
+ 
     if args.target:
         capture_kit, target_json = args.target
 
@@ -413,7 +463,8 @@ if __name__ == "__main__":
         genes = load_bed(annotBed)
         fh = open(target_json, 'r')
         targets = json.load(fh)
+        varann = json.load(open(args.varann, 'r'))
         if capture_kit in targets:
             targets = targets[capture_kit]
-        annotate_combined_sv(combined_input, genes, targets, capture_kit, output)
+        annotate_combined_sv(combined_input, genes, targets, capture_kit, varann, output)
 

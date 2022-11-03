@@ -80,7 +80,11 @@ OncoKB_lookup = loadOncoKB(args.oncokb)
 wgs = args.wgs
 
 #vcf_reader = vcf.Reader(open("/home/chimera/Downloads/new_vcf_format.vcf", 'r'))
-vcf_reader = vcf.Reader(open(args.vcf, 'r'))
+if args.vcf.endswith('.gz'):
+    vcf_reader = vcf.Reader(filename=args.vcf)
+else:
+    vcf_reader = vcf.Reader(open(args.vcf, 'r'))
+
 vcftype = args.vcftype
 sdid = "-".join(os.path.basename(args.vcf).split('-')[1:3])
 sid = "-".join(os.path.basename(args.vcf).split('-')[0:5])
@@ -177,7 +181,7 @@ for record in vcf_reader:
                                                   tumor_vaf, normal_dp, normal_alt, normal_vaf, 
                                                   clinsig, rsid, gnomAD, brcaEx, oncogenicity, num_tools])) + "\n")
         # filter for WGS samples
-        if wgs and num_tools >= 2 and (impact == 'HIGH' or impact == 'MODERATE'):
+        if wgs and num_tools >= 2 and tumor_alt >= 5 and (impact == 'HIGH' or impact == 'MODERATE'):
             output_file.write('\t'.join(map(str, [record.CHROM, record.POS-1, record.POS,
                                                   record.REF, record.ALT, '', '', '', gene, 
                                                   impact, canonical_trans['Consequence'], canonical_trans['Feature'],

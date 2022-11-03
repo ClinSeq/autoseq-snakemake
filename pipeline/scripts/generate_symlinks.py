@@ -92,7 +92,7 @@ class GenerateSymlink():
                      ('sv', 'gtf_normal', '^(?:(?!CFDNA).)*(DEL|DUP|INV|TRA).gtf$'),
                      ('snps', 'bam_cfdna', '.*-CFDNA-.*_clipoverlap.bam$'),
                      ('snps', 'bam_normal', '^(?:(?!CFDNA).)*clipoverlap.bam$'),
-                     ('snps', 'vep', '.*.all.(somatic|germline).vep.vcf$'),
+                     ('snps', 'vep', '.*.all.(somatic|germline).vep.vcf.gz$'),
                      ('cnv', 'flank_profile_cfdna', '.*-CFDNA-.*_profile.bedGraph'),
                      ('cnv', 'flank_profile_normal', '^(?:(?!CFDNA).)*_profile.bedGraph'),
                      ('cnv', 'flank_cnv_cfdna', '.*-CFDNA-.*_segments.bedGraph'),
@@ -187,24 +187,29 @@ class GenerateSymlink():
         snp_vep = ""
         type_color_arr = {'DEL':'53,116,199', 'TRA': '239,133,62', 'DUP' :'204,55,48', 'INV' :'69,136,51', 'COM' : '2,2,0'}
 
-        snp_resource += resource_path.format(path_name=target_bed)
-        capture_bed = track_capture_bed.format(capture_bed_full=target_bed, capture_bed=os.path.basename(target_bed))
+        capture_bed = ''
+        if target_bed != '':
+            snp_resource += resource_path.format(path_name=target_bed)
+            capture_bed += track_capture_bed.format(capture_bed_full=target_bed, capture_bed=os.path.basename(target_bed))
 
-        for track_type, each_track in [('snps', 'bam_cfdna'), ('snps', 'bam_normal'),
-                    ('cnv', 'flank_cnv_normal'),
-                    ('cnv', 'flank_profile_normal'),
-                    ('cnv', 'flank_cnv_cfdna'),
-                    ('cnv', 'flank_profile_cfdna'),
-                    ('asf', 'flank_asf'),
-                    ('snps', 'vep')]:
-            
+        all_snp_files = [('snps', 'bam_cfdna'), ('snps', 'bam_normal'),
+                         ('cnv', 'flank_cnv_normal'),
+                         ('cnv', 'flank_profile_normal'),
+                         ('cnv', 'flank_cnv_cfdna'),
+                         ('cnv', 'flank_profile_cfdna'),
+                         ('asf', 'flank_asf'),
+                         ('snps', 'vep')]
+
+        if capture_id[0:2] == 'WG':
+            all_snp_files.append(('bam_common', 'bam_nodups'))
+
+        for track_type, each_track in all_snp_files:
             for each_file in igv_session_files[track_type][each_track]:
                 full_path = igvnav_dir + '/' + each_file
                 if not os.path.exists(full_path) or not os.path.getsize(full_path):
                     continue
                 snp_resource += resource_path.format(path_name=full_path)
                 if each_track.startswith('bam'):
-
                     regex = ".*-(N|CFDNA|T)-.*(DEL|DUP|INV|TRA).bam$"
                     matches = re.search(regex, each_file)
                     if matches:
@@ -255,7 +260,9 @@ class GenerateSymlink():
         sv_mut_track= ""
         sv_gtf_track= ""
 
-        sv_resource += resource_path.format(path_name=target_bed)
+        if target_bed != '':
+            sv_resource += resource_path.format(path_name=target_bed)
+
         for track_type, each_track in all_sv_files:
             for each_file in igv_session_files[track_type][each_track]:
 

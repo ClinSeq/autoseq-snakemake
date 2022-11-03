@@ -308,7 +308,7 @@ rule somatic_generateIGVnav:
     log:
         "{}/logs/{}-{}.somatic_generate_igvnav.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR) 
     shell:
-        "generateIGVnavInput.py {input.somatic} {input.oncokb} {params.vcftype} --output {output} 2> {log} "
+        "generateIGVnavInput.py {input.somatic} {input.oncokb} {params.vcftype} --wgs --output {output} 2> {log} "
 
 
 haplotype_jc_vcf_prefix = "{}/variants/haplotypecaller/{}-{}.haplotypecaller-joint-calling".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)

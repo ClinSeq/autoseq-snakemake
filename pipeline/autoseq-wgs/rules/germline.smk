@@ -102,4 +102,4 @@ rule germline_generateIGVnav:
     params:
         vcftype = "germline"
     shell:
-        "generateIGVnavInput.py {input.vcf} {input.oncokb} {params.vcftype} --output {output} "
+        "generateIGVnavInput.py {input.vcf} {input.oncokb} {params.vcftype} --wgs --output {output} "

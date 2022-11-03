@@ -8,7 +8,7 @@ options(warn=-1)
 
 simpleEventType <- function(gr) {
   pgr = partner(gr)
-  return(ifelse(seqnames(gr) != seqnames(pgr), "CTX", # inter-chromosomosal
+  return(ifelse(seqnames(gr) != seqnames(pgr), "TRA", # inter-chromosomosal
     ifelse(strand(gr) == strand(pgr), "INV",
       ifelse(gr$insLen >= abs(gr$svLen) * 0.7, "INS", # TODO: improve classification of complex events
         ifelse(xor(start(gr) < start(pgr), strand(gr) == "-"), "DEL",
