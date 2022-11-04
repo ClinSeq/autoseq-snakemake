@@ -19,11 +19,11 @@
 #argmask 0=no arg, 1=req, 2=optional
 args <- rbind(
     c("frankenplot_Rmd", NA, 1, "character", "path to frankenplot.Rmd script"), # added
-    c("output_dir", NA, 1, "character", "output directory"),                    # added
+    c("output", NA, 1, "character", "output html file including directory"),    # added
     c("tumor_cnr", NA, 1, "character", "tumor bin file from CNVkit"),
     c("tumor_cns", NA, 1, "character", "tumor segment file from CNVkit"),
-    c("normal_cnr", NA, 1, "character", "normal bin file from CNVkit"),
-    c("normal_cns", NA, 1, "character", "normal segment file from CNVkit"),
+    c("normal_cnr", NA, 2, "character", "normal bin file from CNVkit"),
+    c("normal_cns", NA, 2, "character", "normal segment file from CNVkit"),
     c("het_snps_vcf", NA, 1, "character", "heterozygous SNPs .vcf file"),
     c("purecn_csv", NA, 1, "character", "PureCN result .csv file"),
     c("purecn_genes_csv", NA, 1, "character", "PureCN result _genes.csv"),
@@ -33,11 +33,11 @@ args <- rbind(
     c("svcaller_T_DUP", NA, 1, "character", "Tumor SV caller DUP-events.gtf"),
     c("svcaller_T_INV", NA, 1, "character", "Tumor SV caller INV-events.gtf"),
     c("svcaller_T_TRA", NA, 1, "character", "Tumor SV caller TRA-events.gtf"),
-    c("svcaller_N_DEL", NA, 1, "character", "Normal SV caller DEL-events.gtf"),
-    c("svcaller_N_DUP", NA, 1, "character", "Normal SV caller DUP-events.gtf"),
-    c("svcaller_N_INV", NA, 1, "character", "Normal SV caller INV-events.gtf"),
-    c("svcaller_N_TRA", NA, 1, "character", "Normal SV caller TRA-events.gtf"),
-    c("germline_mut_vcf", NA, 1, "character", "germline mutation vcf file"),
+    c("svcaller_N_DEL", NA, 2, "character", "Normal SV caller DEL-events.gtf"),
+    c("svcaller_N_DUP", NA, 2, "character", "Normal SV caller DUP-events.gtf"),
+    c("svcaller_N_INV", NA, 2, "character", "Normal SV caller INV-events.gtf"),
+    c("svcaller_N_TRA", NA, 2, "character", "Normal SV caller TRA-events.gtf"),
+    c("germline_mut_vcf", NA, 2, "character", "germline mutation vcf file"),
     c("somatic_mut_vcf", NA, 1, "character", "somatic mutation vcf file")#,
     # c("plot_png", NA, 1, "character", "plot .png file name"),                   # removed
     # c("plot_png_normal", NA, 1, "character", "normal CNV plot .png file name"), # removed
@@ -49,7 +49,16 @@ args <- rbind(
 
 opts <- getopt(args)
 
-#save.image('ws.Rdata')
+save.image('ws.Rdata')
+
+#stop()
+
+#load('ws.Rdata')
+
+
+# check if tumor only mode
+t_only <- is.null(opts$normal_cnr)
+
 
 # Cancer gene shortlist ---------------------------------------------------
 
@@ -411,6 +420,7 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes)
 {
     vcf <- readVcf(opts$het_snps_vcf,genome = "GRCh37")
     
+    if (t_only) if (ncol(vcf)>1) vcf <- vcf[,2]   # using second "sample" if t_only
     
     g <- geno(vcf)
     r <- rowRanges(vcf)
@@ -418,42 +428,68 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes)
     pos <- data.frame(ranges(r))
     alf <- NULL
     if (nrow(pos)>0) {
-        
         alf <- data.table(chromosome=chr, start=pos$start, end=pos$end, stringsAsFactors = F)
+        alf$pos <- alf$start
     }
     
     if (!is.null(alf)) if( !all(is.na(alf$chromosome)) ) {
         
-        alf$pos <- alf$start
         
-        alf$t <- as.numeric(sapply(g$AD[,2], "[", 2))/as.numeric(g$DP[,2])
-        alf$t[is.nan(alf$t)]=NA # allele freq becomes NaN if cov=0. Then set to NA
-        alf$n <- as.numeric(sapply(g$AD[,1], "[", 2))/as.numeric(g$DP[,1])
-        alf$n[is.nan(alf$n)]=NA # allele freq becomes NaN if cov=0. Then set to NA
-        alf$td <- as.numeric(g$DP[,2])
-        alf$nd <- as.numeric(g$DP[,1])
-        
-        # stored for use with VEP-annotated
-        all_alf <- alf
-        
-        # filter unwanted for SNP allele ratio tables
-        alf <- alf[width(vcf)==1 & str_detect(names(vcf),'rs')]
-        alf <- alf[chromosome %in% c(1:22,'X','Y')]
-        alf <- alf[nd > 15 & td > 30 & nd*n>5 & nd*(1-n)>5]
-        # 
-        
-        # tumor table
-        alf[,allele_ratio:=t]
-        alf[,depth:=td]
-        alf[,maf:=abs(allele_ratio-.5)+.5]
-        
-        # normal table
-        alf_n <- copy(alf)
-        alf_n[,allele_ratio:=n]
-        alf_n[,depth:=nd]
-        alf_n[,maf:=abs(allele_ratio-.5)+.5]
-        
-        
+        if (!t_only) { 
+            alf$t <- as.numeric(sapply(g$AD[,2], "[", 2))/as.numeric(g$DP[,2])
+            alf$t[is.nan(alf$t)]=NA # allele freq becomes NaN if cov=0. Then set to NA
+            alf$n <- as.numeric(sapply(g$AD[,1], "[", 2))/as.numeric(g$DP[,1])
+            alf$n[is.nan(alf$n)]=NA # allele freq becomes NaN if cov=0. Then set to NA
+            alf$td <- as.numeric(g$DP[,2])
+            alf$nd <- as.numeric(g$DP[,1])
+            
+            # stored for use with VEP-annotated
+            all_alf <- alf
+            
+            # filter unwanted for SNP allele ratio tables
+            alf <- alf[width(vcf)==1 & str_detect(names(vcf),'rs')]
+            alf <- alf[chromosome %in% c(1:22,'X','Y')]
+            alf <- alf[nd > 15 & td > 30 & nd*n>5 & nd*(1-n)>5]
+            # 
+            
+            # tumor table
+            alf[,allele_ratio:=t]
+            alf[,depth:=td]
+            alf[,maf:=abs(allele_ratio-.5)+.5]
+            
+            # normal table
+            alf_n <- copy(alf)
+            alf_n[,allele_ratio:=n]
+            alf_n[,depth:=nd]
+            alf_n[,maf:=abs(allele_ratio-.5)+.5]
+        }
+        if (t_only) {
+            alf$t <- as.numeric(sapply(g$AD[,1], "[", 2))/as.numeric(g$DP[,1])
+            alf$t[is.nan(alf$t)]=NA # allele freq becomes NaN if cov=0. Then set to NA
+            alf$td <- as.numeric(g$DP[,1])
+            
+            alf[,n:=NA][,nd:=NA]
+            
+            # stored for use with VEP-annotated
+            all_alf <- alf
+            
+            # filter unwanted for SNP allele ratio tables
+            alf <- alf[width(vcf)==1 & str_detect(names(vcf),'rs')]
+            alf <- alf[chromosome %in% c(1:22,'X','Y')]
+            alf <- alf[td > 30 & td*t>5 & td*(1-t)>5]
+            # 
+            
+            # tumor table
+            alf[,allele_ratio:=t]
+            alf[,depth:=td]
+            alf[,maf:=abs(allele_ratio-.5)+.5]
+            
+            # normal table
+            alf_n <- NULL
+            # alf_n[,allele_ratio:=n]
+            # alf_n[,depth:=nd]
+            # alf_n[,maf:=abs(allele_ratio-.5)+.5]
+        }
         
         
         
@@ -544,8 +580,10 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes)
 # Read germline point mutations -------------------------------------------
 
 galf <- NULL
+galf_t <- NULL
+galf_n <- NULL
 
-if (T) {
+if (!t_only) {
     vcf <- readVcf(opts$germline_mut_vcf,genome = "GRCh37")
     
     csq <- as.data.table(info(vcf)$CSQ)
@@ -696,7 +734,7 @@ if (T) {
     }
     
     # match with germline mutations
-    if (!is.null(galf_t)) if (nrow(galf_t)>0) {
+    if (!t_only) if (!is.null(galf_t)) if (nrow(galf_t)>0) {
         binranges <- makeGRangesFromDataFrame(bins[,.(chromosome,start=start-50,end=end+50)])
         mutranges <- makeGRangesFromDataFrame(galf_t[,.(chromosome,start,end)])
         overlap <- findOverlaps(mutranges,binranges)
@@ -714,7 +752,8 @@ if (T) {
     bins[gene!='Background',exonic:=exonic]
 }
 
-{ # normal
+bins_n <- NULL
+if (!t_only) { # normal
     bins_n <- fread(opts$normal_cnr)
     bins_n[,bin:=1:.N]
     bins_n[gene=='Antitarget',gene:='Background']
@@ -814,10 +853,11 @@ if (T) {
         sv$type='TRA'
         t_strvs=rbind(t_strvs,sv)
     }, silent=T)
-    
+    t_strvs <- as.data.table(t_strvs)
 }
-{ # normal
-    n_strvs=NULL
+
+n_strvs=NULL
+if (!t_only) { # normal
     try( {
         sv <- read.delim(opts$svcaller_N_DEL,header=F,stringsAsFactors = F)
         colnames(sv)[c(1,4,5,6,9)]=c('chromosome','start','end','count','id')
@@ -842,11 +882,9 @@ if (T) {
         sv$type='TRA'
         n_strvs=rbind(n_strvs,sv)
     }, silent=T)
-    
+    n_strvs <- as.data.table(n_strvs)
 }
 
-t_strvs <- as.data.table(t_strvs)#[,source:='somatic']
-n_strvs <- as.data.table(n_strvs)#[,source:='germline']
 
 # match t_strvs to cancergenes
 sv_ranges <- makeGRangesFromDataFrame(t_strvs)
@@ -860,15 +898,18 @@ t_strvs[queryHits(overlap),bin:=bins[subjectHits(overlap)]$bin]
 
 
 # match n_strvs to cancergenes
-sv_ranges <- makeGRangesFromDataFrame(n_strvs)
-suppressWarnings(overlap <- findOverlaps(sv_ranges,cancergeneranges))
-n_strvs[queryHits(overlap),cancergene:=cancergenes[subjectHits(overlap)]$gene]
-
-# match n_strvs to bins_n
-binranges <- makeGRangesFromDataFrame(bins_n[,.(chromosome,start=start,end=end)])
-overlap <- findOverlaps(sv_ranges,binranges)
-n_strvs[queryHits(overlap),bin:=bins_n[subjectHits(overlap)]$bin]
-
+if (!t_only) {
+    
+    sv_ranges <- makeGRangesFromDataFrame(n_strvs)
+    suppressWarnings(overlap <- findOverlaps(sv_ranges,cancergeneranges))
+    n_strvs[queryHits(overlap),cancergene:=cancergenes[subjectHits(overlap)]$gene]
+    
+    # match n_strvs to bins_n
+    binranges <- makeGRangesFromDataFrame(bins_n[,.(chromosome,start=start,end=end)])
+    overlap <- findOverlaps(sv_ranges,binranges)
+    n_strvs[queryHits(overlap),bin:=bins_n[subjectHits(overlap)]$bin]
+    
+}
 # # match n_strvs to bins
 # binranges <- makeGRangesFromDataFrame(bins[,.(chromosome,start=start,end=end)])
 # overlap <- findOverlaps(sv_ranges,binranges)
@@ -934,10 +975,6 @@ purecn_loh[,C:=round(C)][,M:=round(M)]
 # bins[queryHits(overlap),M:=purecn_loh[subjectHits(overlap)]$M]
 # 
 
-
-getMaf <- function(alt,depth,refbias=.01) {
-    
-}
 
 
 # Genome plot function ---------------------------------------------------------
@@ -1090,11 +1127,11 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         geom_vline(xintercept = 1,lty=3) +
         xlab('Corrected depth (smooth)') + ylab('Major allele ratio (smooth)') +
         geom_point(aes(x=2^smooth_log2,y=smooth_maf),fill='#60606060',col='#20202060',shape=21) #+
-        # geom_point(data=gridsnps[`selected genes`!=''],aes(x=2^smooth_log2,y=smooth_maf,fill=`selected genes`),
-        #            shape=21,col='#00000050',size=1,show.legend = F) +
-        # scale_fill_hue(l=80)
+    # geom_point(data=gridsnps[`selected genes`!=''],aes(x=2^smooth_log2,y=smooth_maf,fill=`selected genes`),
+    #            shape=21,col='#00000050',size=1,show.legend = F) +
+    # scale_fill_hue(l=80)
     #geom_point(data=temp,mapping=aes(x=2^V1,y=1,fill=`selected genes`),size=2,shape=25,show.legend=F)
-
+    
     
     
     ## downsample ---------------------------------------------------------    
@@ -1104,7 +1141,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     set.seed(25)
     if (nrow(targets)>3e5) targets <- targets[!is.na(`selected genes`) | runif(n = nrow(targets))< (3e5/nrow(targets))]
     
-        
+    
     ## by pos ---------------------------------------------------------    
     
     
@@ -1417,7 +1454,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         scale_y_continuous(breaks = c(0,.2,.4,.6,.8,1),
                            minor_breaks = c(.1,.3,.5,.7,.9),
                            limits = 0:1)
-        
+    
     if (!is.null(somatic)) if (nrow(somatic)>0) p$depth_alleleratio <- p$depth_alleleratio + 
         geom_point(data=somatic,mapping = aes(x=2^somatic$log2,y=AF.T,shape=`point mutation`,col=`point mutation`),
                    fill='red',size=.3,show.legend = F) +
@@ -1896,18 +1933,17 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
     
     print(fig+pa)
     
-
+    
 }
 
 
 
 # Run rmarkdown script ----------------------------------------------------
 
-output_file <- paste0(str_remove(basename(opts$tumor_cnr),'.cnr'),'_and_',str_remove(basename(opts$normal_cnr),'.cnr'),'.html')
 
 rmarkdown::render(
     input = opts$frankenplot_Rmd,
-    output_file = paste0(opts$output_dir,'/',output_file),
+    output_file = opts$output,
     envir = parent.frame()
 )
 
