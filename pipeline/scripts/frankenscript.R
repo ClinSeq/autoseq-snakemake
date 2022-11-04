@@ -1096,7 +1096,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     
     # snp (grid) smooth-to-allele-ratio plot
     p$grid <- ggplot(gridsnps) + ylim(c(0.5,1)) + 
-        scale_x_continuous(limits=c(.5,2),breaks=c(.3,1,1.5,2),labels=c('.5','1','1.5','2')) + 
+        scale_x_continuous(limits=c(.3,2),breaks=c(.5,1,1.5,2),labels=c('0.5','1','1.5','2')) + 
         xlab('Corrected depth (smooth)') + ylab('Major allele ratio (smooth)') +
         #geom_hline(yintercept = baseline,lty=3) +
         geom_vline(xintercept = 1,lty=3) +
@@ -1450,7 +1450,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         #                 mapping = aes(x=2^log2,y=allele_ratio)) +
         #geom_point(data=targets[!is.na(`selected genes`)],mapping = aes(x=2^log2,y=allele_ratio,fill=`selected genes`),shape=21,col='#00000050',size=.8) +
         #scale_fill_grey(start=1,end=0,breaks=seq(.1,1,.1)) + 
-        scale_x_continuous(limits=c(.4,2)) +
+        scale_x_continuous(limits=c(.3,2),breaks=c(.5,1,1.5,2),labels=c('0.5','1','1.5','2')) + 
         scale_y_continuous(breaks = c(0,.2,.4,.6,.8,1),
                            minor_breaks = c(.1,.3,.5,.7,.9),
                            limits = 0:1)
