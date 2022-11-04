@@ -49,7 +49,7 @@ args <- rbind(
 
 opts <- getopt(args)
 
-save.image('ws.Rdata')
+#save.image('ws.Rdata')
 
 #stop()
 
