@@ -301,13 +301,13 @@ data2_exon <- data2[data2$Feature == 'exon',]
       matrix('',nrow = sum(rowspermut),ncol = length(header)+1)#,stringsAsFactors = F)
     colnames(table)=c('N',header)  # blir detta fel ibland?????
     for (i in 1:length(vep)) {
-      for (j in 1:length(vep[[i]])) { # for each effect
+      for (j in 1:length(vep[[i]])) try( { # for each effect
         t2=vep[[i]][j]
         t2=strsplit(t2,'[|]')[[1]] # pipe separated line with one effect of the mutation
         t2=c((i),t2)
         thisrow=sum(rowspermut[1:i])-rowspermut[i]+j
         table[thisrow,1:length(t2)]=t2
-      }
+      }, silent=T)
     }
     table=table[,-which(colnames(table)=="AF")]  # remove AF col from vep data to not confuse with AF from galf
 
@@ -317,8 +317,11 @@ data2_exon <- data2[data2$Feature == 'exon',]
     # Merge with vep table
     galf=merge(galf,table,by=c('N','Allele'),all.x=T)
   } #end germline mutations
-  galf$gnomAD_AF=as.numeric(levels(galf$gnomAD_AF)[galf$gnomAD_AF])  # Make gnom_AD numerical so it can be used
-  galf=(galf[which(galf$AO>=12 & galf$AF>=0.2 & (galf$gnomAD_AF < 0.05 | is.na(galf$gnomAD_AF))),-1])
+  try( {
+      galf$gnomAD_AF=as.numeric(levels(galf$gnomAD_AF)[galf$gnomAD_AF])  # Make gnom_AD numerical so it can be used
+      galf=(galf[which(galf$AO>=12 & galf$AF>=0.2 & (galf$gnomAD_AF < 0.05 | is.na(galf$gnomAD_AF))),-1])
+  }, silent=T)
+  galf=(galf[which(galf$AO>=12 & galf$AF>=0.2),])
   # mark the type
   galf$pch=rep(22,nrow(galf))
   galf$pch[galf$type=='snv']=21
@@ -744,10 +747,10 @@ write(exportJson, opts$cna_json)
       points(2^alf$log2[ixCurChr],smoothedAi[ixCurChr],col='#00800070',pch=16,cex=cex)
 
 
-      if (c==24 & !is.null(alf)) {
+      if (c==24 & !is.null(alf)) try( {
         d=density(2^alf$log2[alf$chromosome %in% as.numeric(1:22)])
         points(d$x,d$y/max(d$y),type='l')
-      }
+      }, silent=T)
 
       whole=(c(0.5,1,1.5,2))
 
@@ -1014,32 +1017,32 @@ write(exportJson, opts$cna_json)
     }
 
   }, silent=T)
-  try( {
-
-    ## Add germline mutations
-    scol=rep('#0000C0CC',nrow(galf))
-
-    ix=(galf$hasConsequence) & galf$AO>=12 & galf$AF>=0.2
-
-    points(galf$cumpos[ix],galf$AF[ix],
-           pch=galf$pch[ix],
-           cex=0.6,
-           bg=scol[ix]
-    )
-    if (nrow(galf)>0) {
-      g <- pos <- aa <- rep('',nrow(galf))
-      for (j in 1:nrow(galf)) {
-        g[j]=as.character(galf$SYMBOL[j])
-        g[is.na(g)]=''
-        pos[j]=strsplit(as.character(galf$Protein_position[j]),'/')[[1]][1]
-        aa[j]=strsplit(as.character(galf$Amino_acids[j]),'/')[[1]][2]
-        pos[is.na(pos)]=''; pos[pos=='-']=''; aa[is.na(aa)]=''
-      }
-      ix=ix & pos!='' & g %in% genes$label & aa!=''
-      text(x = galf$cumpos[ix],y=galf$AF[ix]+0.07,labels = paste0(g[ix],' ',pos[ix],aa[ix]),cex=0.4,srt=30,col=scol[ix])
-    }
-
-  }, silent=T)
+  # try( {
+  # 
+  #   ## Add germline mutations
+  #   scol=rep('#0000C0CC',nrow(galf))
+  # 
+  #   ix=(galf$hasConsequence) & galf$AO>=12 & galf$AF>=0.2
+  # 
+  #   points(galf$cumpos[ix],galf$AF[ix],
+  #          pch=galf$pch[ix],
+  #          cex=0.6,
+  #          bg=scol[ix]
+  #   )
+  #   if (nrow(galf)>0) {
+  #     g <- pos <- aa <- rep('',nrow(galf))
+  #     for (j in 1:nrow(galf)) {
+  #       g[j]=as.character(galf$SYMBOL[j])
+  #       g[is.na(g)]=''
+  #       pos[j]=strsplit(as.character(galf$Protein_position[j]),'/')[[1]][1]
+  #       aa[j]=strsplit(as.character(galf$Amino_acids[j]),'/')[[1]][2]
+  #       pos[is.na(pos)]=''; pos[pos=='-']=''; aa[is.na(aa)]=''
+  #     }
+  #     ix=ix & pos!='' & g %in% genes$label & aa!=''
+  #     text(x = galf$cumpos[ix],y=galf$AF[ix]+0.07,labels = paste0(g[ix],' ',pos[ix],aa[ix]),cex=0.4,srt=30,col=scol[ix])
+  #   }
+  # 
+  # }, silent=T)
 
   #Close all the opened split.screens and release the figure
 
@@ -1183,10 +1186,10 @@ write(exportJson, opts$cna_json)
       points(2^alf$log2[ixCurChr],smoothedAi[ixCurChr],col='#00800070',pch=16,cex=cex)
 
 
-      if (c==24 & !is.null(alf)) {
+      if (c==24 & !is.null(alf)) try( {
         d=density(2^alf$log2[alf$chromosome %in% as.numeric(1:22)])
         points(d$x,d$y/max(d$y),type='l')
-      }
+      }, silent=T)
 
       whole=(c(0.5,1,1.5,2))
 
@@ -2172,7 +2175,7 @@ write(x, filename)
 ########draw density plot ###################
 ix <- alf$chromosome %in% c(chrsizes$chr[24],'X','Y')
 ixCurChr <-  alf$chromosome %in% chrsizes$chr[24]
-d=density(2^alf$log2[alf$chromosome %in% as.numeric(1:22)])
+#d=density(na.exclude(2^alf$log2[alf$chromosome %in% as.numeric(1:22)]))
 p5 <- ggplot()+
   ggtitle(text) +
   theme_bw() +
@@ -2190,8 +2193,8 @@ p5 <- ggplot()+
                      label=c("2:1","3:1"))+
   geom_vline(xintercept=(c(0.5,1,1.5,2)), colour='grey', size=0.1) +
   geom_hline(yintercept=(c(1/3,1/2)), colour='grey', size=0.1, cex=0.4) +
-  geom_point(aes(2^alf$log2[!ix],smoothedAi[!ix]), colour='grey', cex=0.4)+
-  geom_line(aes(x=d$x,y=d$y/max(d$y)))
+  geom_point(aes(2^alf$log2[!ix],smoothedAi[!ix]), colour='grey', cex=0.4)#+
+  #geom_line(aes(x=d$x,y=d$y/max(d$y)))
 
 p5 <-ggplotly(p5)
 x<-plotly_json(p5, FALSE)
@@ -2200,7 +2203,7 @@ write(x, filename)
 #####redraw the density plot ######
 ix <- alf$chromosome %in% c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,'X', 'Y', 'MT')
 ixCurChr <-  alf$chromosome %in% c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22, 'X', 'Y', 'MT')
-d=density(alf$log2[alf$chromosome %in% c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,'X', 'Y', 'MT')])
+#d=density(alf$log2[alf$chromosome %in% c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,'X', 'Y', 'MT')])
 p3 <- ggplot()+
   ggtitle(text) +
   theme_bw() +
@@ -2222,8 +2225,8 @@ p3 <- ggplot()+
     labels = seq(-2,2, by = 0.5),
     expand = c(0,0),
     limits = c(-2,2)
-  ) +
-  geom_path(aes(x=d$y/max(d$y), y=d$x))
+  ) #+
+  #geom_path(aes(x=d$y/max(d$y), y=d$x))
 
   p3 <-ggplotly(p3, width = 200, height = 1024)
   x1<-plotly_json(p3, FALSE)
