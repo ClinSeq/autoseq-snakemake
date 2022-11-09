@@ -28,7 +28,7 @@ capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
 #     input:
 #         cns = outdir + "/cnv/{sample}.cns",
 #     output:
-#         seg = outdir + "/cnv/{sample}.seg",
+#         seg = outdir + "/cnv/{sample}_dnacopy.seg",
 #     threads: params['cnstoseg']['threads']
 #     shell:
 #         "cnvkit.py export seg  -o {output.seg}  {input.cns}"
