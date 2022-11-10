@@ -80,8 +80,10 @@ OncoKB_lookup = loadOncoKB(args.oncokb)
 #vcf_reader = vcf.Reader(open("/home/chimera/Downloads/new_vcf_format.vcf", 'r'))
 vcf_reader = vcf.Reader(open(args.vcf, 'r'))
 vcftype = args.vcftype
-
+sdid = "-".join(os.path.basename(args.vcf).split('-')[1:3])
+sid = "-".join(os.path.basename(args.vcf).split('-')[0:5])
 output_file = open(args.output, 'w') 
+variants = list()
 
 if args.vardict:
     vardict_vcf = vcf.Reader(open(args.vardict, 'r'))
@@ -113,9 +115,9 @@ except Exception as e:
 # output file headers 
 
 if vcftype == "somatic":
-    output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'IMPACT', 'CONSEQUENCE', 'HGVSp', 'T_DP', 'T_ALT', 'T_VAF', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'gnomAD', 'BRCAEx', 'OncoKB', 'NUM_TOOLS']) + "\n")
+    output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'IMPACT', 'CONSEQUENCE', 'TRANSCRIPT', 'HGVSc', 'HGVSp', 'T_DP', 'T_ALT', 'T_VAF', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID', 'gnomAD', 'BRCAEx', 'OncoKB', 'NUM_TOOLS']) + "\n")
 elif vcftype == "germline":
-    output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'IMPACT', 'CONSEQUENCE', 'HGVSp', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID', 'gnomAD', 'BRCAEx', 'OncoKB']) + "\n")
+    output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'IMPACT', 'CONSEQUENCE', 'TRANSCRIPT', 'HGVSc','HGVSp', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID', 'gnomAD', 'BRCAEx', 'OncoKB']) + "\n")
 
 for record in vcf_reader:
     try:
@@ -159,14 +161,19 @@ for record in vcf_reader:
         tumor_vaf = tumor['VAF']
 
         num_tools = int(record.INFO['NUM_TOOLS'])
+        rsid = canonical_trans['Existing_variation']
 
-        if (filter_col == 'PASS' or filter_col == 'LowQual'):
-            output_file.write('\t'.join(map(str, [record.CHROM, record.POS, str(record.POS+1) , 
+        if (filter_col == 'PASS' or filter_col == 'LowQual') and (impact == 'HIGH' or impact == 'MODERATE'):
+            # forming variant string to remove duplicates
+            # eg: 3-113275658-G-TTTTTTT
+            tmp_str = "-".join(map(str, [record.CHROM, record.POS, record.REF, record.ALT[0]]))
+            variants.append(tmp_str)
+            output_file.write('\t'.join(map(str, [record.CHROM, record.POS-1, record.POS,
                                                   record.REF, record.ALT, '', '', '', gene, 
-                                                  impact, canonical_trans['Consequence'], 
-                                                  canonical_trans['HGVSp'], tumor_dp, tumor_alt, 
+                                                  impact, canonical_trans['Consequence'], canonical_trans['Feature'],
+                                                  canonical_trans['HGVSc'], canonical_trans['HGVSp'], tumor_dp, tumor_alt, 
                                                   tumor_vaf, normal_dp, normal_alt, normal_vaf, 
-                                                  clinsig, gnomAD, brcaEx, oncogenicity, num_tools])) + "\n")
+                                                  clinsig, rsid, gnomAD, brcaEx, oncogenicity, num_tools])) + "\n")
     
     elif vcftype == "germline":
         normal = record.samples[0]
@@ -181,10 +188,11 @@ for record in vcf_reader:
                     normal_alt = normal['AD'][1]
                     normal_vaf = float(normal_alt)/float(normal_dp)
 
-                    output_file.write('\t'.join(map(str, [record.CHROM, record.POS, str(record.POS+1), 
+                    output_file.write('\t'.join(map(str, [record.CHROM, record.POS-1, record.POS,
                                                           record.REF, record.ALT, '', '', '', gene, 
                                                           impact, canonical_trans['Consequence'], 
-                                                          canonical_trans['HGVSp'], normal_dp , normal_alt, 
+                                                          canonical_trans['Feature'], canonical_trans['HGVSc'],
+                                                          canonical_trans['HGVSp'], normal_dp , normal_alt,
                                                           round(normal_vaf, 2), clinsig, record.ID, gnomAD,
                                                           brcaEx, oncogenicity])) + "\n")
             
@@ -203,6 +211,10 @@ if args.vardict and vcftype == "somatic":
         try:
             # filter small indels - length less than 5 
             if len(ref) > 5 or len(alt) > 5:
+                # to avoid duplicates    
+                tmp_str = "-".join(map(str, [record.CHROM, record.POS, ref, alt]))
+                if tmp_str in variants:
+                    continue
 
                 canonical_trans = csq_parsing(record.INFO['CSQ'], vcftype)
 
@@ -225,10 +237,10 @@ if args.vardict and vcftype == "somatic":
                 normal = [sam for sam in record.samples if '-N-' in sam.sample][0]
                 tumor = [sam for sam in record.samples if '-CFDNA-' in sam.sample or '-T-' in sam.sample][0]
             
-                normal_ref = normal['AD'][0]
+                normal_dp = sum(normal['AD'])
                 normal_alt = normal['AD'][1]
                 normal_vaf = normal['AF']
-                tumor_ref = tumor['AD'][0]
+                tumor_dp = sum(tumor['AD'])
                 tumor_alt = tumor['AD'][1]
                 tumor_vaf = tumor['AF']
 

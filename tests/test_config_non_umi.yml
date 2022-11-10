@@ -1,4 +1,3 @@
-
 samples: tests/test_liqbio_sample.json
 
 reference: tests/dummy_genome/dummy_genome.json
@@ -7,7 +6,7 @@ normal_bams: ["tests/dummy_normal/LB-P-NA12877-N-03098850-TD1-C31_nodups.bam", "
 
 libdir: tests/libraries
 
-umi: True
+umi: False
 
 container: 
     base: False
@@ -18,7 +17,7 @@ outdir: tests
 
 steps: ALL
 
-gnomAD: "/nfs/PROBIO/gnomad/r2.1/genomes/gnomad.genomes.r2.1.sites.noVEP.vcf.gz"
+gnomAD: "tests/dummy_genome/gnomad.genomes.r2.1.sites.noVEP.vcf.gz"
 
 params:
     scratch: /tmp
@@ -136,6 +135,4 @@ params:
     msisensor:
         threads: 8
     multiqc:
-        threads: 1
-    jumble:
         threads: 1

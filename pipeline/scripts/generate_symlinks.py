@@ -27,7 +27,9 @@ capture_kit_loopkup = {"CS": "clinseq_v3_targets",
                             "PA": "pancancer",
                             "C2": "probio_comprehensive2",
                             "C3": "probio_comprehensive3",
-                            "PN": "pancancer2"
+                            "C4": "probio_comprehensive4",
+                            "PN": "pancancer2",
+                            "PE": "pancancer2_enzymatic"
                             }
 
 

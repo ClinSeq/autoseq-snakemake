@@ -12,7 +12,7 @@ import pipeline
 from pipeline.utils.utils import make_paths_absolute, Pipeline
 from pipeline.utils.clinseq_barcodes import data_available_for_clinseq_barcode, \
     extract_clinseq_barcodes, validate_clinseq_barcodes, convert_barcodes_to_sampledict, \
-    check_sampledata, normpath
+    check_sampledata, normpath, parse_project
 
 
 def console_autoseq():
@@ -127,6 +127,7 @@ def launch(context, ref, samples, outdir, libdir,
 
     normal_barcode = [i for i in all_clinseq_barcodes if '-N-' in i]
     tumor_barcode = [i for i in all_clinseq_barcodes if '-T-' in i or '-CFDNA-' in i]
+    project_id = parse_project(tumor_barcode[0])
 
     sample_str = "_".join(tumor_barcode + normal_barcode)
     outdir = os.path.join(outdir, sampledata['sdid'], sample_str)
@@ -159,18 +160,20 @@ def launch(context, ref, samples, outdir, libdir,
     if pipeline == 'tumor_only' and normal_bam:
         nClip_bam = os.path.join(normal_bam, normal_barcode[0] + "_clipoverlap.bam")
         nNodups_bam = os.path.join(normal_bam , normal_barcode[0] + "_nodups.bam")
-        for bam in [nClip_bam, nNodups_bam]:
+        nClip_idx = os.path.join(normal_bam, normal_barcode[0] + "_clipoverlap.bai")
+        nNodups_idx = os.path.join(normal_bam , normal_barcode[0] + "_nodups.bam.bai")
+        for bam in [nClip_bam, nNodups_bam, nClip_idx, nNodups_idx]:
             if os.path.isfile(bam):
                 Log.info(f"Normal sample bam file - {bam}")
             else:
                 Log.error(f"{bam} does not exist")
                 raise click.Abort()
 
-        config_dict['normal_bams'] = [nClip_bam, nNodups_bam]
+        config_dict['normal_bams'] = [nClip_bam, nNodups_bam, nClip_idx, nNodups_idx]
         
 
     out_configpath = os.path.join(normpath(outdir), f"config_{sample_str}.yml")
-    jobdb = os.path.join(normpath(outdir), f"{sample_str}.jobdb")
+    jobdb = os.path.join(normpath(outdir), f"{sample_str}_jobdb.json")
 
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
@@ -193,7 +196,8 @@ def launch(context, ref, samples, outdir, libdir,
 
     autoseq = Pipeline(snakefile = snakefile, 
                       config = out_configpath, 
-                      sdid = sdid, 
+                      sdid = sdid,
+                      project_id = project_id,
                       workdir = outdir, 
                       dryrun = dryrun, 
                       profile = profile,

@@ -88,7 +88,7 @@ CONTEST.append("{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR)
 CNV_OUTPUT = list()
 CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cns", sample=cancer_sample))
 CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cnr", sample=cancer_sample))
-CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.seg", sample=cancer_sample))
+# CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.seg", sample=cancer_sample))
 CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_profile.bedGraph", sample=cancer_sample))
 CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_segments.bedGraph", sample=cancer_sample))
 CNV_OUTPUT.append("{}/qc/{}-liqbio-cna.png".format(outdir, CANCER_CAPTURE_STR))
@@ -112,11 +112,10 @@ for sample in all_clinseq_barcodes:
     if '-CFDNA-' in sample or '-T-' in sample:
         capture_to_results[CANCER_CAPTURE].cns = outdir + "/cnv/{}.cns".format(sample)
         capture_to_results[CANCER_CAPTURE].cnr = outdir + "/cnv/{}.cnr".format(sample)
-        capture_to_results[CANCER_CAPTURE].seg = outdir + "/cnv/{}.seg".format(sample)
+        capture_to_results[CANCER_CAPTURE].seg = outdir + "/cnv/{}_dnacopy.seg".format(sample)
     
     # svs results to sample capture
-    for event in ["DEL", "DUP", "INV", "TRA"]:
-        
+    for event in ["DEL", "DUP", "INV", "TRA"]:        
         if '-CFDNA-' in sample or '-T-' in sample:
             capture_to_results[CANCER_CAPTURE].svs[event] = "{}/svs/{}-{}.gtf".format(outdir, sample, event)
 
@@ -135,6 +134,7 @@ VARIANTS.append("{}/variants/{}-merged.germline.split_norm.brcaEx.vep.vcf.gz".fo
 VARIANTS.append("{}/variants/{}-{}-all.somatic.gnomADg.noSNPs.brcaEx.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
 VARIANTS.append(expand(outdir + "/svs/{sample}-{events}.gtf", sample=cancer_sample, events=["DEL", "DUP", "INV", "TRA"]))
 VARIANTS.append(expand(outdir + "/svs/{sample}_effects.json", sample=cancer_sample))
+VARIANTS.append("{}/svs/igv/{}-sv-annotated.txt".format(outdir, CANCER_CAPTURE_STR))
 
 OUTPUT.append(VARIANTS)
 
@@ -149,7 +149,7 @@ samples_of_interest = [compose_lib_capture_str(unique_capture)
 QC_overview = "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest))
 
 OUTPUT.append(QC_overview)
-OUTPUT.append(outdir + "/bams/intermediate_bam_files.removed")
+OUTPUT.append(outdir + "/bams/intermediate_bamfiles.removed")
 
 container: config['container']['base']
 
@@ -190,9 +190,11 @@ rule remove_bamfiles:
         expand(outdir + "/bams/{sample}_realigned-2.bam", sample=cancer_sample),
         expand(outdir + "/bams/{sample}_consensus_filtered.bam", sample=cancer_sample),
         expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=cancer_sample),
-        expand(outdir + "/bams/{sample}_nodups.bam", sample=cancer_sample)
+        expand(outdir + "/bams/{sample}_nodups.bam", sample=cancer_sample),
+        expand(outdir + "/fastqs/{sample}_concatenated_1.fastq.gz", sample=cancer_sample),
+        expand(outdir + "/fastqs/{sample}_concatenated_2.fastq.gz", sample=cancer_sample)
     output:
-        outdir + "/bams/intermediate_bam_files.removed"
+        outdir + "/bams/intermediate_bamfiles.removed"
     run:
         del_bam = [bam for bam in input if 'clipoverlap' not in bam and 'nodups' not in bam]
         bamfiles = " ".join(del_bam)
@@ -202,7 +204,7 @@ rule remove_bamfiles:
 
 
 include: "../autoseq/rules/split_targets.smk"
-include: "../autoseq/rules/pre_processing.smk"
+include: "rules/pre_processing.smk"
 include: "../autoseq/rules/umi_processing.smk"
 include: "rules/qc.smk"
 include: "rules/cnvcalling.smk"

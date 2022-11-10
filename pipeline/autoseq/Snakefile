@@ -43,7 +43,8 @@ if 'ALL' in steps or 'preprocess' in steps:
     BAM_FILES = expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes)
     UMIBAM_FILES = expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=all_clinseq_barcodes)
     OUTPUT.append(BAM_FILES)
-    OUTPUT.append(UMIBAM_FILES)
+    if umi:
+        OUTPUT.append(UMIBAM_FILES)
 
     capture_to_results[NORMAL_CAPTURE].bamfile = get_capture_bam(NORMAL_CAPTURE, BAM_FILES)
     capture_to_results[CANCER_CAPTURE].bamfile = get_capture_bam(CANCER_CAPTURE, BAM_FILES)
@@ -83,7 +84,7 @@ if 'ALL' in steps or 'variants' in steps:
     CNV_OUTPUT = list()
     CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cns", sample=all_clinseq_barcodes))
     CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cnr", sample=all_clinseq_barcodes))
-    CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.seg", sample=all_clinseq_barcodes))
+    # CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.seg", sample=all_clinseq_barcodes))
     CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_profile.bedGraph", sample=all_clinseq_barcodes))
     CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_segments.bedGraph", sample=all_clinseq_barcodes))
     CNV_OUTPUT.append("{}/variants/{}-{}-liqbio-cna.json".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
@@ -97,12 +98,12 @@ for sample in all_clinseq_barcodes:
     if '-N-' in sample:
         capture_to_results[NORMAL_CAPTURE].cns = outdir + "/cnv/{}.cns".format(sample)
         capture_to_results[NORMAL_CAPTURE].cnr = outdir + "/cnv/{}.cnr".format(sample)
-        capture_to_results[NORMAL_CAPTURE].seg = outdir + "/cnv/{}.seg".format(sample)
+        capture_to_results[NORMAL_CAPTURE].seg = outdir + "/cnv/{}_dnacopy.seg".format(sample)
     
     if '-CFDNA-' in sample or '-T-' in sample:
         capture_to_results[CANCER_CAPTURE].cns = outdir + "/cnv/{}.cns".format(sample)
         capture_to_results[CANCER_CAPTURE].cnr = outdir + "/cnv/{}.cnr".format(sample)
-        capture_to_results[CANCER_CAPTURE].seg = outdir + "/cnv/{}.seg".format(sample)
+        capture_to_results[CANCER_CAPTURE].seg = outdir + "/cnv/{}_dnacopy.seg".format(sample)
 
     # svs results to sample capture
     for event in ["DEL", "DUP", "INV", "TRA"]:
@@ -169,8 +170,8 @@ rule generate_symlinks:
 
 
 include: "rules/pre_processing.smk"
-include: "rules/split_targets.smk"
 if umi:
+    include: "rules/split_targets.smk"
     include: "rules/umi_processing.smk"
 else:
     include: "rules/alignment.smk"

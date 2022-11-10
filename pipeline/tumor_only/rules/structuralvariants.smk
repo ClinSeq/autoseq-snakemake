@@ -20,7 +20,7 @@ rule svcaller_run:
         " --fasta-filename {input.reference}  "
         " --filter-event-overlap "
         " --events-gtf {output.gtf} "
-        " --events-bam {output.bam} {input.bam} && "
+        " --events-bam {output.bam} {input.bam} 2> {log} && "
         "source deactivate"
 
 
@@ -42,11 +42,11 @@ rule sveffect_predict:
         " --dup-gtf {input.DUP} "
         " --inv-gtf {input.INV} " 
         " --tra-gtf {input.TRA} "
-        " {output.combined_bed} &&  "
+        " {output.combined_bed} 2> {log} &&  "
         "sveffect predict --ts-regions {input.ts_regions} "
         " --ar-regions {input.ar_regions} "
         " --fusion-regions {input.fusion_regions} "
-        " --effects-filename {output.effects_json} {output.combined_bed} && "
+        " --effects-filename {output.effects_json} {output.combined_bed} 2>> {log}&& "
         "source deactivate"
 
 
@@ -59,9 +59,29 @@ rule generateIGVnavInput_svcaller:
         cancer_str = CANCER_CAPTURE_STR,
         svs_dir = outdir + "/svs/",
         igvout = outdir + "/svs/igv/"
+    log:
+        outdir + "/logs/generateIGVnavInput_svcaller-{}.log".format(CANCER_CAPTURE_STR)
     shell:
         "generateIGVnavInput_SV.py --input {params.svs_dir} "
                         " --sdid {params.cancer_str} "
                         " --tool svcaller " 
                         " --vcftype somatic " 
-                        " --output {params.igvout} "
+                        " --output {params.igvout} 2> {log} "
+
+
+rule annotate_generateIGVnavInput:
+    input:
+        svcaller_tumor = "{}/svs/igv/{}_svcaller.mut".format(outdir, CANCER_CAPTURE_STR),
+        genes = reference["genes_bed"],
+        targets = reference['sv_filter']
+    output:
+        "{}/svs/igv/{}-sv-annotated.txt".format(outdir, CANCER_CAPTURE_STR)
+    params:
+        svs_dir = "{}/svs/igv/".format(outdir),
+        capture_kit_id = CANCER_CAPTURE.capture_kit_id
+    log:
+        outdir + "/logs/generateIGVnavInput_annotate-{}.log".format(CANCER_CAPTURE_STR)
+    shell:        
+        "generateIGVnavInput_SV.py --input {params.svs_dir} "
+                " --annotBed {input.genes} --target {params.capture_kit_id} {input.targets} "
+                " --output {output} 2> {log} "

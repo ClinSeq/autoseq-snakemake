@@ -301,13 +301,15 @@ data2_exon <- data2[data2$Feature == 'exon',]
       matrix('',nrow = sum(rowspermut),ncol = length(header)+1)#,stringsAsFactors = F)
     colnames(table)=c('N',header)  # blir detta fel ibland?????
     for (i in 1:length(vep)) {
-      for (j in 1:length(vep[[i]])) try( { # for each effect
-        t2=vep[[i]][j]
-        t2=strsplit(t2,'[|]')[[1]] # pipe separated line with one effect of the mutation
-        t2=c((i),t2)
-        thisrow=sum(rowspermut[1:i])-rowspermut[i]+j
-        table[thisrow,1:length(t2)]=t2
-      }, silent=T)
+      for (j in 1:length(vep[[i]])) { # for each effect
+        try({
+            t2=vep[[i]][j]
+            t2=strsplit(t2,'[|]')[[1]] # pipe separated line with one effect of the mutation
+            t2=c((i),t2)
+            thisrow=sum(rowspermut[1:i])-rowspermut[i]+j
+            table[thisrow,1:length(t2)]=t2
+        }, silent = T)
+      }
     }
     table=table[,-which(colnames(table)=="AF")]  # remove AF col from vep data to not confuse with AF from galf
 

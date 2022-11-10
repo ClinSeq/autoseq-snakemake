@@ -10,12 +10,26 @@ class TestWorkflow(unittest.TestCase):
 
     def setUp(self):
         self.snakefile = "pipeline/autoseq/Snakefile"
-        self.config = "config.yml"
+        self.to_snakefile = "pipeline/tumor_only/Snakefile"
+        self.config = "tests/test_config.yml"
+        self.config_noumi = "tests/test_config_non_umi.yml"
         self.reference = "tests/dummy_genome/dummy_genome.json"
     
     @patch("pipeline.utils.utils.os.path.isfile")
     @patch("pipeline.utils.utils.get_chromosomes")
     def test_autoseq_valid(self, mock_isfile, mock_get_chromosomes):
+        mock_isfile.return_value = True
+        mocked_open = mock_open(read_data='{"1", "2", "3", "4", "5", "6", "7", "8", "X", "Y"}')
+        mock_get_chromosomes.return_value = {'1', '2', '3', '4', '5', '6', '7', '8', 'X', 'Y'}
+
+        with patch("pipeline.utils.utils.open", mocked_open, create=True):
+            self.assertTrue(snakemake.snakemake(self.snakefile,
+                                                configfiles=[self.config],
+                                                dryrun=True))
+
+    @patch("pipeline.utils.utils.os.path.isfile")
+    @patch("pipeline.utils.utils.get_chromosomes")
+    def test_autoseq_wo_umi(self, mock_isfile, mock_get_chromosomes):
         mock_isfile.return_value = True
         mocked_open = mock_open(read_data='{"1", "2", "3", "4", "5", "6", "7", "8", "X", "Y"}')
         mock_get_chromosomes.return_value = {'1', '2', '3', '4', '5', '6', '7', '8', 'X', 'Y'}
@@ -34,5 +48,21 @@ class TestWorkflow(unittest.TestCase):
 
         with patch("pipeline.utils.utils.open", mocked_open, create=True):
             self.assertFalse(snakemake.snakemake(self.snakefile,
+                                                configfiles=[self.config],
+                                                dryrun=True))
+
+    @patch("pipeline.utils.utils.os.path.isfile")
+    @patch("pipeline.utils.utils.get_chromosomes")
+    @patch("os.symlink")
+    @patch("os.makedirs")
+    def test_tumor_only_valid(self, mock_isfile, mock_get_chromosomes, mock_os_symlink, mock_makedirs):
+        mock_isfile.return_value = True
+        mocked_open = mock_open(read_data='{"1", "2", "3", "4", "5", "6", "7", "8", "X", "Y"}')
+        mock_get_chromosomes.return_value = {'1', '2', '3', '4', '5', '6', '7', '8', 'X', 'Y'}
+        mock_os_symlink.return_value = True
+        mock_makedirs.return_value = True
+
+        with patch("pipeline.utils.utils.open", mocked_open, create=True):
+            self.assertTrue(snakemake.snakemake(self.to_snakefile,
                                                 configfiles=[self.config],
                                                 dryrun=True))

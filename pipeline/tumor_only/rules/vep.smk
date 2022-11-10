@@ -11,7 +11,7 @@ rule vep_annotation_somatic:
     shell:
         "source activate ensembl-vep && "
         "vep --vcf --output_file STDOUT " 
-            " --pick --filter_common "
+            " --pick "
             " --dir {input.vep_dir} "
             " --fasta {input.reference} "
             " --check_existing  --total_length --allele_number "
@@ -57,7 +57,7 @@ rule vep_annotation_noSNPs:
     shell:
         "source activate ensembl-vep && "
         "vep --vcf --output_file STDOUT " 
-            " --pick --filter_common "
+            " --pick "
             " --dir {input.vep_dir} "
             " --fasta {input.reference} "
             " --check_existing  --total_length --allele_number "
@@ -80,7 +80,7 @@ rule vep_annotation_germline:
     shell:
         "source activate ensembl-vep && "
         "vep --vcf --output_file STDOUT " 
-            " --pick --filter_common "
+            " --pick "
             " --dir {input.vep_dir} "
             " --fasta {input.reference} "
             " --check_existing  --total_length --allele_number "
@@ -123,7 +123,7 @@ rule vep_annotation_brcaex:
     shell:
         "source activate ensembl-vep && "
         "vep --vcf --output_file STDOUT " 
-            " --pick --filter_common "
+            " --pick "
             " --dir {input.vep_dir} "
             " --fasta {input.reference} "
             " --check_existing  --total_length --allele_number "
