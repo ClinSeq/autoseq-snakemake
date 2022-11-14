@@ -90,6 +90,7 @@ if 'ALL' in steps or 'variants' in steps:
     CNV_OUTPUT.append("{}/variants/{}-{}-liqbio-cna.json".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
     CNV_OUTPUT.append("{}/qc/{}-{}-liqbio-purity.json".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
     CNV_OUTPUT.append("{}/qc/{}-{}-liqbio-cna.png".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    CNV_OUTPUT.append("{}/qc/{}-{}-frankenplot.html".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
     OUTPUT.append(CNV_OUTPUT)
 
 # set results to capture
