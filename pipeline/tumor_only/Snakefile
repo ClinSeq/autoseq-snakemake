@@ -149,7 +149,7 @@ samples_of_interest = [compose_lib_capture_str(unique_capture)
 QC_overview = "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest))
 
 OUTPUT.append(QC_overview)
-OUTPUT.append(outdir + "/bams/intermediate_bam_files.removed")
+OUTPUT.append(outdir + "/bams/intermediate_bamfiles.removed")
 
 container: config['container']['base']
 
@@ -194,7 +194,7 @@ rule remove_bamfiles:
         expand(outdir + "/fastqs/{sample}_concatenated_1.fastq.gz", sample=cancer_sample),
         expand(outdir + "/fastqs/{sample}_concatenated_2.fastq.gz", sample=cancer_sample)
     output:
-        outdir + "/bams/intermediate_bam_files.removed"
+        outdir + "/bams/intermediate_bamfiles.removed"
     run:
         del_bam = [bam for bam in input if 'clipoverlap' not in bam and 'nodups' not in bam]
         bamfiles = " ".join(del_bam)
