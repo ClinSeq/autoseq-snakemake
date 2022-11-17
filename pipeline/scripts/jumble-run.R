@@ -1,18 +1,27 @@
 #!/usr/bin/env Rscript
 
+jumble_version <- '0.2.0'
+
 # Markus Mayrhofer 2022
+
 # Dependencies ------------------------------------------------------------
-suppressPackageStartupMessages(library(optparse))
-suppressPackageStartupMessages(library(data.table))
-suppressPackageStartupMessages(library(stringr))
-suppressPackageStartupMessages(library(bamsignals))
-suppressPackageStartupMessages(library(Rsamtools))
-suppressPackageStartupMessages(library(GenomicRanges))
-suppressPackageStartupMessages(library(MASS))
-suppressPackageStartupMessages(library(VariantAnnotation))
-suppressPackageStartupMessages(library(PSCBS))
-suppressPackageStartupMessages(library(ggplot2)); theme_set(theme_bw())
-suppressPackageStartupMessages(library(patchwork))
+{
+    suppressPackageStartupMessages(library(optparse))
+    suppressPackageStartupMessages(library(data.table))
+    suppressPackageStartupMessages(library(stringr))
+    suppressPackageStartupMessages(library(bamsignals))
+    suppressPackageStartupMessages(library(Rsamtools))
+    suppressPackageStartupMessages(library(GenomicRanges))
+    suppressPackageStartupMessages(library(MASS))
+    suppressPackageStartupMessages(library(VariantAnnotation))
+    suppressPackageStartupMessages(library(PSCBS))
+    suppressPackageStartupMessages(library(ggplot2)); theme_set(theme_bw())
+    suppressPackageStartupMessages(library(patchwork))
+    suppressPackageStartupMessages(library(BSgenome.Hsapiens.UCSC.hg19))
+    suppressPackageStartupMessages(library(BSgenome))
+    #suppressPackageStartupMessages(library(Repitools))
+    #suppressPackageStartupMessages(library(rospca))
+}
 
 
 # Options ------------------------------------------------------------
@@ -30,41 +39,15 @@ option_list <- list(
 opt <- parse_args(OptionParser(option_list = option_list))
 
 
-# #with RDS
-# setwd('~/Data/CLINSEQ/')
-# opt <- list(reference_file='comprehensive3_baits_twist.bed.reference.RDS',
-#             input_bam='sample1.bam.counts.RDS',
-#             snp_vcf='sample1n.vcf.gz',
-#             output_dir='.'
-# )
-
-
-# #with bam
-# setwd('~/Data/CLINSEQ/')
-# opt <- list(reference_file='comprehensive3_baits_twist.bed.reference.RDS',
-#             input_bam='sample1.bam',
-#             snp_vcf='sample1.vcf',
-#             output_dir='.'
-# )
-
-
-# #PSFF with RDS and vcf
-# setwd('~/Data/CLINSEQ/')
-# opt <- list(reference_file='references/pancancer2_baits_twist.bed.reference.RDS',
-#             input_bam='psff_PN/iPCM-P-00436099-T-MOL2594i-KH20211123-PN20211124_nodups.bam.counts.RDS',
-#             snp_vcf='psff_vcf/iPCM-P-00436099-T-MOL2594i-KH-PN-iPCM-P-00436099-N-03998767-KH-PN.vardict-somatic-purecn.vcf.gz',
-#             output_dir='psff_pdf/'
-# )
-
 
 # Reference file ------------------------------------------------------------
 
 reference <- readRDS(opt$reference_file)
-counts_template <- reference[c("target_bed_file","chromlength","target_ranges","background_ranges")]
+counts_template <- reference[c("target_bed_file","chromlength","ranges")]
 
+wgs <- reference$target_bed_file=='wgs'
 
-
-
+#save.image('ws.Rdata')
 
 
 # Fragment counts ------------------------------------------------------------
@@ -73,20 +56,15 @@ counts_template <- reference[c("target_bed_file","chromlength","target_ranges","
 countsFromBam <- function(counts,bampath) {
     counts$date_count <- date()
     counts$input_bam_file <- bampath
-    target_ranges <- counts$target_ranges
-    background_ranges <- counts$background_ranges
-    counts[['target_count']] <- bamCount(bampath, target_ranges, paired.end="midpoint",
-                                         mapq=20, filteredFlag=1024, verbose=F)
-    counts[['target_short']] <- bamCount(bampath, target_ranges, paired.end="midpoint",
-                                         mapq=20, filteredFlag=1024, tlenFilter=c(0,160), verbose=F)
-    counts[['background_count']] <- bamCount(bampath, background_ranges, paired.end="midpoint",
-                                             mapq=20, filteredFlag=1024, verbose=F)
-    counts[['background_short']] <- bamCount(bampath, background_ranges, paired.end="midpoint",
-                                             mapq=20, filteredFlag=1024, tlenFilter=c(0,160), verbose=F)
+    ranges <- counts$ranges
+    counts[['count']] <- bamCount(bampath, ranges, paired.end="midpoint",
+                                  mapq=20, filteredFlag=1024, verbose=F)
+    counts[['count_short']] <- bamCount(bampath, ranges, paired.end="midpoint",
+                                        mapq=20, filteredFlag=1024, tlenFilter=c(0,150), verbose=F)
     return(counts)
 }
 
-# parse main sample
+# parse this sample
 input <- opt$input_bam
 if (str_detect(input,'.RDS$')) {
     if (!file.exists(input)) stop(paste("Cannot find",input))
@@ -103,317 +81,634 @@ if (str_detect(input,'.RDS$')) {
 
 targets <- reference$targets
 
-background <- reference$background
-background$gene='Background'
-
 name <- str_remove(opt$input_bam,'.*/')
 name <- str_remove(name,'\\.counts.RDS')
 
-targets$sample <- name
-background$sample <- name
+clinbarcode <- str_remove(name, "[_-]nodups.bam")
 
+targets$sample <- clinbarcode
+
+
+# Mark tiled
+targets[,left:=c(Inf,abs(diff(mid)))]
+targets[,right:=c(abs(diff(mid)),Inf)]
+targets[,farthest:=left][right>left,farthest:=right]
+targets[,is_tiled:=F][farthest<250,is_tiled:=T]
+targets[,left:=NULL][,right:=NULL][,farthest:=NULL]
+tiled_genes <- as.data.table(sort(table(targets[is_tiled==T]$gene),decreasing = T))
 
 # Add counts
-targets[,count:=counts$target_count]
-sum_by_bg <- targets[,sum(count),by=background]
-
-background[,raw_count:=counts$background_count]
-background[,count:=raw_count][sum_by_bg$background,count:=raw_count-sum_by_bg$V1]
+targets[,count:=counts$count]
+alltargetcount <- targets[is_target==T & bin %in% reference$keep]$count
 
 # same, short
-targets[,count_short:=counts$target_short]
-sum_by_bg <- targets[,sum(count_short),by=background]
-background[,raw_short:=counts$background_short]
-background[,count_short:=raw_short][sum_by_bg$background,count_short:=raw_short-sum_by_bg$V1]
-
-
-# median correct to backbone and set raw log ratio
-targets[,rawLR:=log2(count+1)][,rawLR:=rawLR-median(rawLR[is_backbone]),by=sample]
-targets[,rawLR_short:=log2(count_short+1)][,rawLR_short:=rawLR_short-median(rawLR_short[is_backbone]),by=sample]
-
-background[,rawLR:=log2(count+1)][,rawLR:=rawLR-median(rawLR[is_backbone]),by=sample]
-background[,rawLR_short:=log2(count_short+1)][,rawLR_short:=rawLR_short-median(rawLR_short[is_backbone]),by=sample]
-
-
-# keep only bins "ok" in this reference
-targets <- targets[reference$keep_targets]
-background <- background[reference$keep_background]
-
-target_ranges <- makeGRangesFromDataFrame(targets)
-background_ranges <- makeGRangesFromDataFrame(background)
+targets[,count_short:=counts$count_short]
 
 
 
-# Noise correction ------------------------------------------------------------
+# For SNPs if present
+targets[,snps:=0]
+targets[,allele_count_correction:=0]
 
-# correct using reference
-jcorrect <- function(temp,train_ix=NULL) {
-    
-    if (is.null(train_ix)) train_ix <- rep(TRUE,nrow(temp))
-    
-    loess_temp=loess(lr ~ PC1+PC2+PC3, data = temp,
-                     subset = train_ix,
-                     family="symmetric", control = loess.control(surface = "direct"))
-    temp[,lr:=lr-predict(loess_temp,temp)]
-    
-    # loess_temp=loess(lr ~ gc, data = temp,
-    #                  subset = train_ix,
-    #                  family="symmetric", control = loess.control(surface = "direct"))
-    # temp[,lr:=lr-predict(loess_temp,temp)]
-    
-    if (F) for (i in 1:(ncol(temp)-1)) {
-        temp$thispc=temp[[paste0('PC',i)]]
-        loess_temp=rlm(lr ~ thispc, data=temp,
-                       subset = targets$is_backbone)
-        temp[,lr:=lr-predict(loess_temp,temp)]
+
+target_ranges <- makeGRangesFromDataFrame(targets[is_target==T])
+ranges <- makeGRangesFromDataFrame(targets)
+
+
+
+# Modify backbone ----------------------------------------------------------
+set.seed(25) # <------------------ To be reproducible.
+max_backbone_in_gene <- 100 #  <--- applies to some
+
+if (!wgs) {
+    genes <- c('ATM','BRCA1','BRCA2','PTEN','RB1')
+    targets[,is_backbone:=chromosome %in% 1:22 & !gene %in% genes]
+    for (g in genes) {
+        ix=targets[gene==g & chromosome %in% as.character(1:22),.I]
+        n <- length(ix)
+        if (n>max_backbone_in_gene) ix=ix[order(rnorm(n))][1:max_backbone_in_gene]
+        targets[ix,is_backbone:=T]
     }
-    return(temp$lr)
 }
 
-# standard
-temp <- cbind(data.table(lr=targets$rawLR),reference$targets_ref)
-targets[,log2:=jcorrect(temp,targets$is_backbone)]
-
-# short
-temp <- cbind(data.table(lr=targets$rawLR_short),reference$targets_ref_short)
-targets[,log2_short:=jcorrect(temp,targets$is_backbone)]
-
-# standard bg
-temp <- cbind(data.table(lr=background$rawLR),reference$background_ref)
-background[,log2:=jcorrect(temp,is_backbone)]
-
-# bg short
-temp <- cbind(data.table(lr=background$rawLR_short),reference$background_ref_short)
-background[,log2_short:=jcorrect(temp,is_backbone)]
 
 
-
-# ggplot(background) + geom_point(aes(x=background,y=log2)) +
-#     geom_point(data=targets,mapping = aes(x=background,y=log2),col='blue')
-
-
-# SNPs ------------------------------------------------------------
+# SNP allele ratio ------------------------------------------------------------
 #save.image('ws.Rdata')
 
-targets$allele_ratio <- as.double(NA)
+peakx <- function(data) {
+    if(length(data)==1) return(data)
+    maxx <- NA
+    try({
+        d <- density(data[!is.na(data)])
+        maxy <- max(d$y)
+        maxx <- d$x[d$y==maxy][1]
+    }, silent=T)
+    return(maxx)
+}
 
 snp_allele_ratio <- FALSE
 input <- opt$snp_vcf
 if (!is.null(input)) {
     snp_allele_ratio <- TRUE
-    if (!str_detect(input,'.[vV][cC][fF]$') & !str_detect(input,'.[vV][cC][fF].[gG][zZ]$')) stop("SNP vcf file appears incorrect")
+    
+    if (is.null(reference$snp_rlm_model)) 
+        warning('SNP data in sample but not in reference object. Raw SNP allele ratio will be plotted but not used.')
+    
+    if (!str_detect(input,'.[vV][cC][fF]$') & !str_detect(input,'.[vV][cC][fF].[gG][zZ]$')) 
+        stop("SNP vcf file appears incorrect")
     
     vcf=readVcf(input)
     
-    # Get alleles
-    ref_allele <- as.character(ref(vcf))
-    alt_allele <- as.data.table(alt(vcf))[, .(values = list(value)), by = group][,values]
-    n_alt_alleles <- sapply(alt_allele, length)
-    alt_allele <- sapply(alt_allele, "[[", 1)
-    
-    # Keep only simple substitutions
-    vcf <- vcf[str_length(ref_allele)==1 & str_length(alt_allele)==1 & n_alt_alleles==1]
-    
-    # Get alleles again
-    ref_allele <- as.character(ref(vcf))
-    alt_allele <- as.data.table(alt(vcf))[, .(values = list(value)), by = group][,values]
-    alt_allele <- sapply(alt_allele, "[[", 1)
-    from <- rep('C/G',length(vcf)); from[ref_allele %in% c('A','T')] <- 'A/T'
-    to <- rep('C/G',length(vcf)); to[alt_allele %in% c('A','T')] <- 'A/T'
-    type <- paste(from,'>',to)
-    
-    # Prepare table of SNPs for this patient
-    snp_table <- data.table(snp=1:length(vcf),target=as.integer(NA),id=names(vcf),type)
-    
-    # Used for filtering
-    min_DP <- rep(Inf,length(vcf))
-    max_AD <- rep(-Inf,length(vcf))
-    max_RD <- rep(-Inf,length(vcf))
-    
     # If there is more than one sample in the VCF, which one to use?
     ix <- 1 # base assumption: first is this sample
-
     names <- colnames(vcf)
     if (length(names)>1) {
         # but if one name in the VCF fits the sample name better, use it:
         check <- which(str_detect(name,names))
         if (length(check)==1) ix <- check
+        
+        # Keep only this sample
+        vcf <- vcf[,ix]
+        
     }
-
-    vcf <- vcf[,ix]
     
+    
+    
+    # remove SNPs that do not have 2 alleles
+    alleles <- as.data.table(table(as.data.table(alt(vcf))$group))$N
+    vcf <- vcf[alleles==1 & sapply(geno(vcf)$AD,length)==2]
+    
+    name <- colnames(vcf)
     
     g <- geno(vcf)
     
+    # Prepare table of SNPs for this sample
+    snp_table <- as.data.table(rowRanges(vcf))[,1:3][,chromosome:=seqnames][,c(4,2,3)]
+    snp_table <- cbind(
+        data.table(
+            sample=name,
+            id=names(vcf)),
+        snp_table
+    )
     
-    AD <- sapply(g$AD, "[[", 2)
-    RD <- sapply(g$AD, "[[", 1)
-    DP=AD+RD
+    # Get alleles
+    snp_table$ref_allele <- as.character(ref(vcf))
+    alt_allele <- as.data.table(alt(vcf))[, .(values = list(value)), by = group][,values]
+    snp_table$n_alt_alleles <- sapply(alt_allele, length)
+    snp_table$alt_allele <- sapply(alt_allele, "[[", 1)
+    
+    # Get SNP type
+    # from <- rep('C/G',length(vcf)); from[snp_table$ref_allele %in% c('A','T')] <- 'A/T'
+    # to <- rep('C/G',length(vcf)); to[snp_table$alt_allele %in% c('A','T')] <- 'A/T'
+    snp_table[!str_detect(ref_allele,'^[ACGT]$'),ref_allele:='other']
+    snp_table[!str_detect(alt_allele,'^[ACGT]$'),alt_allele:='other']
+    snp_table[,type:=paste0(ref_allele,'>',alt_allele)]
+    snp_table[str_length(ref_allele)!=1 | str_length(alt_allele)!=1]$type <- 'other'
+    
+    # Get read counts
+    snp_table$AD <- sapply(g$AD, "[[", 2)
+    snp_table$RD <- sapply(g$AD, "[[", 1)
+    snp_table$DP=snp_table$AD+snp_table$RD
+    snp_table[,logDP:=log2(DP)]
+    
+    # Compute raw allele ratio
+    raw_allele_ratio <- unname(round(snp_table$AD/snp_table$DP,4))
+    raw_allele_ratio[is.nan(raw_allele_ratio)] <- 0
+    snp_table$allele_ratio <- raw_allele_ratio
+    
+    # SNP id with details
+    snp_table[,snp:=paste(id,ref_allele,alt_allele)]
+    
+    # Overlap with bins, drop SNPs not on targets
+    overlap <- findOverlaps(makeGRangesFromDataFrame(snp_table),ranges)
+    snp_table[queryHits(overlap),bin:=subjectHits(overlap)]
+    snp_table <- snp_table[bin %in% targets[is_target==T]$bin]
     
     
-    raw_allele_ratio <- unname(round(AD/DP,4))
-    raw_allele_ratio[is.nan(raw_allele_ratio)] <- NA
     
-    # for use in filtering
-    min_DP <- apply(data.table(DP,min_DP),1,min,na.rm=T)
-    max_AD <- apply(data.table(AD,max_AD),1,max,na.rm=T)
-    max_RD <- apply(data.table(RD,max_RD),1,max,na.rm=T)
+    # SNP correction ----------------------------------------------------------
     
-    # Selection to use for alt/ref correction model
-    ix <- AD>50 & RD > 50 & raw_allele_ratio > .4 & raw_allele_ratio < .6 & DP < quantile(DP,.95)*1.1
-    
-    # ggplot() + geom_point(aes(x=RD[ix]+AD[ix], y=AD[ix]/RD[ix],fill=type[ix]),shape=21) +
-    #     scale_y_log10() +
-    #     geom_smooth(aes(x=RD[ix]+AD[ix], y=AD[ix]/RD[ix],group=type[ix],col=type[ix]))
-    # ggplot() + geom_point(aes(x=1:sum(ix), y=AD[ix]/RD[ix],fill=type[ix]),shape=21)
-    
-    allele_ratio <- raw_allele_ratio
-    
-    # compute error factors (in development, and paused.)
-    
-    if (F) {
-        temp <- data.table(AD,RD,depth=AD+RD,ratio=AD/RD,type=type,error_factor=1.0,mapd=1)
-        # m <- rlm(ratio ~ depth, temp[ix])
-        # error_factor <- predict(m,temp)
-        # # avoid extrapolating into positive error factor
-        # error_factor[error_factor>1] <- 1
-        # ggplot() + geom_point(aes(x=RD+AD, y=AD/RD)) + scale_y_log10() +
-        #     geom_point(aes(x=RD+AD, y=error_factor),col='red')
+    if (!is.null(reference$snp_rlm_model)) {
         
-        all <- NULL
-        current <- temp[ix]
-        ix_g <- current$type=='A/T > C/G'
-        ix_b <- current$type=='C/G > A/T'
-        ix <- !ix_g & !ix_b
-        i=0
-        for (other in 90:100) {
-            current[ix,error_factor:=other]
-            current[ix,ratio:=AD/(AD+RD*error_factor/100)]
-            for (green in 90:100) {
-                current[ix_g,error_factor:=green]
-                current[ix_g,ratio:=AD/(AD+RD*error_factor/100)]
-                for (blue in 90:100) {
-                    current[ix_b,error_factor:=blue]
-                    current[ix_b,ratio:=AD/(AD+RD*error_factor/100)]
+        # Compute GC content for SNPs
+        gc_ranges <- makeGRangesFromDataFrame(unique(snp_table[,.(chromosome,start,end)]))
+        seqlevelsStyle(gc_ranges) <- "UCSC"
+        gc_ranges <- gc_ranges[width(gc_ranges)==1]
+        start(gc_ranges) <- start(gc_ranges)-1
+        end(gc_ranges) <- end(gc_ranges)+1
+        gc_ranges$gc3 <- gcContentCalc(gc_ranges, organism=Hsapiens)
+        start(gc_ranges) <- start(gc_ranges)-1
+        end(gc_ranges) <- end(gc_ranges)+1
+        gc_ranges$gc5 <- gcContentCalc(gc_ranges , organism=Hsapiens)
+        start(gc_ranges) <- start(gc_ranges)-48
+        end(gc_ranges) <- end(gc_ranges)+48
+        gc_ranges$gc101 <- gcContentCalc(gc_ranges , organism=Hsapiens)
+        start(gc_ranges) <- start(gc_ranges)+50
+        end(gc_ranges) <- end(gc_ranges)-50
+        seqlevelsStyle(gc_ranges) <- "NCBI"
+        gc_table <- as.data.table(gc_ranges)[,-c('strand','width')][,chromosome:=seqnames][,-'seqnames']
+        snp_table <- merge(snp_table,gc_table,all=T,by=c('chromosome','start','end'))
+        
+        
+        # Compute features for ref allele bias
+        snp_table[,hom_alt:=F][chromosome %in% 1:22 & allele_ratio > .95,hom_alt:=T]
+        
+        t <- c('C>T','G>A')
+        snp_table[,peak_ld:=peakx(log2(DP[type %in% t & hom_alt==T & chromosome %in% 1:22])),by=c('sample')]
+        
+        snp_table[,homC_T:=peakx(log2(DP[hom_alt==T & type=='C>T']))-peak_ld,by=c('sample')]
+        snp_table[,homT_C:=peakx(log2(DP[hom_alt==T & type=='T>C']))-peak_ld,by=c('sample')]
+        snp_table[,homA_G:=peakx(log2(DP[hom_alt==T & type=='A>G']))-peak_ld,by=c('sample')]
+        snp_table[,homG_A:=peakx(log2(DP[hom_alt==T & type=='G>A']))-peak_ld,by=c('sample')]
+        
+        # Compute general model based bias estimates
+        snp_rlm_model <- reference$snp_rlm_model
+        snp_table[,bias_estimate:=.04] # default 
+        for (ref in unique(snp_table$ref_allele)) 
+            for (alt in unique(snp_table$alt_allele)) 
+                if(ref!=alt & ref != 'other') {
+                    cat(ref,'>',alt,'\n')
+                    thismodel <- snp_rlm_model[[paste0(ref,'_',alt)]]
                     
-                    current[,mapd:=median(abs(diff(abs(ratio-.5))))]
-                    i <- i+1
-                    all[[i]] <- copy(current)
+                    ix <- snp_table$ref_allele==ref & snp_table$alt_allele==alt
+                    cat(sum(ix),'total \n')
+                    predicted_bias <- predict(thismodel,snp_table[ix])
+                    cat(length(predicted_bias),'predicted \n')
+                    #hist(predicted_bias)
+                    snp_table[ix,bias_estimate:=predicted_bias]
                 }
-            }
-        }
-        bound <- rbindlist(all)
-        best <- bound[mapd==min(mapd)]
-        #plot(best$ratio)
-        best <- unique(best[,.(type,error_factor)])
         
+        snp_table[,AD_corrected:=AD*(2^bias_estimate)]
+        snp_table[,DP_corrected:=RD+AD_corrected]
+        snp_table[,allele_ratio_corrected:=AD_corrected/DP_corrected]
         
-        all <- NULL
-        current <- temp[AD>10 & RD>10]
-        ix_g <- current$type=='A/T > C/G'
-        ix_b <- current$type=='C/G > A/T'
-        ix <- !ix_g & !ix_b
-        i=0
-        best_other <- best[type=='C/G > C/G']$error_factor[1]
-        best_green <- best[type=='A/T > C/G']$error_factor[1]
-        best_blue <- best[type=='C/G > A/T']$error_factor[1]
-        for (other in -5:5) {
-            current[ix,error_factor:=best_other+other/10]
-            current[ix,ratio:=AD/(AD+RD*error_factor/100)]
-            for (green in -5:5) {
-                current[ix_g,error_factor:=best_green+green/10]
-                current[ix_g,ratio:=AD/(AD+RD*error_factor/100)]
-                for (blue in -5:5) {
-                    current[ix_b,error_factor:=best_blue+blue/10]
-                    current[ix_b,ratio:=AD/(AD+RD*error_factor/100)]
-                    
-                    current[,mapd:=median(abs(diff(abs(ratio-.5))))]
-                    i <- i+1
-                    all[[i]] <- copy(current)
-                }
-            }
-        }
-        bound <- rbindlist(all)
-        best <- bound[mapd==min(mapd)]
+        # Compute residual bias estimates where available
+        snp_coeff_table <- reference$snp_coeff_table
+        ix <- match(snp_table$snp,snp_coeff_table$snp)
+        snp_table[,residual_bias_estimate:=0]
+        snp_table[,residual_bias_estimate:=
+                      snp_coeff_table$constant[ix]+
+                      snp_coeff_table$logDP[ix]*logDP+
+                      snp_coeff_table$peak_ld[ix]*peak_ld+
+                      snp_coeff_table$homC_T[ix]*homC_T+
+                      snp_coeff_table$homT_C[ix]*homT_C+
+                      snp_coeff_table$homA_G[ix]*homA_G+
+                      snp_coeff_table$homG_A[ix]*homG_A]
+        snp_table[is.na(residual_bias_estimate),residual_bias_estimate:=0]
         
-        # ggplot(best) + geom_point(aes(x=1:nrow(best), y=AD/(AD+RD),fill=type),shape=21)
-        # ggplot(best) + geom_point(aes(x=1:nrow(best), y=AD/(AD+RD*error_factor/100),fill=type),shape=21)
-        best <- unique(best[,.(type,error_factor)])
+        # Correct for residual bias
+        snp_table[,AD_corrected2:=AD_corrected*(2^residual_bias_estimate)]
+        snp_table[,DP_corrected2:=RD+AD_corrected2]
+        snp_table[,allele_ratio_corrected2:=AD_corrected2/DP_corrected2]
         
+        # Compute the correction factor and cap it at 2/3 to 3/2. Note that only the model based, first correction factor is used for that.
+        snp_table[,correct_factor:=2^(bias_estimate+residual_bias_estimate)]
+        snp_table[correct_factor>1.5,correct_factor:=1.5]
+        snp_table[correct_factor<2/3,correct_factor:=2/3]
         
+        # Compute the correction number
+        snp_table[,correct_number:=(correct_factor-1)*AD]
+        snp_table[,correct_number_check:=AD_corrected2-AD] # should be same
         
-        #for (t in unique(temp$type)) temp[type==t]$error_factor <- median(temp[ix & type==t]$ratio,na.rm=T)
-        for (t in unique(temp$type)) temp[type==t]$error_factor <- best[type==t]$error_factor[1]
-        
-        #AD_corrected <- AD/temp$error_factor
-        allele_ratio <- unname(round(AD/(AD+RD*temp$error_factor/100),4))
+        # Add correction number to target table
+        snps_by_bin <- snp_table[,.N,by=bin]
+        targets[snps_by_bin$bin,snps:=snps_by_bin$N]
+        correction_by_bin <- snp_table[,max(correct_number),by=bin]
+        targets[correction_by_bin$bin,allele_count_correction:=correction_by_bin$V1]
         
     }
-    
-    snp_table$allele_ratio <- allele_ratio
-
-    
-    overlaps <- findOverlaps(target_ranges,rowRanges(vcf))
-    snp_table[subjectHits(overlaps)]$target <- queryHits(overlaps)
-    
-    #best <- min_DP > 100 & max_AD > 10 & max_RD > 10 # 300, 50, 50
-    #overlaps <- findOverlaps(target_ranges,rowRanges(vcf[best]))
-    
-    
-    targets[queryHits(overlaps)]$allele_ratio <-  snp_table[subjectHits(overlaps)]$allele_ratio
-
     
 }
 
 
+
+
+# LogR and genotype correction ------------------------------------------------------------
+
+
+
+
+min1 <- function(data) {
+    data[data<1] <- 1
+    data[is.na(data)] <- 1
+    return(data)
+}
+
+# Basic logR, targets (with correction for SNPs)
+targets[,rawLR:=log2(min1(count+allele_count_correction))]
+targets[,rawLR_short:=log2(min1(count_short+allele_count_correction*(count_short/count)))] # allelic correction scaled for short-fragments
+
+# median correct to backbone
+targets[,rawLR:=rawLR-median(rawLR[is_backbone]),by='is_target']
+targets[,rawLR_short:=rawLR_short-median(rawLR_short[is_backbone]),by='is_target']
+
+# correct by reference median
+targets[reference$keep,rawLR:=rawLR-reference$median]
+targets[reference$keep,rawLR_short:=rawLR_short-reference$median_short]
+
+
+
+# Remove outliers 1 ------------------------------------------------------------
+
+alltargets <- copy(targets) # to get the full set back later
+
+# keep only bins "ok" in this reference set
+targets <- targets[bin %in% reference$keep]
+
+
+# PCA outliers based on score SD
+set.seed(25)
+pca <- as.data.table(prcomp(reference$targets_ref[,-1],center = F,scale. = F)$x)
+targets[,keep:=T]
+
+for (pc in colnames(pca)) {
+    fact <- ifelse(pc %in% c('PC1','PC2'),2,3)
+    sd <- sd(pca[[pc]])
+    targets[pca[[pc]] < -sd*fact, keep:=F]
+    targets[pca[[pc]] > sd*fact, keep:=F]
+}
+targets <- targets[keep==T]
+targets[,keep:=NULL]
+
+
+# 
+# deviation <- function(vector) {
+#     m <- runmed(vector,k = 7)
+#     d <- abs(vector-m)
+#     return(d)
+# }
+# 
+# targets[,dev:=deviation(rawLR),by=chromosome]
+# targets[dev<3][,rawLR:=NA]
+# targets$dev <- NULL
+# 
+# # remove the NA before creating a reference PCA:
+# targets <- targets[!is.na(rawLR)]
+
+# pca <- as.data.table(prcomp(reference$targets_ref[bin %in% targets$bin,-1],center = F,scale. = F)$x)
+# n_pcs <- min(ncol(pca,5))
+# for (i in 1:n_pcs) {
+#     pc_range <- quantile(x[,i],c(.005,.995),na.rm=T)
+# }
+
+
+
+# PCA v1 ------------------------------------------------------------
+
+ix <- targets[is_target==T]$bin # the ontarget
+
+set.seed(25)
+tpca <- as.data.table(prcomp(reference$targets_ref[bin %in% ix,-1],center = F,scale. = F)$x)
+tpca_short <- as.data.table(prcomp(reference$targets_ref_short[bin %in% ix,-1],center = F,scale. = F)$x)
+
+if (!wgs) if (any(targets$is_target==F)) {
+    ix <- targets[is_target==F]$bin # the offtarget
+    bgpca <- as.data.table(prcomp(reference$targets_ref[bin %in% ix,-1],center = F,scale. = F)$x)
+    bgpca_short <- as.data.table(prcomp(reference$targets_ref_short[bin %in% ix,-1],center = F,scale. = F)$x)
+}
+
+
+
+# Reference data correction v1 ------------------------------------------------------------
+
+# correct using reference PCA
+jcorrect <- function(temp,train_ix=NULL) {
+    
+    if (is.logical(train_ix[1])) train_ix <- which(train_ix)
+    if (is.null(train_ix)) train_ix <- which(rep(TRUE,nrow(temp)))
+    
+    set.seed(25)
+    if (length(train_ix)>10e3) {
+        new_ix <- train_ix[order(rnorm(n=length(train_ix)))][1:10e3]
+        train_ix <- new_ix
+    }
+    
+    pcs <- ncol(temp)-2
+    bins <- nrow(temp)
+    
+    if (pcs>=3 & bins<50e3) {
+        # loess_temp <- loess(lr ~ PC1+PC2+PC3, data = temp,
+        #                     subset = train_ix,
+        #                     family="symmetric", control = loess.control(surface = "direct"))
+        # 
+        # temp[,lr:=lr-predict(loess_temp,temp)]
+        loess_temp <- rlm(lr ~ PC1+PC2+PC3, data=temp,
+                          subset = train_ix)
+        temp[,lr:=lr-predict(loess_temp,temp)]
+    }
+    
+    
+    for (i in 1:(pcs)) {
+        temp$thispc=temp[[paste0('PC',i)]]
+        loess_temp <- rlm(lr ~ thispc, data=temp,
+                          subset = train_ix)
+        temp[,lr:=lr-predict(loess_temp,temp)]
+    }
+    
+    # apply GC correct as linear function, where there is gc, if many bins
+    if (bins > 50e3 & any(!is.na(temp$gc))) {
+        ix <- which(!is.na(temp$gc))
+        loess_temp <- rlm(lr ~ gc, data=temp[ix],
+                          subset = intersect(train_ix,ix))
+        temp[ix,lr:=lr-predict(loess_temp,temp[ix])]
+        # or loess if fewer
+    } else if (any(!is.na(temp$gc))) {
+        ix <- which(!is.na(temp$gc))
+        loess_temp=loess(lr ~ gc, data = temp[ix],
+                         subset = intersect(train_ix,ix),
+                         family="symmetric", control = loess.control(surface = "direct"))
+        temp[ix,lr:=lr-predict(loess_temp,temp[ix])]
+    }
+    
+    return(temp$lr)
+}
+
+
+targets[,log2:=rawLR]
+targets[,log2_short:=rawLR_short]
+
+# standard
+ix <- targets$is_target
+temp <- cbind(data.table(
+    lr=targets[ix]$rawLR),
+    gc=targets[ix]$gc,
+    tpca)
+targets[ix,log2:=jcorrect(temp,targets[ix]$is_backbone)]
+
+# short
+temp <- cbind(data.table(
+    lr=targets[ix]$rawLR_short),
+    gc=targets[ix]$gc,
+    tpca_short)
+targets[ix,log2_short:=jcorrect(temp,targets[ix]$is_backbone)]
+
+if (!wgs) if (any(targets$is_target==F)) {
+    ix <- targets$is_target
+    # standard bg
+    temp <- cbind(data.table(
+        lr=targets[!ix]$rawLR),
+        gc=targets[!ix]$gc,
+        bgpca)
+    targets[!ix,log2:=jcorrect(temp,targets[!ix]$is_backbone)]
+    
+    # bg short
+    temp <- cbind(data.table(
+        lr=targets[!ix]$rawLR_short),
+        gc=targets[!ix]$gc,
+        bgpca_short)
+    targets[!ix,log2_short:=jcorrect(temp,targets[!ix]$is_backbone)]
+    
+}
+
+
+# PCA v2 ------------------------------------------------------------
+
+# ix <- targets[is_target==T & gc>.3 & gc<.6]$bin # the ontarget and good enough
+# 
+# tpca <- as.data.table(prcomp(reference$targets_ref[bin %in% ix,-1],center = F,scale. = F)$x)
+# tpca_short <- as.data.table(prcomp(reference$targets_ref_short[bin %in% ix,-1],center = F,scale. = F)$x)
+# 
+# if (!wgs) {
+#     ix <- targets[is_target==F]$bin # the offtarget
+#     bgpca <- as.data.table(prcomp(reference$targets_ref[bin %in% ix,-1],center = F,scale. = F)$x)
+#     bgpca_short <- as.data.table(prcomp(reference$targets_ref_short[bin %in% ix,-1],center = F,scale. = F)$x)
+# }
+# 
+
+
+
+# Reference data correction v2 ------------------------------------------------------------
+
+
+targets[,log2x:=log2_short]
+# 
+# 
+# # standard
+# ix <- targets$is_target==T & targets$gc>.3 & targets$gc<.6
+# temp <- cbind(data.table(
+#     lr=targets[ix]$rawLR),
+#     gc=targets[ix]$gc,
+#     tpca)
+# targets[ix,log2x:=jcorrect(temp,targets[ix]$is_backbone)]
+# 
+# 
+# if (!wgs) {
+#     ix <- targets$is_target==F
+#     # standard bg
+#     temp <- cbind(data.table(
+#         lr=targets[ix]$rawLR),
+#         gc=targets[ix]$gc,
+#         bgpca)
+#     targets[ix,log2x:=jcorrect(temp,targets[ix]$is_backbone)]
+#     
+# }
+# 
+
+
+# temp <- cbind(data.table(
+#     lr=targets$rawLR),
+#     gc=targets$gc,
+#     tpca)
+# targets[,log2x:=jcorrect(temp,targets$is_backbone)]
+
+
+# flatten <- function(vector) return(vector-runmed(vector,k=11))
+# flatten_mat <- function(mat) return(apply(mat,2,flatten))
+# 
+# jcorrect_v2 <- function(lr,gc,ref) {
+# 
+#     flat_sample <- flatten(lr)
+#     flat_ref <- flatten_mat(ref)
+#     
+#     pca <- prcomp(t(flat_ref),center = F,scale. = F)
+#     
+#     ncomp <- min(10,ceiling(ncol(flat_ref)/2))
+#     scores <- pca$x[,1:ncomp]
+#     
+#     getCoeff <- function(scores, responsevector) {
+#         m <- rlm(responsevector ~ scores)
+#         return(as.data.table(t(m$coefficients)))
+#     }  
+#     
+#     coeffs <- NULL
+#     for (i in 1:nrow(ref)) {
+#         coeffs[[i]] <- getCoeff(scores,t(ref[i,]))
+#     }
+#     coeffs <- rbindlist(coeffs)
+#     
+#     # compute prediction
+#     prediction <- coeffs$`(Intercept)`
+#     for (i in 2:ncol(coeffs)) {
+#         prediction <- prediction + coeffs[,..i] * scores[i-1]
+#     }
+#     
+#     new_lr <- lr-prediction[[1]]
+#     return(new_lr)
+# }
+
+
+
+# standard
+
+#lr <- targets[is_target==T & chromosome!='Y']$rawLR
+#gc <- targets[is_target==T & chromosome!='Y']$gc
+#ref <- reference$targets_ref[,-1]
+
+# targets[is_target==T & chromosome!='Y',log2x:=jcorrect_v2(rawLR,
+#                                                       gc,
+#                                                       reference$targets_ref[,-1])]
+# 
+# # short
+# targets[is_target==T & chromosome!='Y',log2_shortx:=jcorrect_v2(rawLR_short,
+#                                                       gc,
+#                                                       reference$targets_ref_short[,-1])]
+# 
+# if (!wgs) {
+#     # standard bg
+#     targets[is_target==F & chromosome!='Y',log2x:=jcorrect_v2(rawLR,
+#                                                           gc,
+#                                                           reference$background_ref[,-1])]
+#     
+#     
+#     # bg short
+#     targets[is_target==F & chromosome!='Y',log2_shortx:=jcorrect_v2(rawLR_short,
+#                                                           gc,
+#                                                           reference$background_ref_short[,-1])]
+#     
+# }
+
+
+# Remove outliers 2 ------------------------------------------------------------
+
+deviation <- function(vector) {
+    m <- runmed(vector,k = 7)
+    d <- abs(vector-m)
+    return(d)
+}
+
+targets[,dev:=deviation(log2),by=chromosome]
+targets <- targets[dev<1]
+
+targets[log2 < -4, log2:=-4]
+targets[log2 > 7, log2:=7]
+targets[log2x < -4, log2x:=-4]
+targets[log2x > 7, log2x:=7]
+
+
+
+# Adjust X to background ------------------------------------------------------------
+
+if (!wgs) {
+    # X-chromosome correction factor to targeted bins, based on background bins
+    temp <- targets[chromosome=='X' & !is.na(log2)]
+    temp[,bg:=as.numeric(NA)][is_target==F,bg:=2^log2]
+    temp[,bg_median:=runmed(bg,51,na.action = 'na.omit')]
+    temp[,tg:=as.numeric(NA)][is_target==T & is_tiled==F & gene=='',tg:=2^log2]
+    temp[,tg_median:=runmed(tg,51,na.action = 'na.omit')]
+    temp[,dif:=bg_median-tg_median]
+    x_correct <- median(temp$dif,na.rm = T)
+    targets[chromosome=='X' & is_target==T, log2:=log2+x_correct]
+}
 
 # Segmentation ------------------------------------------------------------
 
 
-
 getsegs <- function(targets, logratio) {
+    
+    alpha <- .01
+    if (wgs) { 
+        alpha <- 1e-5
+        #if (median(targets$end-targets$start) >= 5000) alpha <- 1e-5
+    }
+    
     segments <- segmentByCBS(y=logratio,avg='median',
-                             chromosome=as.numeric(str_replace(targets$chromosome,'X','23')),
-                             alpha = 0.01,undo=1)
+                             chromosome=targets$chromosome,
+                             alpha = alpha,undo=1)
     segments <- as.data.table(segments)[!is.na(chromosome),-1]
     segments[,start_pos:=targets$start[ceiling(start)]]
     segments[,end_pos:=targets$end[floor(end)]]
     segments[,genes:='']
+    
     for (i in 1:nrow(segments)) {
         ix <- ceiling(segments[i]$start):floor(segments[i]$end)
-        #suppressWarnings(segments[i]$mean <- round(mean(targets[ix]$log2,trim=.1,na.rm=T)),3)
-        genes <- unique(targets$gene[ix])
+        segments[i,mean:=median(logratio[ix],na.rm = T)] # <----------------- here, value per segment is set
+        genes <- paste0(unique(targets[ix][gene!='']$gene),collapse = ',')
+        genes <- unique(strsplit(genes,',')[[1]])
         genes <- genes[!genes %in% c('','Background')]
         if (length(genes)>0) segments[i]$genes <- paste(genes,collapse = ', ')
+        
+        # adjust segment start and end to bin number, rather than bin order
+        ix <- ceiling(segments[i]$start)
+        segments[i,start:=targets[ix]$bin]
+        ix <- floor(segments[i]$end)
+        segments[i,end:=targets[ix]$bin]
     }
-    segments[,chromosome:=str_replace(as.character(chromosome),'23','X')]
+    
+    
+    
+    
     return(segments)
 }
 
 
-# Merge targets and background for segmentation
-# bins <- rbind(targets[,.(chromosome,start,mid,end,log2,type='t')],
-#               background[,.(chromosome,start,mid,end,log2,type='b')])
 
-bins <- rbind(targets,background,fill=T)
-bins[,chromosome:=str_replace(chromosome,'Y','24')][,chromosome:=str_replace(chromosome,'X','23')][,chromosome:=as.numeric(chromosome)]
-
-bins <- bins[order(chromosome,mid)][,bin:=1:.N]
-
-segments <- getsegs(bins, bins$log2)
+# Do the segmentation
+targets[,chromosome:=str_replace(chromosome,'Y','24')][,chromosome:=str_replace(chromosome,'X','23')][,chromosome:=as.numeric(chromosome)]
+segments <- getsegs(copy(targets), targets$log2)
+targets[,chromosome:=as.character(chromosome)][chromosome=='23',chromosome:='X'][chromosome=='24',chromosome:='Y']
+segments[,chromosome:=as.character(chromosome)][chromosome=='23',chromosome:='X'][chromosome=='24',chromosome:='Y']
 
 
-
-# Gene/segment tables ------------------------------------------------------------
-
-
+# Gene+segment table ------------------------------------------------------------
 
 segments_temp <- segments[,.(segment=paste(1:.N),type='segment',chromosome,start=start_pos,end=end_pos,
-                         length=end_pos-start_pos,
-                         bins=nbrOfLoci,genes,mean)]
-genes <- targets[,.(segment='',type='gene',chromosome,start,end,length=NA,bins=0,
-                    genes=gene,log2,
-                    mean=0)]
+                             length=end_pos-start_pos,
+                             bins=nbrOfLoci,genes,mean)]
+
+genes <- targets[is_target==T,.(segment='',type='gene',chromosome,start,end,length=NA,bins=0,
+                                genes=gene,log2,
+                                mean=0)]
 
 
 for (i in 1:nrow(segments)) {
@@ -430,9 +725,8 @@ suppressWarnings(genes[,mean:=round(median(log2,na.rm=T),3),by=genes])
 
 genes[,log2:=NULL]
 
-
 suppressWarnings(
-    segments_genes <- rbind(segments_temp,unique(genes[bins>20]))[order(as.numeric(chromosome),start)]
+    segments_genes <- rbind(segments_temp,unique(genes))[order(as.numeric(chromosome),start)]
 )
 
 
@@ -440,20 +734,22 @@ suppressWarnings(
 
 # Table output ------------------------------------------------------------
 
+targets <- merge(alltargets,targets,by=colnames(alltargets),all=T)[order(bin)]
 
-clinbarcode <- str_remove(name, "_nodups.bam")
-bins[,chromosome:=as.character(chromosome)][chromosome=='23',chromosome:='X'][chromosome=='24',chromosome:='Y']
+# The combined segments and genes table (skipped for now)
+#fwrite(x = segments_genes,file = paste0(opt$output_dir,'/',clinbarcode,'.segments.csv'))
 
-fwrite(x = segments_genes,file = paste0(opt$output_dir,'/',clinbarcode,'.segments.csv'))
-fwrite(x = bins,file = paste0(opt$output_dir,'/',clinbarcode,'.bins.csv'))
-fwrite(x = targets,file = paste0(opt$output_dir,'/',clinbarcode,'.targets.csv'))
-# fwrite(x = background,file = paste0(opt$output_dir,'/',name,'.background.csv'))
+# Jumble targets and background
+fwrite(x = targets,file = paste0(opt$output_dir,'/',clinbarcode,'.jumble.csv'))
 
 
-# for compatibility with CNVkit. Currently with targets only to allow PureCN to work (does not allow overlaps)
-# cnr:  chromosome      start   end     gene    depth   log2    weight
-cnr <- targets[,.(chromosome=as.character(chromosome),start,end,gene,depth=round(count/width*160,3),log2,weight=1)][gene=='',gene:='-']
-cnr[,chromosome:=str_replace(chromosome,'23','X')][,chromosome:=str_replace(chromosome,'24','Y')]
+
+# for compatibility with CNVkit.
+# cnr:  chromosome      start   end     gene    depth   log2    weight ()
+cnr <- targets[!is.na(log2),.(chromosome=as.character(chromosome),start,end,gene,
+                              depth=round(count/width*200,3),log2,weight=1,
+                              gc,count)][gene=='',gene:='-']
+
 fwrite(x = cnr,file = paste0(opt$output_dir,'/',clinbarcode,'.cnr'),sep = '\t')
 
 # cns:  chromosome      start   end     gene    log2    depth   probes  weight
@@ -464,252 +760,147 @@ fwrite(x = cns,file = paste0(opt$output_dir,'/',clinbarcode,'.cns'),sep = '\t')
 # DNAcopy segment file:
 # ID    chrom   loc.start       loc.end num.mark        seg.mean        C
 seg <- segments[,.(ID=name,chrom=chromosome,loc.start=start_pos,loc.end=end_pos,num.mark=nbrOfLoci,seg.mean=mean,C=NA)]
+seg[,chrom:=str_replace(chrom,'Y','24')][,chrom:=str_replace(chrom,'X','23')][,chrom:=as.numeric(chrom)]
 fwrite(x = seg,file = paste0(opt$output_dir,'/',clinbarcode,'_dnacopy.seg'),sep = '\t')
 
 
-# Count file output (not overwrite) ------------------------------------------------------------
-if (!file.exists(paste0(opt$output_dir,'/',clinbarcode,'.counts.RDS')))
-    saveRDS(counts,paste0(opt$output_dir,'/',clinbarcode,'.counts.RDS'))
+# Count file output ------------------------------------------------------------
+# (not overwrite, not if input was counts.RDS)
+if (!file.exists(paste0(opt$output_dir,'/',clinbarcode,'.*counts.RDS')))
+    if (!str_detect(opt$input_bam,'counts.RDS$'))
+        saveRDS(counts,paste0(opt$output_dir,'/',clinbarcode,'.counts.RDS'))
 
 
-# Save workspace ------------------------------------------------------------
-#save.image(paste0(opt$output_dir,'/',clinbarcode,'.jumble_workspace.RDS'))
+# Save workspace? ------------------------------------------------------------
+#save.image(paste0(opt$output_dir,'/',clinbarcode,'.jumble_workspace.Rdata'))
 
 
-# Plot prototype ------------------------------------------------------------
 
-bins$type <- 'Target'
-bins[gene=='Background']$type <- 'Background'
+# QC metrics ------------------------------------------------------------
+#save.image(paste0(opt$output_dir,'/',clinbarcode,'.jumble_workspace.Rdata'))
 
 
-if (F) {
-    
-    # make chroms object for plots
-    chroms=data.table(chromosome=unique(bins$chromosome),
-                      start=0,
-                      end=0,
-                      mid=0)
-    for (chr in chroms$chromosome) {
-        chroms$start[chr==chroms$chromosome]=bins[chromosome==chr,min(bin)]
-        chroms$end[chr==chroms$chromosome]=bins[chromosome==chr,max(bin)]
-        chroms$mid[chr==chroms$chromosome]=bins[chromosome==chr,mean(bin)]
-    }
-    
-    
-    p1 <- ggplot(bins[count/width*160 > 100]) +
-        geom_point(mapping = aes(x=bin,y=count/width*160,fill=label),
-                   shape=21,col='#00000050',size=1) +
-        facet_wrap(facets = vars(sample),ncol = 1) + ylab('coverage') +
-        scale_fill_hue() + scale_y_log10() +
-        guides(fill=guide_legend(override.aes=list(shape=21,size=2))) +
-        scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
-                           expand = c(.01,.01),labels = chroms$chromosome) +
-        theme(panel.grid.major.x = element_blank(),
-              panel.grid.minor.y = element_line(),
-              panel.grid.minor.x = element_line(color = 'black'),
-              axis.line = element_line(),
-              axis.ticks = element_line())
-    
-    p2 <- ggplot(bins) +
-        geom_point(mapping = aes(x=bin,y=log2,fill=label),shape=21,col='#00000050',size=1) +
-        facet_wrap(facets = vars(sample),ncol = 1) +
-        scale_fill_hue() + ylim(c(-3,3)) +
-        geom_segment(data=segments,col='green',size=1,
-                     mapping = aes(x=start,xend=end,y=mean,yend=mean)) +
-        guides(fill=guide_legend(override.aes=list(shape=21,size=2))) +
-        scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
-                           expand = c(.01,.01),labels = chroms$chromosome) +
-        theme(panel.grid.major.x = element_blank(),
-              panel.grid.minor.y = element_line(),
-              panel.grid.minor.x = element_line(color = 'black'),
-              axis.line = element_line(),
-              axis.ticks = element_line())
-    
-    if (snp_allele_ratio) p3 <- ggplot(bins) +
-        geom_point(mapping = aes(x=bin,y=allele_ratio,fill=label),
-                   shape=21,col='#00000050',size=1) +
-        facet_wrap(facets = vars(sample),ncol = 1) +
-        scale_fill_hue() + ylim(0:1) +
-        guides(fill=guide_legend(override.aes=list(shape=21,size=2))) +
-        scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
-                           expand = c(.01,.01),labels = chroms$chromosome) +
-        theme(panel.grid.major.x = element_blank(),
-              panel.grid.minor.y = element_line(),
-              panel.grid.minor.x = element_line(color = 'black'),
-              axis.line = element_line(),
-              axis.ticks = element_line())
-    
-    q1 <- ggplot(targets[count/width*160 > 100],mapping = aes(x=gc,y=count/width*160)) +
-        xlim(c(0.1,0.85)) + ylab('Coverage') +
-        geom_point(aes(fill=label),shape=21,col='#00000050',size=1) +
-        scale_fill_hue() + scale_y_log10() +
-        facet_wrap(facets = vars(label),ncol=3) +
-        guides(fill=guide_legend(override.aes=list(shape=21,size=2))) +
-        theme(panel.spacing = unit(0, "lines"))
-    
-    q2 <- ggplot(targets,mapping = aes(x=gc,y=log2)) +
-        xlim(c(0.1,0.85)) + ylim(c(-3,3)) +
-        geom_point(aes(fill=label),shape=21,col='#00000050',size=1) +
-        scale_fill_hue() +
-        facet_wrap(facets = vars(label),ncol=3) +
-        guides(fill=guide_legend(override.aes=list(shape=21,size=2))) +
-        theme(panel.spacing = unit(0, "lines"))
-    
-    
-    temp <- targets[!is.na(label),median(log2),by=label]
-    targets[,smooth_log2:=runmed(log2,k=9),by=chromosome]
-    if (snp_allele_ratio) q3 <- ggplot() +
-        geom_point(data=targets,aes(x=smooth_log2,y=allele_ratio),col='#00000050',shape=21,fill='grey',size=1,show.legend = F) +
-        geom_point(data=targets[!is.na(label)],aes(x=smooth_log2,y=allele_ratio,fill=label),shape=21,col='#00000050',size=1,show.legend=F) +
-        geom_point(mapping=aes(x=temp$V1,y=0,fill=temp$label),size=2,shape=24,show.legend=F) +
-        scale_fill_hue() +
-        scale_x_continuous(limits = c(min(temp$V1-.5,-2),max(temp$V1+.5,2))) +
-        scale_y_continuous(limits = c(0,1)) + #,breaks = c(seq(0,1,.1)),minor_breaks = NULL,labels = c(seq(0,1,.1))) +
-        guides(fill=guide_legend(override.aes=list(shape=21,size=2))) +
-        theme(panel.spacing = unit(0, "lines"))
-    
-    
-    
-    if (snp_allele_ratio) {
-        pa <- plot_annotation(
-            title = paste(name,date(), stats),
-        )
-        layout <- "AAAAADD\nBBBBBEE\nCCCCCFF"
-        fig=p1+p2+p3+q1+q2+q3+
-            plot_layout(design = layout,guides = 'collect')
-    } else {
-        pa <- plot_annotation(
-            title = paste(name,date(), stats),
-        )
-        layout <- "AAAAACC\nBBBBBDD"
-        fig=p1+p2+q1+q2+
-            plot_layout(design = layout,guides = 'collect')
-    }
-    
-    print(fig+pa)
-    
+mapd <- function(data) {
+    return(median(abs(diff(data)),na.rm = T))
+} 
+
+noise <- function(data) {
+    m <- mapd(data)
+    f <- 2^m-1
+    return(round(100*f,1))
 }
 
-
-
-
-
-
-# Plot fragment size effect ------------------------------------------------------------
-
-if (F) {
-    short <- bins
-    short[,smooth_log2:=runmed(log2_short,21),by='chromosome']
-    short[,smooth_rawLR:=runmed(rawLR_short,21),by='chromosome']
-    short$fragments <- '<160'
-    all <- bins
-    all[,smooth_log2:=runmed(log2,21),by='chromosome']
-    all[,smooth_rawLR:=runmed(rawLR,21),by='chromosome']
-    all$fragments <- 'all'
+if (!wgs) {
     
-    p1_ <- ggplot(bins) +
-        geom_point(mapping = aes(x=bin,y=rawLR,fill=label),shape=21,col='#00000050',size=2) +
-        geom_line(data=rbind(all,short),mapping = aes(x=bin,y=smooth_rawLR,col=fragments),size=2) +
-        facet_wrap(facets = vars(sample),ncol = 1) + ylim(c(-3,3)) +
-        scale_fill_hue() + scale_color_manual(values = c('all'='black','<160'='lightgrey')) +
-        scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
-                           expand = c(.01,.01),labels = chroms$chromosome) +
-        theme(panel.grid.major.x = element_blank(),
-              panel.grid.minor.y = element_line(),
-              panel.grid.minor.x = element_line(color = 'black'),
-              axis.line = element_line(),
-              axis.ticks = element_line())
+    # tiled gene bias
+    tiled_genes <- as.data.table(sort(table(targets[is_tiled==T]$gene),decreasing = T))
+    include_genes <- tiled_genes[N>50]$V1
+    targets[,chr_median:=as.numeric(NA)][,chr_median:=peakx(log2[is_tiled==F & is_target==T]),by=chromosome]
+    targets[,tiled_median:=as.numeric(NA)][,tiled_median:=peakx(log2[gene %in% include_genes & is_tiled==T]),by=gene]
+    targets[,tiled_bias:=tiled_median-chr_median]
+    tiled <- unique(targets[!is.na(tiled_bias),.(sample,gene,chr_median,tiled_median,tiled_bias)])
+    tiled_bias <- round(100*2^median(abs(tiled$tiled_bias))-100,1)
+    
+    # waviness 11 to 51 (non-tiled) target bins
+    temp <- targets[is_tiled==F & is_target==T][!is.na(log2)]
+    temp[,peak11:=frollapply(log2, 11, peakx)]
+    temp[,peak51:=frollapply(log2, 51, peakx)]
+    waviness <- round(100*2^median(abs(temp$peak11-temp$peak51),na.rm=T)-100,1)
     
     
-    p2_ <- ggplot(bins) + ylab('<160 log2') +
-        geom_point(mapping = aes(x=bin,y=log2_short,fill=label),shape=21,col='#00000050',size=1) +
-        geom_line(data=rbind(all,short),mapping = aes(x=bin,y=smooth_log2,col=fragments),size=1.5) +
-        facet_wrap(facets = vars(sample),ncol = 1) + ylim(c(-3,3)) +
-        scale_fill_hue() + scale_color_manual(values = c('all'='black','<160'='lightgrey')) +
-        scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
-                           expand = c(.01,.01),labels = chroms$chromosome) +
-        theme(panel.grid.major.x = element_blank(),
-              panel.grid.minor.y = element_line(),
-              panel.grid.minor.x = element_line(color = 'black'),
-              axis.line = element_line(),
-              axis.ticks = element_line())
-    
-    q1_ <- ggplot(targets,mapping = aes(x=rawLR,y=rawLR_short)) +
-        xlab('All fragments') + ylab('Fragments < 160 bases') +
-        geom_point(aes(fill=label),shape=21,col='#00000050',size=1) +
-        scale_fill_hue() + geom_abline() +
-        facet_wrap(facets = vars(label),ncol=3) +
-        guides(fill=guide_legend(override.aes=list(shape=21,size=2))) +
-        theme(panel.spacing = unit(0, "lines"))
-    
-    q2_ <- ggplot(targets,mapping = aes(x=log2,y=log2_short)) +
-        xlab('All fragments') + ylab('Fragments < 160 bases') +
-        geom_point(aes(fill=label),shape=21,col='#00000050',size=1) +
-        scale_fill_hue() + geom_abline() +
-        facet_wrap(facets = vars(label),ncol=3) +
-        guides(fill=guide_legend(override.aes=list(shape=21,size=2))) +
-        theme(panel.spacing = unit(0, "lines"))
-    
-    pa=plot_annotation(
-        title = paste(name,date()),
+    stats <- paste0('Fragments per target: ',
+                    paste(round(quantile(alltargetcount,c(.025,.975))),collapse = '-'),
+                    ', Noise: ',
+                    noise(targets[is_target==T]$log2),'%/', noise(targets[is_target==F]$log2),'%',
+                    ', Bias: ', tiled_bias,'%',
+                    ', Waviness: ', waviness,'%'
     )
-    # layout <- "AAAAACC\nBBBBBDD"
-    # fig=p1+p2+q1+q2+
-    #     plot_layout(design = layout,guides = 'collect')
-    #
-    # print(fig+pa)
-    
-    if (snp_allele_ratio) {
-        pa <- plot_annotation(
-            title = paste(name,date(), stats),
-        )
-        layout <- "AAAAAEE\nBBBBBFF\nCCCCCGG\nDDDDDHH"
-        fig=p1+p2+p2_+p3+q1+q2+q2_+q3+
-            plot_layout(design = layout,guides = 'collect')
-    } else {
-        pa <- plot_annotation(
-            title = paste(name,date(), stats),
-        )
-        layout <- "AAAAADD\nBBBBBEE\nCCCCCFF"
-        fig=p1+p2+p2_+q1+q2+q2_+
-            plot_layout(design = layout,guides = 'collect')
-    }
-    
-    print(fig+pa)
 }
 
-# Plot new frankenplot ------------------------------------------------------------
+
+
+if (wgs) stats <- paste0('Fragments per target: ',
+                         paste(round(quantile(alltargetcount,c(.025,.975))),collapse = '-'),
+                         ', Noise: ',
+                         noise(targets$log2),'%'
+)
+
+
+
+
+# Plot ------------------------------------------------------------
+
+
 
 if (T) {
     
-   
+    
     
     p <- NULL
-    t <- bins[chromosome==13 & str_detect(gene,'RB1')]$target; bins[target %in% min(t):max(t),gene:='RB1']
-    bins[,label:=NA][gene %in% c('AR','ATM','BRCA2','PTEN','RB1','NTRK3','ERG','CDK12','TMPRSS2'),label:=gene]
-    bins[,smooth_log2:=runmed(log2,k=21),by=chromosome]
-
+    targets[,smooth_log2:=runmed(log2,k=7),by=chromosome]
+    ylims <- c(.4,max(2,max(2^targets$smooth_log2)))
+    
+    size <- 1; if (wgs) size <- 2
+    
+    if (wgs) {
+        label_genes <- c('BRCA2','PTEN','RB1')
+        targets[,label:=as.character(NA)]
+        for (g in label_genes) {
+            targets[str_detect(gene,paste0('^',g,'$')),`label`:=g]
+            targets[str_detect(gene,paste0(',',g,'$')),`label`:=g]
+            targets[str_detect(gene,paste0('^',g,',')),`label`:=g]
+            targets[str_detect(gene,paste0(',',g,',')),`label`:=g]
+        }
+        
+    } else {
+        #label_genes <- c('AR','ATM','BRCA2','PTEN','RB1','ERG','CDK12','TMPRSS2')
+        label_genes <- c('BRCA2','PTEN')
+        targets[,label:=as.character(NA)]
+        targets[is_tiled==T,label:='other_tiled']
+        for (g in label_genes) {
+            targets[str_detect(gene,paste0('^',g,'$')),`label`:=g]
+            targets[str_detect(gene,paste0(',',g,'$')),`label`:=g]
+            targets[str_detect(gene,paste0('^',g,',')),`label`:=g]
+            targets[str_detect(gene,paste0(',',g,',')),`label`:=g]
+        }
+    }
+    
+    #targets <- targets[is_target==T]
+    
+    ## Grid ------------------------------------------------------------
+    
     if (snp_allele_ratio) { 
-        bins[allele_ratio>.95 | allele_ratio<.05,allele_ratio:=NA]
-        bins[,maf:=abs(allele_ratio-.5)+.5]
-        bins[!is.na(maf)][maf<.95,maf:=runmed(maf,9)]
-        # snp (grid) smooth-to-alleleratio plot
-        p$grid <- ggplot(bins) + xlim(c(.2,1.8)) + ylim(c(.5,1)) + xlab('Corrected depth (smooth)') + ylab('Major allele ratio (smooth)') +
-            geom_point(data=bins[,.(log2,maf)],aes(x=2^log2,y=maf),col='lightgrey') +
-            geom_point(aes(x=2^log2,y=maf),fill='#60606090',col='#20202090',shape=21) +
-            geom_point(data=bins[label!=''],aes(x=2^log2,y=maf,fill=label),shape=21,col='#00000050',size=1) +
+        
+        # defaults to using raw allele ratio:
+        snp_table[,allele_ratio_use:=allele_ratio] 
+        # but if there is a corrected allele ratio, use it:
+        if (!is.null(snp_table$allele_ratio_corrected2)) snp_table[,allele_ratio_use:=allele_ratio_corrected2]
+        
+        snp_table <- snp_table[type!='other'][allele_ratio_use < .99][allele_ratio_use > .01]
+        snp_table <- snp_table[DP > median(DP)/3][DP < median(DP)*3]
+        
+        targets[,allele_ratio:=as.double(NA)][match(snp_table$bin,bin),allele_ratio:=snp_table$allele_ratio_use]
+        targets[,maf:=abs(allele_ratio-.5)+.5]
+        targets[!is.na(maf),maf:=runmed(maf,7)]
+        # snp (grid) smooth-to-allele-ratio plot
+        p$grid <- ggplot(targets) + xlim(c(.2,1.8)) + ylim(c(.5,1)) + xlab('Corrected depth (smooth)') + ylab('Major allele ratio (smooth)') +
+            geom_point(data=targets[,.(smooth_log2,maf)],aes(x=2^smooth_log2,y=maf),col='lightgrey',alpha=.2) +
+            geom_point(aes(x=2^smooth_log2,y=maf),fill='#60606090',col='#20202090',shape=21) +
+            geom_point(data=targets[label!=''],aes(x=2^smooth_log2,y=maf,fill=label),shape=21,col='#00000050',size=size) +
             facet_wrap(facets = vars(factor(chromosome,levels=unique(chromosome),ordered=T)),ncol = 8) +
             theme(panel.spacing = unit(0, "lines"),strip.text.x = element_text(size = 8))
-        # snp (all) smooth-to-alleleratio plot
-        temp <- bins[!is.na(label),median(log2),by=label]
-        p$nogrid <- ggplot(bins) + xlim(c(.2,max(c(1.8,bins$smooth_log2)))) + ylim(c(.5,1)) + xlab('Corrected depth (smooth)') + ylab('Major allele ratio (smooth)') +
-            geom_point(data=bins[,.(log2,maf)],aes(x=2^log2,y=maf),fill='#60606090',col='#20202090',shape=21) +
-            geom_point(data=bins[label!=''],aes(x=2^log2,y=abs(allele_ratio-.5)+.5,fill=label),shape=21,col='#00000050',size=1) +
-            #geom_segment(data=temp,mapping=aes(x=2^V1,xend=2^V1,y=.99,yend=1,col=label),size=.4,show.legend=F)
+        # snp (all) smooth-to-allele-ratio plot
+        temp <- targets[!is.na(label),median(log2),by=label]
+        p$nogrid <- ggplot(targets) + xlim(c(0.2,1.8)) + ylim(c(.5,1)) + xlab('Corrected depth (smooth)') + ylab('Major allele ratio (smooth)') +
+            geom_point(data=targets[,.(smooth_log2,maf)],aes(x=2^smooth_log2,y=maf),fill='#60606050',col='#20202050',shape=21) +
+            geom_point(data=targets[label!=''],aes(x=2^smooth_log2,y=maf,fill=label),shape=21,col='#00000050',size=size) +
             geom_point(data=temp,mapping=aes(x=2^V1,y=1,fill=label),size=2,shape=25,show.legend=F)
     }
+    
+    # By pos ------------------------------------------------------------
+    
     # chroms object by genomic pos
-    chroms <- reference$chromlength[chromosome!='Y']
+    chroms <- data.table(chromosome=names(reference$chromlength),length=reference$chromlength)
     chroms[,start:=as.double(0)] 
     chroms[,stop:=as.double(length)] 
     chroms[,mid:=as.double(round(length/2))] 
@@ -719,18 +910,18 @@ if (T) {
         chroms[i,mid:=chroms$stop[i-1]+round(length/2)]
     }    
     # fix positions by genome
-    bins[,gpos:=mid]
-    for (chr in unique(bins$chromosome)[-1]) bins[chromosome==chr,gpos:=gpos+sum(reference$chromlength[1:(which(chromosome==chr)-1)]$length)]
+    targets[,gpos:=mid]
+    for (chr in unique(targets$chromosome)[-1]) targets[chromosome==chr,gpos:=gpos+sum(chroms[1:(which(chromosome==chr)-1)]$length)]
     segments[,gstart:=as.double(start_pos)][,gstop:=as.double(end_pos)]
-    for (chr in unique(bins$chromosome)[-1]) {
-        segments[chromosome==chr,gstart:=gstart+sum(reference$chromlength[1:(which(chromosome==chr)-1)]$length)]
-        segments[chromosome==chr,gstop:=gstop+sum(reference$chromlength[1:(which(chromosome==chr)-1)]$length)]
+    for (chr in unique(targets$chromosome)[-1]) {
+        segments[chromosome==chr,gstart:=gstart+sum(chroms[1:(which(chromosome==chr)-1)]$length)]
+        segments[chromosome==chr,gstop:=gstop+sum(chroms[1:(which(chromosome==chr)-1)]$length)]
     }
     # logR by pos + segments (2nd left)
-    p$pos_log2 <- ggplot(bins) + xlab('Genomic position') + ylab('Corrected depth') +
-        geom_point(data=bins[is.na(label)],mapping = aes(x=gpos,y=2^log2),fill='#60606070',col='#20202070',shape=21,size=1) +
-        geom_point(data=bins[!is.na(label)],mapping = aes(x=gpos,y=2^log2,fill=label),shape=21,col='#00000050',size=1) +
-        scale_fill_hue() + scale_y_log10(limits=c(min(.5,min(2^bins$smooth_log2)),max(2,max(2^bins$smooth_log2)))) +
+    p$pos_log2 <- ggplot(targets) + xlab('Genomic position') + ylab('Corrected depth') +
+        geom_point(data=targets[is.na(label)],mapping = aes(x=gpos,y=2^log2),fill='#60606070',col='#20202070',shape=21,size=1) +
+        geom_point(data=targets[!is.na(label)],mapping = aes(x=gpos,y=2^log2,fill=label),shape=21,col='#00000050',size=size) +
+        scale_fill_hue() + scale_y_log10(limits=ylims) +
         geom_segment(data=segments,col='green',size=1,
                      mapping = aes(x=gstart,xend=gstop,y=2^mean,yend=2^mean)) +
         scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
@@ -741,11 +932,25 @@ if (T) {
               axis.line = element_line(),
               axis.ticks = element_line()) 
     
+    # depth by pos 
+    limits <- c(1e2,1e4); if (wgs) limits <- c(10,1000)
+    p$pos_rawdepth <- ggplot(targets) + xlab('Genomic position') + ylab('Read count') +
+        geom_point(data=targets[is_target==T],mapping = aes(x=gpos,y=count),fill='#60606050',col='#20202050',size=1,shape=21) +
+        geom_point(data=targets[!is.na(label)],mapping = aes(x=gpos,y=count,fill=label),shape=21,col='#00000050',size=size) +
+        scale_fill_hue() + scale_y_log10(limits=limits) +
+        scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
+                           expand = c(.01,.01),labels = chroms$chromosome) +
+        theme(panel.grid.major.x = element_blank(),
+              panel.grid.minor.y = element_line(),
+              panel.grid.minor.x = element_line(color = 'black'),
+              axis.line = element_line(),
+              axis.ticks = element_line())
+    
     if (snp_allele_ratio) {
         # allele ratio by pos
-        p$pos_alleleratio <- ggplot(bins) + xlab('Genomic position') + ylab('Allele ratio') +
-            geom_point(data=bins[is.na(label)],mapping = aes(x=gpos,y=allele_ratio),fill='#60606080',col='#20202080',shape=21,size=1) +
-            geom_point(data=bins[!is.na(label)],mapping = aes(x=gpos,y=allele_ratio,fill=label),shape=21,col='#00000050',size=1) +
+        p$pos_alleleratio <- ggplot(targets) + xlab('Genomic position') + ylab('Allele ratio') +
+            geom_point(data=targets[is.na(label)],mapping = aes(x=gpos,y=allele_ratio),fill='#60606080',col='#20202080',shape=21,size=1) +
+            geom_point(data=targets[!is.na(label)],mapping = aes(x=gpos,y=allele_ratio,fill=label),shape=21,col='#00000050',size=1) +
             scale_fill_hue() + ylim(0:1) +
             scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
                                expand = c(.01,.01),labels = chroms$chromosome) +
@@ -756,21 +961,23 @@ if (T) {
                   axis.ticks = element_line()) 
     }
     
+    # By order ------------------------------------------------------------
+    
     # chroms object by order
-    chroms=data.table(chromosome=unique(bins$chromosome),
+    chroms=data.table(chromosome=unique(targets$chromosome),
                       start=0,
                       end=0,
                       mid=0)
     for (chr in chroms$chromosome) {
-        chroms$start[chr==chroms$chromosome]=bins[chromosome==chr,min(bin)]
-        chroms$end[chr==chroms$chromosome]=bins[chromosome==chr,max(bin)]
-        chroms$mid[chr==chroms$chromosome]=bins[chromosome==chr,mean(bin)]
+        chroms$start[chr==chroms$chromosome]=targets[chromosome==chr,min(bin)]
+        chroms$end[chr==chroms$chromosome]=targets[chromosome==chr,max(bin)]
+        chroms$mid[chr==chroms$chromosome]=targets[chromosome==chr,mean(bin)]
     }
     # logR by order
-    p$order_log2 <- ggplot(bins) + xlab('Order of genomic position') + ylab('Corrected depth') +
-        geom_point(data=bins[is.na(label)],mapping = aes(x=bin,y=2^log2),fill='#60606070',col='#20202070',shape=21,size=1) +
-        geom_point(data=bins[!is.na(label)],mapping = aes(x=bin,y=2^log2,fill=label),shape=21,col='#00000050',size=1) +
-        scale_fill_hue() + scale_y_log10(limits=c(min(.5,min(2^bins$smooth_log2)),max(2,max(2^bins$smooth_log2)))) +
+    p$order_log2 <- ggplot(targets) + xlab('Order of genomic position') + ylab('Corrected depth') +
+        geom_point(data=targets[is.na(label)],mapping = aes(x=bin,y=2^log2),fill='#60606070',col='#20202070',size=1) +
+        geom_point(data=targets[!is.na(label)],mapping = aes(x=bin,y=2^log2,fill=label),shape=21,col='#00000050',size=size) +
+        scale_fill_hue() + scale_y_log10(limits=ylims) +
         geom_segment(data=segments,col='green',size=1,
                      mapping = aes(x=start,xend=end,y=2^mean,yend=2^mean)) +
         scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
@@ -781,16 +988,47 @@ if (T) {
               axis.line = element_line(),
               axis.ticks = element_line()) 
     # logR by gc
-    p$gc_log2 <- ggplot(bins) + xlab('Target GC content') + ylab('Corrected depth') +
-        geom_point(data=bins[is.na(label)],mapping = aes(x=gc,y=2^log2),fill='#60606040',col='#20202040',shape=21,size=1) +
-        geom_smooth(data=bins[!is.na(label)],mapping = aes(x=gc,y=2^log2,col=label),size=.5,se=F,show.legend = F) +
-        scale_fill_hue() + scale_y_log10(limits=c(min(.5,min(2^bins$smooth_log2)),max(2,max(2^bins$smooth_log2)))) 
-    m <- bins[!is.na(target),median(count*160/width)]
+    p$gc_log2 <- ggplot(targets) + xlab('Target GC content') + ylab('Corrected depth') + xlim(c(.2,.78)) +
+        geom_point(data=targets,mapping = aes(x=gc,y=2^log2,fill=label),
+                   col='#20202040',shape=21,size=1,alpha=.7,show.legend = F) + # fill='#60606040'
+        facet_wrap(facets = vars(label),ncol = 2) +
+        theme(panel.spacing = unit(0, "lines"),strip.text.x = element_text(size = 8)) +
+        # geom_smooth(data=targets[!is.na(label)],
+        #             mapping = aes(x=gc,y=2^log2,col=label),size=.5,se=F,show.legend = F,method = 'loess') +
+        scale_fill_hue() + scale_y_log10(limits=ylims) 
+    m <- targets[is_target==T,median(count)]
+    
+    ##### testing alt. correction:
+    p$order_log2x <- ggplot(targets) + xlab('Order of genomic position') + ylab('Corrected depth v.2') +
+        geom_point(data=targets[is.na(label)],mapping = aes(x=bin,y=2^log2x),fill='#60606070',col='#20202070',size=1) +
+        geom_point(data=targets[!is.na(label)],mapping = aes(x=bin,y=2^log2x,fill=label),shape=21,col='#00000050',size=size) +
+        scale_fill_hue() + scale_y_log10(limits=ylims) +
+        geom_segment(data=segments,col='green',size=1,
+                     mapping = aes(x=start,xend=end,y=2^mean,yend=2^mean)) +
+        scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
+                           expand = c(.01,.01),labels = chroms$chromosome) +
+        theme(panel.grid.major.x = element_blank(),
+              panel.grid.minor.y = element_line(),
+              panel.grid.minor.x = element_line(color = 'black'),
+              axis.line = element_line(),
+              axis.ticks = element_line()) 
+    # logR by gc
+    p$gc_log2x <- ggplot(targets) + xlab('Target GC content') + ylab('Corrected depth v.2') + xlim(c(.2,.78)) +
+        geom_point(data=targets,mapping = aes(x=gc,y=2^log2x,fill=label),
+                   col='#20202040',shape=21,size=1,alpha=.7,show.legend = F) + # fill='#60606040'
+        facet_wrap(facets = vars(label),ncol = 2) +
+        theme(panel.spacing = unit(0, "lines"),strip.text.x = element_text(size = 8)) +
+        # geom_smooth(data=targets[!is.na(label)],
+        #             mapping = aes(x=gc,y=2^log2x,col=label),size=.5,se=F,show.legend = F,method = 'loess') +
+        scale_fill_hue() + scale_y_log10(limits=ylims) 
+    m <- targets[is_target==T,median(count)]
+    ##
+    
     if (snp_allele_ratio) {
         # allele ratio by order 
-        p$order_alleleratio <- ggplot(bins) + xlab('Order of genomic position') + ylab('Allele ratio') +
-            geom_point(data=bins[is.na(label)],mapping = aes(x=bin,y=allele_ratio),fill='#60606050',col='#20202050',shape=21,size=1) +
-            geom_point(data=bins[!is.na(label)],mapping = aes(x=bin,y=allele_ratio,fill=label),shape=21,col='#00000050',size=1) +
+        p$order_alleleratio <- ggplot(targets) + xlab('Order of genomic position') + ylab('Allele ratio') +
+            geom_point(data=targets[is.na(label)],mapping = aes(x=bin,y=allele_ratio),fill='#60606050',col='#20202050',shape=21,size=1) +
+            geom_point(data=targets[!is.na(label)],mapping = aes(x=bin,y=allele_ratio,fill=label),shape=21,col='#00000050',size=size) +
             scale_fill_hue() + ylim(0:1) +
             scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
                                expand = c(.01,.01),labels = chroms$chromosome) +
@@ -800,16 +1038,22 @@ if (T) {
                   axis.line = element_line(),
                   axis.ticks = element_line()) 
         # allele ratio by depth
-        p$depth_alleleratio <- ggplot(bins) + xlab('Sequence depth') + ylab('Allele ratio') +
-            geom_point(data=bins[is.na(label)],mapping = aes(x=count*150/width,y=allele_ratio),fill='#60606070',col='#20202070',shape=21,size=1) +
-            geom_point(data=bins[!is.na(label)],mapping = aes(x=count*150/width,y=allele_ratio,fill=label),shape=21,col='#00000050',size=1) +
+        p$depth_alleleratio <- ggplot(targets) + xlab('Depth') + ylab('Allele ratio') +
+            #geom_point(data=targets[is.na(label)],mapping = aes(x=count,y=allele_ratio),fill='#60606070',col='#20202070',shape=21,size=1) +
+            geom_point(data=targets,mapping = aes(x=count,y=allele_ratio,fill=label),
+                       shape=21,col='#00000050',size=1,alpha=.7,show.legend = F) +
+            facet_wrap(facets = vars(label),ncol = 2) +
+            theme(panel.spacing = unit(0, "lines"),strip.text.x = element_text(size = 8)) +
             scale_fill_hue() + ylim(0:1) + scale_x_log10(limits=c(m/3,m*3))
     }
+    
+    # Depth ------------------------------------------------------------
+    
     # depth by order 
-    p$order_rawdepth <- ggplot(bins) + xlab('Order of genomic position') + ylab('Sequence depth') +
-        geom_point(data=bins[is.na(label)],mapping = aes(x=bin,y=count*150/width),fill='#60606050',col='#20202050',shape=21,size=1) +
-        geom_point(data=bins[!is.na(label)],mapping = aes(x=bin,y=count*150/width,fill=label),shape=21,col='#00000050',size=1) +
-        scale_fill_hue() + scale_y_log10(limits=c(m/2,m*2)) +
+    p$order_rawdepth <- ggplot(targets) + xlab('Order of genomic position') + ylab('Depth') +
+        geom_point(data=targets[is_target==T],mapping = aes(x=bin,y=count),fill='#60606050',col='#20202050',size=1,shape=21) +
+        geom_point(data=targets[!is.na(label)],mapping = aes(x=bin,y=count,fill=label),shape=21,col='#00000050',size=size) +
+        scale_fill_hue() + scale_y_log10(limits=limits) +
         scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
                            expand = c(.01,.01),labels = chroms$chromosome) +
         theme(panel.grid.major.x = element_blank(),
@@ -818,23 +1062,27 @@ if (T) {
               axis.line = element_line(),
               axis.ticks = element_line()) 
     # depth by GC 
-    p$gc_rawdepth <- ggplot(bins) + xlab('Target GC content') + ylab('Sequence depth') +
-        geom_point(data=bins[is.na(label)],mapping = aes(x=gc,y=count*150/width),fill='#60606040',col='#20202040',shape=21,size=1) +
-        geom_smooth(data=bins[!is.na(label)],mapping = aes(x=gc,y=count*150/width,col=label),size=.5,se=F,show.legend = F) +
-        scale_fill_hue() + scale_y_log10(limits=c(m/2,m*2))
+    p$gc_rawdepth <- ggplot(targets) + xlab('Target GC content') + ylab('Depth') + xlim(c(.2,.78)) +
+        geom_point(data=targets[is_target==T],mapping = aes(x=gc,y=count,fill=label),
+                   col='#20202040',shape=21,size=1,alpha=.7,show.legend = F) + # 
+        facet_wrap(facets = vars(label),ncol = 2) +
+        theme(panel.spacing = unit(0, "lines"),strip.text.x = element_text(size = 8)) +
+        # geom_smooth(data=targets[!is.na(label)],
+        #             mapping = aes(x=gc,y=count,col=label),size=.5,se=F,show.legend = F,method = 'loess') +
+        scale_fill_hue() + scale_y_log10(limits=limits)
     
     
     for (i in 1:length(p)) p[[i]] <- p[[i]] + guides(fill=guide_legend(override.aes=list(shape=21,size=3)))
     
-    stats <- paste0('Coverage: ',
-                    paste(round(quantile(targets[is_backbone==T]$count,c(.01,.99))),collapse = '-')
-    )
     
     pa <- plot_annotation(
-        title = paste(clinbarcode,'         ',date(),'         ',stats),
+        title = paste(clinbarcode,'         ',stats),
+        caption = paste('Jumble',jumble_version,'on',format(Sys.time(), "%a %b %e %Y, %H:%M"))
     )
-
-    if (snp_allele_ratio) {
+    
+    # Layout ------------------------------------------------------------
+    
+    if (snp_allele_ratio & !wgs) {
         
         layout <-  "ABBBB
                 CDDDD
@@ -851,16 +1099,30 @@ if (T) {
             p$pos_alleleratio+
             p$nogrid+p$grid+
             plot_layout(design = layout,guides = 'collect')
-    } else {
-
+    }
+    if (!snp_allele_ratio & !wgs) {
+        
         layout <-  "ABBBB
                 CDDDD
-                EEEEE
+                EFFFF
+                GGGGG
                 "
         fig <- 
             p$gc_rawdepth+p$order_rawdepth+
             p$gc_log2+p$order_log2+
+            p$gc_log2x+p$order_log2x+
             p$pos_log2+
+            plot_layout(design = layout,guides = 'collect')
+    }
+    
+    if (wgs) {
+        
+        layout <-  "ABBBB
+                CDDDD
+                "
+        fig <- 
+            p$gc_rawdepth+p$pos_rawdepth+
+            p$gc_log2+p$pos_log2+
             plot_layout(design = layout,guides = 'collect')
     }
     
@@ -870,15 +1132,12 @@ if (T) {
 }
 
 
+
 # Close image ------------------------------------------------------------
+
 
 dev.off()
 
 
-# Save image object ------------------------------------------------------------
-
-p$bins <- bins
-p$segments <- segments
-saveRDS(counts,paste0(opt$output_dir,'/',clinbarcode,'.plots.RDS'))
 
 

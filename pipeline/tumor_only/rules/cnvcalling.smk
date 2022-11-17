@@ -28,7 +28,7 @@ capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
 #     input:
 #         cns = outdir + "/cnv/{sample}.cns",
 #     output:
-#         seg = outdir + "/cnv/{sample}.seg",
+#         seg = outdir + "/cnv/{sample}_dnacopy.seg",
 #     threads: params['cnstoseg']['threads']
 #     shell:
 #         "cnvkit.py export seg  -o {output.seg}  {input.cns}"
@@ -41,7 +41,7 @@ rule jumblerun_cnv:
     output:
         cns = outdir + "/cnv/{sample}.cns",
         cnr = outdir + "/cnv/{sample}.cnr",
-        seg = outdir + "/cnv/{sample}.seg"
+        seg = outdir + "/cnv/{sample}_dnacopy.seg"
     params:
         outdir = outdir + "/cnv/"
     threads: params['jumble']['threads']
@@ -54,18 +54,18 @@ rule jumblerun_cnv:
         " -o {params.outdir} 2> {log} "
 
 
-rule cnvkit_tracks:
+rule cnv_tracks:
     input:
         cns = outdir + "/cnv/{sample}.cns",
         cnr = outdir + "/cnv/{sample}.cnr"        
     output:
         profile_bedgraph = outdir + "/cnv/{sample}_profile.bedGraph",
         segments_bedgraph = outdir + "/cnv/{sample}_segments.bedGraph",
-    threads: params['cnvkit_tracks']['threads']
+    threads: params['cnv_tracks']['threads']
     shell:
-        "awk '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$5}}' "
+        "awk -F$'\\t' -v OFS='\\t' '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$5}}' "
         " {input.cnr} > {output.profile_bedgraph} "
-        " && awk '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$5}}' "
+        " && awk -F$'\\t' -v OFS='\\t' '$1 != \"chromosome\" {{print $1\"\\t\"$2\"\\t\"$3\"\\t\"$5}}' "
         " {input.cns} > {output.segments_bedgraph} "
 
 

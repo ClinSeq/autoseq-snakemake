@@ -41,6 +41,7 @@
             "targets-interval_list": "intervals/targets/probio_baseline2.interval_list"
         }
     },
+    "sv_filter": "variants/svfilter_2022-07-11.json",
     "targets": {  
         "probio_comprehensive3": {
             "blacklist-bed": null, 

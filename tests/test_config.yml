@@ -1,4 +1,3 @@
-
 samples: tests/test_liqbio_sample.json
 
 reference: tests/dummy_genome/dummy_genome.json
@@ -93,7 +92,7 @@ params:
         threads: 1
     cnstoseg:
         threads: 1
-    cnvkit_tracks:
+    cnv_tracks:
         threads: 1
     gatk4:
         threads: 1

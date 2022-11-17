@@ -32,12 +32,13 @@ class Pipeline:
     Class pipeline to build snakmake command based on given args.
 
     """
-    def __init__(self, snakefile, config, sdid, workdir, dryrun, 
+    def __init__(self, snakefile, config, sdid, project_id, workdir, dryrun, 
                 profile, jobdb, smk_option, use_singularity, bind_paths, cores='4'):
         self.snakefile = snakefile
         self.cores = cores
         self.configfile = config
         self.sdid = sdid
+        self.project_id = project_id
         self.workdir = workdir
         self.profile = profile
         self.jobdb = jobdb
@@ -63,7 +64,7 @@ class Pipeline:
             slurm_submit = get_scheduler(self.profile, 'pyscript')
             cluster_config = get_scheduler(self.profile, 'config')
             slurm_cmd = " --notemp --immediate-submit -j 500 "
-            slurm_cmd += " --jobname smk.{{rulename}}.{}.{{jobid}}.sh ".format(self.sdid)
+            slurm_cmd += " --jobname smk.{{rulename}}.{}-{}.{{jobid}}.sh ".format(self.project_id, self.sdid)
             slurm_cmd += " --cluster-config {} ".format(cluster_config)
             slurm_cmd += (" --cluster '{} "
                           " --jobdb {} "
