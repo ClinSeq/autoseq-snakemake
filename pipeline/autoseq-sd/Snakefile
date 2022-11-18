@@ -56,10 +56,11 @@ capture_to_results = collections.defaultdict(SinglePanelResults)
 OUTPUT = list()
 
 # 1. Preprocessing and Alignment 
-BAM_FILES = expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes)
-UMIBAM_FILES = expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=all_clinseq_barcodes)
-OUTPUT.append(BAM_FILES)
-OUTPUT.append(UMIBAM_FILES)
+if 'ALL' in steps or 'preprocess' in steps:
+    BAM_FILES = expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes)
+    UMIBAM_FILES = expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=all_clinseq_barcodes)
+    OUTPUT.append(BAM_FILES)
+    OUTPUT.append(UMIBAM_FILES)
 
 capture_to_results[NORMAL_CAPTURE].bamfile = get_capture_bam(NORMAL_CAPTURE, BAM_FILES)
 capture_to_results[CANCER_CAPTURE].bamfile = get_capture_bam(CANCER_CAPTURE, BAM_FILES)
@@ -67,41 +68,41 @@ capture_to_results[NORMAL_CAPTURE].umibam = get_capture_bam(NORMAL_CAPTURE, UMIB
 capture_to_results[CANCER_CAPTURE].umibam = get_capture_bam(CANCER_CAPTURE, UMIBAM_FILES)
 
 # 2. QC
+if 'ALL' in steps or 'qc' in steps:
+    FASTQC = expand(outdir + "/qc/fastqc/{sample}/", sample=all_clinseq_barcodes)
+    OUTPUT.append(FASTQC)
 
-FASTQC = expand(outdir + "/qc/fastqc/{sample}/", sample=all_clinseq_barcodes)
-OUTPUT.append(FASTQC)
-
-PICARD_QC = list()
-PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-insertsize.txt", 
-                        sample=all_clinseq_barcodes))
-PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-oxog.txt",
-                        sample=all_clinseq_barcodes))
-PICARD_QC.append(expand(outdir + "/qc/picard/{sample}_clipoverlap.picard-hsmetrics.txt",
-                        sample=all_clinseq_barcodes))
-PICARD_QC.append(expand(outdir + "/qc/picard/{sample}_nodups.picard-hsmetrics.txt",
-                        sample=all_clinseq_barcodes))
-QC_overview = "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest))
-OUTPUT.append(QC_overview)
+    PICARD_QC = list()
+    PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-insertsize.txt", 
+                            sample=all_clinseq_barcodes))
+    PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-oxog.txt",
+                            sample=all_clinseq_barcodes))
+    PICARD_QC.append(expand(outdir + "/qc/picard/{sample}_clipoverlap.picard-hsmetrics.txt",
+                            sample=all_clinseq_barcodes))
+    PICARD_QC.append(expand(outdir + "/qc/picard/{sample}_nodups.picard-hsmetrics.txt",
+                            sample=all_clinseq_barcodes))
+    QC_overview = "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest))
+    OUTPUT.append(QC_overview)
 
 # 3. Variant calling
+if 'ALL' in steps or 'variants' in steps:
+    VARIANTS = list()
+    VARIANTS.append("{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR))
+    VARIANTS.append("{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
+    VARIANTS.append(expand(outdir + "/svs/{sample}-{events}.gtf", sample=all_clinseq_barcodes, events=["DEL", "DUP", "INV", "TRA"]))
+    VARIANTS.append(expand(outdir + "/svs/{sample}_effects.json", sample=all_clinseq_barcodes))
+    VARIANTS.append("{}/svs/svaba/{}-{}.svaba.somatic.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    VARIANTS.append("{}/svs/svaba/{}-{}.svaba.germline.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    VARIANTS.append("{}/svs/lumpy/{}-{}-lumpy.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    VARIANTS.append("{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 
-VARIANTS = list()
-VARIANTS.append("{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR))
-VARIANTS.append("{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
-VARIANTS.append(expand(outdir + "/svs/{sample}-{events}.gtf", sample=all_clinseq_barcodes, events=["DEL", "DUP", "INV", "TRA"]))
-VARIANTS.append(expand(outdir + "/svs/{sample}_effects.json", sample=all_clinseq_barcodes))
-VARIANTS.append("{}/svs/svaba/{}-{}.svaba.somatic.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
-VARIANTS.append("{}/svs/svaba/{}-{}.svaba.germline.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
-VARIANTS.append("{}/svs/lumpy/{}-{}-lumpy.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
-VARIANTS.append("{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    IGV = list()
+    IGV.append("{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
+    IGV.append("{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR))
+    IGV.append("{}/variants/{}-and-{}.germline-variants-somatic-afs.bedGraph".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 
-IGV = list()
-IGV.append("{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
-IGV.append("{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR))
-IGV.append("{}/variants/{}-and-{}.germline-variants-somatic-afs.bedGraph".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
-
-OUTPUT.append(VARIANTS)
-OUTPUT.append(IGV)
+    OUTPUT.append(VARIANTS)
+    OUTPUT.append(IGV)
 
 
 wildcard_constraints:
