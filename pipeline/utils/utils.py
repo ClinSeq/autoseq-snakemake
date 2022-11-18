@@ -255,7 +255,8 @@ def get_capture_name(capture_kit_code):
                             "PE": "pancancer2_enzymatic",
                             "P2": "probio_biomarkersignature2",
                             "S2": "probio_snvindel2",
-                            "B2": "probio_baseline2"
+                            "B2": "probio_baseline2",
+                            "PS": "probio_snvindel"
                             }
 
     if capture_kit_code == 'WG':
