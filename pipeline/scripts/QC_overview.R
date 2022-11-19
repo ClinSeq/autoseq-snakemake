@@ -137,21 +137,24 @@ for (f in contest_files) {
   })    
 }
 
-msings = data.frame()
-for (f in msings_files) {
-  tryCatch({
-    SAMP = sub("_nodups.MSI_Analysis.txt", "", basename(f))
-    DIR = dirname(dirname(dirname(f)))
-    msings = rbind(msings, cbind(SAMP, DIR, t(read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)))[2,], stringsAsFactors=FALSE)
-  }, error = function(err) {
-    print(paste("Sample: ", SAMP, " QC: mSINGs"))
-    print(paste("ERROR: ", err))
-  })
+if (length(msings_files) != 0) {
+    msings = data.frame()
+    for (f in msings_files) {
+        tryCatch({
+            SAMP = sub("_nodups.MSI_Analysis.txt", "", basename(f))
+            DIR = dirname(dirname(dirname(f)))
+            msings = rbind(msings, cbind(SAMP, DIR, t(read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)))[2,], stringsAsFactors=FALSE)
+        }, error = function(err) {
+            print(paste("Sample: ", SAMP, " QC: mSINGs"))
+            print(paste("ERROR: ", err))
+        })
+    }
+
+    colnames(msings) = c("SAMP", "DIR", read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)[,1])
+    msings$`msi status`[which(msings$msing_score<0.2)] = "NEG"  # use cut-off 0.2 for MSI-H (default 0.1 is too low)
+    msings$msing_score = as.numeric(msings$msing_score)
 }
 
-colnames(msings) = c("SAMP", "DIR", read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)[,1])
-msings$`msi status`[which(msings$msing_score<0.2)] = "NEG"  # use cut-off 0.2 for MSI-H (default 0.1 is too low)
-msings$msing_score = as.numeric(msings$msing_score)
 
 # samtools flagstats
 flagstat_data = data.frame(matrix(ncol = 8, nrow = 0))
@@ -233,10 +236,17 @@ process_samp <- function(sample) {
 }
 
 
-# merge the QC tables 
-qc_merge = merge(merge(merge(merge(merge(HsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
+# merge the QC tables
+if (length(msings_files) == 0){
+    qc_merge = merge(merge(merge(merge(HsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
+                InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")),
+                flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
+} else {
+    qc_merge = merge(merge(merge(merge(merge(HsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
                 InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")),
                 msings, by = c("SAMP", "DIR"), all.x = TRUE), flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
+}
+
 
 qc_merge$mapped_reads = as.numeric(qc_merge$mapped_reads)
 qc_merge$paired_reads = as.numeric(qc_merge$paired_reads)
@@ -263,9 +273,15 @@ InsertSize_histogram$doi = InsertSize_histogram$DIR == Sys.glob(analysis_dir)
 
 
 # create an ouput table for the samples of interest
-soi_table = data.table(qc_merge)[i = soi&doi, 
-                                 j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, FOLD_80_BASE_PENALTY,
-                                         READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE, msing_score)]
+if (length(msings_files) == 0){
+    soi_table = data.table(qc_merge)[i = soi&doi, 
+                                    j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, FOLD_80_BASE_PENALTY,
+                                            READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
+} else {
+    soi_table = data.table(qc_merge)[i = soi&doi, 
+                                    j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, FOLD_80_BASE_PENALTY,
+                                            READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE, msing_score)]
+}
 table_outfile = sub("pdf$", "txt", outfile)
 write.table(x = soi_table, file = table_outfile, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
 
@@ -360,8 +376,10 @@ my_barplot(x = "factor(contamination, levels = sort(unique(contamination)))", yb
              x_string = "contamination, %", title_string = "Contamination")
 
 # msings score vs read count scatter plot
-my_scatter(x = "READ_PAIRS_EXAMINED", y = "msing_score", xbreaks = seq(0, 1e12, 1e7), ybreaks = waiver(),
-             x_string = "number of read pairs", y_string = "mSINGS score", title_string = "mSINGS score vs Read count")
+if (length(msings_files) != 0){
+    my_scatter(x = "READ_PAIRS_EXAMINED", y = "msing_score", xbreaks = seq(0, 1e12, 1e7), ybreaks = waiver(),
+                 x_string = "number of read pairs", y_string = "mSINGS score", title_string = "mSINGS score vs Read count")
+}
 
 my_scatter(x = "mapped_reads", y= "paired_reads", xbreaks = waiver(), ybreaks = waiver(),
              x_string = "fraction of mapped reads", y_string = "fraction of paired reads", title_string = "Paired Reads vs Mapped reads")
