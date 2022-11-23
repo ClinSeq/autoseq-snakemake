@@ -13,6 +13,7 @@ import argparse
 import vcf
 import os 
 import shutil
+import json
 
 def csq_parsing(csq, vcftype):
     # parsing CSQ taq from VeP annotation 
@@ -71,6 +72,7 @@ parser.add_argument('vcf', help="Input VCF file for annotation")
 parser.add_argument('oncokb', help="OncoKB - all variants tab demilited file")
 parser.add_argument('vcftype', help="somatic (or) germline vcf")
 parser.add_argument('--wgs', action='store_true', default=False, help="tag to use WGS filter")
+parser.add_argument('--cgc', default=False, help="Cancer Gene Census lists")
 parser.add_argument('-v', '--vardict', help="Adding vardict long indels into IGVNav")
 parser.add_argument('--output', help="output tab demilited file for IGVNav", default='output.txt')
 args = parser.parse_args()
@@ -90,6 +92,10 @@ sdid = "-".join(os.path.basename(args.vcf).split('-')[1:3])
 sid = "-".join(os.path.basename(args.vcf).split('-')[0:5])
 output_file = open(args.output, 'w') 
 variants = list()
+cancer_genes = dict()
+
+if args.cgc:
+    cancer_genes = json.load(open(args.cgc, 'r'))
 
 if args.vardict:
     vardict_vcf = vcf.Reader(open(args.vardict, 'r'))
@@ -212,6 +218,9 @@ for record in vcf_reader:
         
         # WGS filter
         if (wgs and len(record.ALT) == 1 and impact == 'HIGH' and not gene.startswith("HLA")) or 'pathogenic' in clinsig:
+            if args.cgc and gene not in cancer_genes:
+                continue
+            
             if record.INFO['set'] == 'Intersection' or record.INFO['set'] == 'haplotypecaller':
                 if normal['DP'] and normal['AD']:
                     normal_dp = normal['DP']
