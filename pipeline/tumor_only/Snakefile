@@ -201,10 +201,13 @@ rule remove_bamfiles:
         expand(outdir + "/fastqs/{sample}_concatenated_2.fastq.gz", sample=cancer_sample)
     output:
         outdir + "/bams/intermediate_bamfiles.removed"
+    params:
+        split_targets = outdir + "/bams/split_targets/"
     run:
         del_bam = [bam for bam in input if 'clipoverlap' not in bam and 'nodups' not in bam]
         bamfiles = " ".join(del_bam)
         shell("rm {bamfiles} ")
+        shell("rm -rf {params.split_targets} 2>> {log} ")
         shell("touch {output} ")
 
 
