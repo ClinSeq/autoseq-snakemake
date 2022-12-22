@@ -93,6 +93,7 @@ CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_profile.bedGraph", sample=cance
 CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_segments.bedGraph", sample=cancer_sample))
 CNV_OUTPUT.append("{}/qc/{}-liqbio-cna.png".format(outdir, CANCER_CAPTURE_STR))
 CNV_OUTPUT.append("{}/qc/{}-normal-liqbio-cna.png".format(outdir, CANCER_CAPTURE_STR))
+CNV_OUTPUT.append("{}/qc/{}-frankenplot.html".format(outdir, CANCER_CAPTURE_STR))
 
 OUTPUT.append(CNV_OUTPUT)
 
@@ -183,22 +184,30 @@ rule remove_bamfiles:
     input:
         expand(outdir + "/bams/{sample}_unmapped.bam", sample=cancer_sample),
         expand(outdir + "/bams/{sample}_umimapped.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_umimapped.bai", sample=cancer_sample),
         expand(outdir + "/bams/{sample}_realigned-1.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_realigned-1.bam.bai", sample=cancer_sample),
         expand(outdir + "/bams/{sample}_groupedbyumi.bam", sample=cancer_sample),
         expand(outdir + "/bams/{sample}_consensus.bam", sample=cancer_sample),
         expand(outdir + "/bams/{sample}_umimapped-2.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_umimapped-2.bai", sample=cancer_sample),
         expand(outdir + "/bams/{sample}_realigned-2.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_realigned-2.bam.bai", sample=cancer_sample),
         expand(outdir + "/bams/{sample}_consensus_filtered.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_consensus_filtered.bai", sample=cancer_sample),
         expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=cancer_sample),
         expand(outdir + "/bams/{sample}_nodups.bam", sample=cancer_sample),
         expand(outdir + "/fastqs/{sample}_concatenated_1.fastq.gz", sample=cancer_sample),
         expand(outdir + "/fastqs/{sample}_concatenated_2.fastq.gz", sample=cancer_sample)
     output:
         outdir + "/bams/intermediate_bamfiles.removed"
+    params:
+        split_targets = outdir + "/bams/split_targets/"
     run:
         del_bam = [bam for bam in input if 'clipoverlap' not in bam and 'nodups' not in bam]
         bamfiles = " ".join(del_bam)
         shell("rm {bamfiles} ")
+        shell("rm -rf {params.split_targets} 2>> {log} ")
         shell("touch {output} ")
 
 
