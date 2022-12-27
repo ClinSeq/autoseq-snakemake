@@ -13,9 +13,20 @@ Each sample+preparation+capture item should have a corresponding barcode with th
 
 *NOTE:* A clinseq barcode is not garuanteed to uniquely specify a single sample+library+capture item, but in practice it should be unique if precise preparation and capture times are included within the `PREPID` and `CAPTUREID` fields.
 
+### Allowed Project IDs
+
+* `AL` = `ALASCCA` 
+* `LB` = `LIQBIO` 
+* `OT` = `OTHERS` #use this for all extra projects 
+* `PB` = `PROBIO` 
+* `PSFF` = `PSFF` 
+* `UL` = `ULLEN` 
+* `iPCM` = `IPCM` 
+* `CRCR` = `CRC Reflex`
+
 ### Allowed Prep IDs
 
-Autoseq know about the following preparation methods: 
+Autoseq knows about the following preparation methods: 
 
 * `BN` = `BIOO_NEXTFLEX`
 * `KH` = `KAPA_HYPERPREP`
@@ -45,3 +56,10 @@ Autoseq knows about the following capture kits:
 * `PC` = `probio_comprehensive`
 * `PB` = `probio_biomarker_signature`
 * `PA` = `pancancer`
+* `PB` = `probio_biomarker_signature`
+* `PA` = `pancancer`
+* `C3` or `C4` = `comprehensive`
+* `P2`or `S2` = `small_design`
+* `OT` = `other_projects` like compassionate cases, Ullen, Paiivi, test, belgian & swiss retrospective cases etc.
+* `PN` = `pancancer` 
+* `PE` = `pancancer_enzymatic`
