@@ -523,11 +523,18 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes)
         
         salf$FILTER <- fixed(vcf)$FILTER
         
+
         salf$AF.T <- as.numeric(g$VAF[,2])
-        salf$AO.T <- as.numeric(apply(g$DP4[,2,3:4],1,sum))  # sum alt forward and alt reverse
-        salf$DP.T <- as.numeric(apply(g$DP4[,2,],1,sum))  # sum ref forward, ref reverse, alt forward and alt reverse
-        salf$AO.N <- as.numeric(apply(g$DP4[,1,3:4],1,sum))  # sum alt forward and alt reverse
-        salf$DP.N <- as.numeric(apply(g$DP4[,1,],1,sum))  # sum ref forward, ref reverse, alt forward and alt reverse
+        if (nrow(salf)>1) {
+            salf$AO.T <- as.numeric(apply(g$DP4[,2,3:4],1,sum))  # sum alt forward and alt reverse
+            salf$DP.T <- as.numeric(apply(g$DP4[,2,],1,sum))  # sum ref forward, ref reverse, alt forward and alt reverse
+            #salf$AO.N <- as.numeric(apply(g$DP4[,1,3:4],1,sum))  # sum alt forward and alt reverse
+            #salf$DP.N <- as.numeric(apply(g$DP4[,1,],1,sum))  # sum ref forward, ref reverse, alt forward and alt reverse
+        } else {
+            tab <- as.data.table(g$DP4)
+            salf$AO.T <- tab[V2!='NORMAL'&V3 %in% 3:4,sum(value)]  # sum alt forward and alt reverse
+            salf$DP.T <- tab[V2!='NORMAL',sum(value)]  # sum ref forward, ref reverse, alt forward and alt reverse
+        }
         
         salf$type='other'
         salf$type[isSNV(vcf)]='snv'
@@ -564,7 +571,7 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes)
         
         
         # Remove low-support variants, and rsid variants but no COSM variants
-        salf <- salf[AO.N < 3 & AO.T >= 5 & DP.N >= 10 & (!str_detect(Existing_variation,'rs') | str_detect(Existing_variation,'COSM'))]
+        salf <- salf[AO.T >= 5 & (!str_detect(Existing_variation,'rs') | str_detect(Existing_variation,'COSM'))]
         
         salf=(salf[,-1])
         
