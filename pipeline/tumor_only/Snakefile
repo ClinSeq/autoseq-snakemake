@@ -203,6 +203,8 @@ rule remove_bamfiles:
         outdir + "/bams/intermediate_bamfiles.removed"
     params:
         split_targets = outdir + "/bams/split_targets/"
+    log:
+        outdir + "/logs/remove_intermediate_{sample}.log".format(sample=cancer_sample)
     run:
         del_bam = [bam for bam in input if 'clipoverlap' not in bam and 'nodups' not in bam]
         bamfiles = " ".join(del_bam)
