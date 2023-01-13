@@ -155,6 +155,7 @@ if (length(msings_files) != 0) {
     msings$msing_score = as.numeric(msings$msing_score)
 }
 
+print(msings)
 
 # samtools flagstats
 flagstat_data = data.frame(matrix(ncol = 8, nrow = 0))
