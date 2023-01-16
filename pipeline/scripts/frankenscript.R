@@ -645,14 +645,15 @@ if (!t_only) {
                 table[thisrow,1:length(t2)]=t2
             }
         }
-        table=table[,-which(colnames(table)=="AF")]  # remove AF col from vep data to not confuse with AF from galf
+        
+        table <- as.data.table(table)
+        
+        table <- table[,-'AF']  # remove AF col from vep data to not confuse with AF from galf
         
         # # Add alleles as vep names them, to use for merge
         # galf$Allele = ifelse(galf$type=="snv", yes = galf$ALT, no = substr(galf$ALT, start=2, stop=nchar(galf$ALT)))
         # galf$Allele[which(galf$Allele== "")] = "-"
-        
-        
-        table <- as.data.table(table)
+
         table[,N:=as.integer(N)]
         galf=merge(galf,table,by='N',all=T)
         
@@ -1254,7 +1255,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                                  fill='white',
                                  col='darkred',
                                  nudge_y = labels$nudge,
-                                 size=1.7,
+                                 size=2,
                                  box.padding = .1,
                                  label.padding = .1,
                                  point.padding = .1,
@@ -1286,7 +1287,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                                  fill='white',
                                  col='blue',
                                  nudge_y = labels$nudge,
-                                 size=1.7,
+                                 size=2,
                                  box.padding = .1,
                                  label.padding = .1,
                                  point.padding = .1,
@@ -1391,7 +1392,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                                  fill='white',
                                  col='darkred',
                                  nudge_y = labels$nudge,
-                                 size=1.7,
+                                 size=2,
                                  box.padding = .1,
                                  label.padding = .1,
                                  point.padding = .1,
@@ -1423,7 +1424,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                                  fill='white',
                                  col='blue',
                                  nudge_y = labels$nudge,
-                                 size=1.7,
+                                 size=2,
                                  box.padding = .1,
                                  label.padding = .1,
                                  point.padding = .1,
@@ -1710,7 +1711,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
                                  fill='white',
                                  col='darkred',
                                  nudge_y = labels$nudge,
-                                 size=1.7,
+                                 size=2,
                                  box.padding = .1,
                                  label.padding = .1,
                                  point.padding = .1,
@@ -1742,7 +1743,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
                                  fill='white',
                                  col='blue',
                                  nudge_y = labels[chromosome==chr]$nudge,
-                                 size=1.7,
+                                 size=2,
                                  box.padding = .1,
                                  label.padding = .1,
                                  point.padding = .1,
@@ -1849,7 +1850,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
                                  fill='white',
                                  col='darkred',
                                  nudge_y = labels$nudge,
-                                 size=1.7,
+                                 size=2,
                                  box.padding = .1,
                                  label.padding = .1,
                                  point.padding = .1,
@@ -1881,7 +1882,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
                                  fill='white',
                                  col='blue',
                                  nudge_y = labels[chromosome==chr]$nudge,
-                                 size=1.7,
+                                 size=2,
                                  box.padding = .1,
                                  label.padding = .1,
                                  point.padding = .1,
