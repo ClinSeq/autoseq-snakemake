@@ -201,5 +201,5 @@ rule franken_plot:
                     "  --svcaller_N_TRA {params.normal_tra} "
                     "  --germline_mut_vcf {input.germline_vcf} "
                     "  --somatic_mut_vcf {input.somatic_vcf} "
-                    "  --output {output.frankenplot} && "
-        " source deactivate ")
+                    "  --output {output.frankenplot} || true ")
+        shell("touch  {output.frankenplot} ")

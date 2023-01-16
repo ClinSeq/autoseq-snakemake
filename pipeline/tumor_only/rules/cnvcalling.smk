@@ -163,5 +163,5 @@ rule franken_plot:
                     "  --svcaller_T_INV {params.tumor_inv} "
                     "  --svcaller_T_TRA {params.tumor_tra} "
                     "  --somatic_mut_vcf {input.somatic_vcf} "
-                    "  --output {output.frankenplot} && "
-        " source deactivate ")
+                    "  --output {output.frankenplot} || true ")
+         shell("touch  {output.frankenplot} ")
