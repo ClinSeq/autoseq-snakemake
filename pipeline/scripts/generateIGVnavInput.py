@@ -135,6 +135,9 @@ for record in vcf_reader:
     oncogenicity = ''
     filter_col = ''
 
+    consequence = canonical_trans['Consequence']
+    is_splice_variant = True if 'splice_region_variant' in consequence else False
+    
     # Filter variants 
     if not record.FILTER: 
         filter_col = "PASS"
@@ -162,8 +165,9 @@ for record in vcf_reader:
 
         num_tools = int(record.INFO['NUM_TOOLS'])
         rsid = canonical_trans['Existing_variation']
-
-        if (filter_col == 'PASS' or filter_col == 'LowQual') and (impact == 'HIGH' or impact == 'MODERATE'):
+        
+        if (filter_col == 'PASS' or filter_col == 'LowQual') and \
+            (impact == 'HIGH' or impact == 'MODERATE' or is_splice_variant):
             # forming variant string to remove duplicates
             # eg: 3-113275658-G-TTTTTTT
             tmp_str = "-".join(map(str, [record.CHROM, record.POS, record.REF, record.ALT[0]]))
@@ -178,7 +182,8 @@ for record in vcf_reader:
     elif vcftype == "germline":
         normal = record.samples[0]
 
-        if len(record.ALT) == 1 and filter_col == 'PASS' and (impact == 'HIGH' or impact == 'MODERATE'):
+        if len(record.ALT) == 1 and filter_col == 'PASS' and \
+            (impact == 'HIGH' or impact == 'MODERATE' or is_splice_variant):
             if record.INFO['set'] == 'Intersection' or record.INFO['set'] == 'haplotypecaller':
                 if canonical_trans['Consequence'] == "missense_variant" and 'pathogenic' not in clinsig:
                     continue

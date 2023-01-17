@@ -93,7 +93,7 @@ CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_profile.bedGraph", sample=cance
 CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_segments.bedGraph", sample=cancer_sample))
 CNV_OUTPUT.append("{}/qc/{}-liqbio-cna.png".format(outdir, CANCER_CAPTURE_STR))
 CNV_OUTPUT.append("{}/qc/{}-normal-liqbio-cna.png".format(outdir, CANCER_CAPTURE_STR))
-CNV_OUTPUT.append("{}/qc/{}-frankenplot.html".format(outdir, CANCER_CAPTURE_STR))
+# CNV_OUTPUT.append("{}/qc/{}-frankenplot.html".format(outdir, CANCER_CAPTURE_STR))
 
 OUTPUT.append(CNV_OUTPUT)
 
@@ -203,6 +203,8 @@ rule remove_bamfiles:
         outdir + "/bams/intermediate_bamfiles.removed"
     params:
         split_targets = outdir + "/bams/split_targets/"
+    log:
+        outdir + "/logs/remove_intermediate_{sample}.log".format(sample=cancer_sample)
     run:
         del_bam = [bam for bam in input if 'clipoverlap' not in bam and 'nodups' not in bam]
         bamfiles = " ".join(del_bam)
