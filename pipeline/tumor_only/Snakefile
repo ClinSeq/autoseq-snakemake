@@ -93,7 +93,7 @@ CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_profile.bedGraph", sample=cance
 CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_segments.bedGraph", sample=cancer_sample))
 CNV_OUTPUT.append("{}/qc/{}-liqbio-cna.png".format(outdir, CANCER_CAPTURE_STR))
 CNV_OUTPUT.append("{}/qc/{}-normal-liqbio-cna.png".format(outdir, CANCER_CAPTURE_STR))
-# CNV_OUTPUT.append("{}/qc/{}-frankenplot.html".format(outdir, CANCER_CAPTURE_STR))
+CNV_OUTPUT.append("{}/qc/{}-frankenplot.html".format(outdir, CANCER_CAPTURE_STR))
 
 OUTPUT.append(CNV_OUTPUT)
 
