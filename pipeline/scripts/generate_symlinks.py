@@ -33,7 +33,8 @@ capture_kit_loopkup = {"CS": "clinseq_v3_targets",
                             "P2": "probio_biomarkersignature2",
                             "S2": "probio_snvindel2",
                             "L2": "probio_baseline2",
-                            "PS": "probio_snvindel"
+                            "PS": "probio_snvindel",
+                            "S3": "probio_snvindel2"
                             }
 
 
