@@ -63,6 +63,23 @@ def loadOncoKB(filepath):
     return OncoKB
 
 
+def loadCGC(filepath):
+    """
+    load Cancer Gene Census file
+    """ 
+    cgc_ann = dict() 
+    with open(filepath, 'r') as fh:
+        header = fh.readline()
+        for line in fh.readlines():
+            data = line.strip('\n').split('\t')
+            ensemblID = data[1]
+            gene_symbol = data[0]
+            ann = data[4]
+            cgc_ann[ensemblID] = (ann, gene_symbol)
+    
+    return cgc_ann
+
+ 
 # Parsing Commandline Arguments using argparse
 #
 
@@ -70,6 +87,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('vcf', help="Input VCF file for annotation")
 parser.add_argument('oncokb', help="OncoKB - all variants tab demilited file")
 parser.add_argument('vcftype', help="somatic (or) germline vcf")
+parser.add_argument('--cgc', help="Cancer Gene Census Annotation ")
 parser.add_argument('-v', '--vardict', help="Adding vardict long indels into IGVNav")
 parser.add_argument('--output', help="output tab demilited file for IGVNav", default='output.txt')
 args = parser.parse_args()
@@ -87,6 +105,9 @@ variants = list()
 
 if args.vardict:
     vardict_vcf = vcf.Reader(open(args.vardict, 'r'))
+
+if args.cgc:
+    cgc_ann = loadCGC(args.cgc)
 
 ###############generate IGVNAV symblins################################################################
 
@@ -115,14 +136,15 @@ except Exception as e:
 # output file headers 
 
 if vcftype == "somatic":
-    output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'IMPACT', 'CONSEQUENCE', 'TRANSCRIPT', 'HGVSc', 'HGVSp', 'T_DP', 'T_ALT', 'T_VAF', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID', 'gnomAD', 'BRCAEx', 'OncoKB', 'NUM_TOOLS']) + "\n")
+    output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE',  'ENSEMBLID', 'IMPACT', 'CONSEQUENCE', 'TRANSCRIPT', 'HGVSc', 'HGVSp', 'T_DP', 'T_ALT', 'T_VAF', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID', 'gnomAD', 'BRCAEx', 'OncoKB', 'CGC_ANN', 'NUM_TOOLS']) + "\n")
 elif vcftype == "germline":
-    output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'IMPACT', 'CONSEQUENCE', 'TRANSCRIPT', 'HGVSc','HGVSp', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID', 'gnomAD', 'BRCAEx', 'OncoKB']) + "\n")
+    output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'ENSEMBLID', 'IMPACT', 'CONSEQUENCE', 'TRANSCRIPT', 'HGVSc','HGVSp', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID', 'gnomAD', 'BRCAEx', 'OncoKB', 'CGC_ANN']) + "\n")
 
 for record in vcf_reader:
     try:
         canonical_trans = csq_parsing(record.INFO['CSQ'], vcftype)
         gene = canonical_trans['SYMBOL']
+        ensembl_id = canonical_trans['Gene']
         aa = canonical_trans['Amino_acids'].split('/')
         protein_position = canonical_trans['Protein_position'].split('/')
         clinsig =  canonical_trans['CLIN_SIG']
@@ -151,6 +173,10 @@ for record in vcf_reader:
             if protein_change in OncoKB_lookup[gene]:
                 oncogenicity = OncoKB_lookup[gene][protein_change]
 
+    cgcann = ''
+    if ensembl_id in cgc_ann:
+        cgcann = cgc_ann[ensembl_id][0]
+
     # processing somatic vcf file
     if vcftype == "somatic":
         normal = record.genotype('NORMAL')
@@ -173,11 +199,11 @@ for record in vcf_reader:
             tmp_str = "-".join(map(str, [record.CHROM, record.POS, record.REF, record.ALT[0]]))
             variants.append(tmp_str)
             output_file.write('\t'.join(map(str, [record.CHROM, record.POS-1, record.POS,
-                                                  record.REF, record.ALT, '', '', '', gene, 
+                                                  record.REF, record.ALT, '', '', '', gene, ensembl_id,
                                                   impact, canonical_trans['Consequence'], canonical_trans['Feature'],
                                                   canonical_trans['HGVSc'], canonical_trans['HGVSp'], tumor_dp, tumor_alt, 
                                                   tumor_vaf, normal_dp, normal_alt, normal_vaf, 
-                                                  clinsig, rsid, gnomAD, brcaEx, oncogenicity, num_tools])) + "\n")
+                                                  clinsig, rsid, gnomAD, brcaEx, oncogenicity, cgcann, num_tools])) + "\n")
     
     elif vcftype == "germline":
         normal = record.samples[0]
@@ -185,21 +211,24 @@ for record in vcf_reader:
         if len(record.ALT) == 1 and filter_col == 'PASS' and \
             (impact == 'HIGH' or impact == 'MODERATE' or is_splice_variant):
             if record.INFO['set'] == 'Intersection' or record.INFO['set'] == 'haplotypecaller':
-                if canonical_trans['Consequence'] == "missense_variant" and 'pathogenic' not in clinsig:
+                if "missense_variant" in canonical_trans['Consequence'] and 'pathogenic' not in clinsig:
                     continue
-
+                
+                if is_splice_variant and 'pathogenic' not in clinsig:
+                    continue
+                
                 if normal['DP'] and normal['AD']:
                     normal_dp = normal['DP']
                     normal_alt = normal['AD'][1]
                     normal_vaf = float(normal_alt)/float(normal_dp)
 
                     output_file.write('\t'.join(map(str, [record.CHROM, record.POS-1, record.POS,
-                                                          record.REF, record.ALT, '', '', '', gene, 
+                                                          record.REF, record.ALT, '', '', '', gene, ensembl_id, 
                                                           impact, canonical_trans['Consequence'], 
                                                           canonical_trans['Feature'], canonical_trans['HGVSc'],
                                                           canonical_trans['HGVSp'], normal_dp , normal_alt,
                                                           round(normal_vaf, 2), clinsig, record.ID, gnomAD,
-                                                          brcaEx, oncogenicity])) + "\n")
+                                                          brcaEx, oncogenicity, cgcann])) + "\n")
             
 ## adding vardict indels into IGVNav 
 

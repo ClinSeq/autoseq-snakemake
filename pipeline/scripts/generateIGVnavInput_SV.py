@@ -18,6 +18,23 @@ igv_color_map = {"DEL": "Non-coding_Transcript",
                  }
 
 
+def loadCGC(filepath):
+    """
+    load Cancer Gene Census file
+    """ 
+    cgc_ann = dict() 
+    with open(filepath, 'r') as fh:
+        header = fh.readline()
+        for line in fh.readlines():
+            data = line.strip('\n').split('\t')
+            ensemblID = data[1]
+            gene_symbol = data[0]
+            ann = data[4]
+            cgc_ann[gene_symbol] = (ann, ensemblID)
+    
+    return cgc_ann
+
+
 def get_igvcolortype(mutfile, tool):
     """
     function to add type for IGV representation
@@ -276,14 +293,14 @@ def check_targets(chrom, start, end, targets):
     return False
 
 
-def annotate_combined_sv(combined_file, genes, targets, output):
+def annotate_combined_sv(combined_file, genes, targets, cgc_ann, output):
     """
     Parsing combined sv list and apply gene annotation for each SV
     """
     # output_file = open(output, 'w')
     summary_columns = ['CHROM_A', 'START_A', 'END_A', 'CHROM_B', 'START_B', 'END_B',
                        'IGV_COORD', 'SVTYPE', 'SV_LENGTH', 'SUPPORT_READS', 'TOOL', 'SDID', 'SAMPLE',
-                       'GENE_A', 'GENE_B', "GENE_A-GENE_B-sorted", "CURATOR"]
+                       'GENE_A', 'GENE_B', "GENE_A-GENE_B-sorted", "CGC_ANN", "CURATOR"]
     summary_sv = list()
     with open(combined_file, 'r') as fh:
         header = fh.readline()
@@ -349,9 +366,13 @@ def annotate_combined_sv(combined_file, genes, targets, output):
             gene_a_b.sort()
             gene_a_b_sorted = ",".join(gene_a_b)
 
+            cgcann = set()
+            cgcann.add(cgc_ann[gene_a][0] if gene_a in cgc_ann else None) 
+            cgcann.add(cgc_ann[gene_b][0] if gene_b in cgc_ann else None)
+
             summary_sv.append([chrom_a, start_a, end_a, chrom_b, start_b, end_b, igv_coord, svtype,
                                 svlength, sup_reads, tool, sdid, sample, gene_a, 
-                                gene_b, gene_a_b_sorted, curator])
+                                gene_b, gene_a_b_sorted, ",".join(list(filter(None, cgcann))), curator])
         summary_sv_df = pd.DataFrame(summary_sv, columns = summary_columns)
         summary_sv_df_sorted = summary_sv_df.sort_values(["GENE_A-GENE_B-sorted", "CHROM_A", "START_A", "CHROM_B", "START_B", "TOOL"], 
                                                         ascending=[True, True, True, True, True, True])
@@ -378,6 +399,7 @@ if __name__ == "__main__":
     parser.add_argument('--sdid', help="SDID from analysis")
     parser.add_argument('--vcftype', help="somatic (or) germline vcf (only for svaba)")
     parser.add_argument('--tool', help="Tool name - Variant callers")
+    parser.add_argument('--cgc', help="Cancer Gene Census Annotation ")
     parser.add_argument('--output', required=True,
                         help="output tab delimited file for IGVNav, format=output.mut")
     args = parser.parse_args()
@@ -391,6 +413,9 @@ if __name__ == "__main__":
     if args.target:
         capture_kit, target_json = args.target
 
+    if args.cgc:
+        cgc_ann = loadCGC(args.cgc)
+    
     output_dir = os.path.dirname(output)
 
     if sv_caller == 'lumpy':
@@ -407,5 +432,5 @@ if __name__ == "__main__":
         genes = load_bed(annotBed)
         fh = open(target_json, 'r')
         targets = json.load(fh)
-        annotate_combined_sv(combined_input, genes, targets[capture_kit], output)
+        annotate_combined_sv(combined_input, genes, targets[capture_kit], cgc_ann, output)
 
