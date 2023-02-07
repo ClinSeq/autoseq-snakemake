@@ -299,7 +299,7 @@ rule somaticseq_merge:
 
 rule somatic_generateIGVnav:
     input:
-        somatic = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        somatic = "{}/variants/{}-{}-all.somatic.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
         oncokb = reference['oncokb']
     output:
         "{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)

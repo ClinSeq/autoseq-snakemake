@@ -43,9 +43,8 @@ class GenerateSymlink():
         self.outputdirname = outputdirname
         self.script_dir = scriptdirname
         self.targets = targets
-        self.is_wgs = False
-        if targets == '':
-            self.is_wgs = True
+        self.is_wgs = True if targets == '' else False
+    
 
     def generateIGVsymlink(self, *args):
         """
