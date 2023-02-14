@@ -1,12 +1,12 @@
 from setuptools import setup, find_packages
 
-version = '0.1.0'
+version = '0.2.0'
 
 setup(name='autoseq',
       version=version,
       packages=find_packages(exclude=('tests*', 'docs', 'examples')),
       install_requires=[
-          "snakemake",
+          "snakemake==6.2.1",
           "click",
           "pyyaml",
           "pandas",

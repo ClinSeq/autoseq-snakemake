@@ -1,0 +1,32 @@
+FROM continuumio/miniconda3:4.10.3
+
+LABEL description="Autoseq Snakemake workflow"
+
+ENV BASH_ENV ~/.bashrc
+SHELL ["/bin/bash", "-c"]
+
+RUN apt-get update -y
+
+RUN apt-get update --fix-missing && apt-get install -y wget bzip2 ca-certificates \
+    libglib2.0-0 libxext6 libsm6 libxrender1 \
+    git mercurial subversion python-pip python-dev build-essential
+
+RUN conda init bash
+
+RUN conda create --name franken  && \
+    conda activate franken && \
+    conda install -c conda-forge r-base=3.5 r-curl r-stringi r-htmltools r-mgcv && \
+    R --quiet -e 'install.packages("BiocManager", repos = "http://ftp.acc.umu.se/mirror/CRAN/")'  \
+       -e 'BiocManager::install("VariantAnnotation")'  \
+       -e 'install.packages("getopt", repos = "http://ftp.acc.umu.se/mirror/CRAN/")' \
+       -e 'install.packages("gridExtra", repos = "http://ftp.acc.umu.se/mirror/CRAN/")'  \
+       -e 'install.packages("RJSONIO", repos = "http://ftp.acc.umu.se/mirror/CRAN/")'   \
+       -e 'install.packages("ggplot2", repos = "http://ftp.acc.umu.se/mirror/CRAN/")'  \
+       -e 'install.packages("plotly", repos = "http://ftp.acc.umu.se/mirror/CRAN/")'
+
+    
+COPY . /autoseq-snakemake/
+
+ENV PATH=$PATH:/autoseq-snakemake/pipeline/scripts/
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+CMD [ "/bin/bash", "-c" ]

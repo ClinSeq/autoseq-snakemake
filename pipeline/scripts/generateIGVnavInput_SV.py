@@ -5,7 +5,49 @@ import argparse
 import os
 import glob
 import re
+import json
 import pandas as pd
+
+
+# structural variant color map for IGV SV representation
+igv_color_map = {"DEL": "Non-coding_Transcript",
+                 "DUP": "Truncating",
+                 "INV": "Indel",
+                 "TRA": "Nonsense",
+                 "BND": "Nonsense"
+                 }
+
+
+def get_igvcolortype(mutfile, tool):
+    """
+    function to add type for IGV representation
+    """
+    outfile = open(mutfile.replace(".tmp", ""), "w")
+    
+    if tool == "svaba":
+        outfile.write("\t".join(['CHROM','START','END','SDID','TYPE','SVTYPE','ALT','SUPPORT_normal', 'SUPPORT_tumor']) + '\n')
+    else:
+        outfile.write("\t".join(['CHROM','START','END','SDID','TYPE','SVTYPE','ALT','SUPPORT_READS']) + '\n')
+
+    with open(mutfile, 'r') as fh:
+        for line in fh:
+            if line.startswith("CHROM"):
+                continue
+            data = line.strip().split()
+            chrom = data[0]
+            start = data[1]
+            end = data[2]
+            sdid = data[3]
+            svtype = data[4]
+            igvtype = igv_color_map[svtype]
+            alt = data[5]
+            if tool == "svaba":
+                support_reads = "\t".join([data[6], data[7]])
+            else:
+                support_reads = data[6]
+            outfile.write("\t".join([chrom, start, end, sdid, igvtype, svtype, alt, support_reads]) + "\n")
+    
+    subprocess.call("rm {}".format(mutfile), shell=True)
 
 
 def parse_svaba(input_vcf, SDID, output, vcftype):
@@ -14,10 +56,12 @@ def parse_svaba(input_vcf, SDID, output, vcftype):
     """
     header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_normal\tSUPPORT_tumor \
              \tDPnormal\tDPtumor\tGENES\"" + " > " + output + "_" + vcftype + "_svaba.mut"
-    svaba_cmd = "vawk '{print $1, $2, $2+1, \"" + SDID + '_svaba_' + vcftype + "\",I$SVTYPE, $5, S$*$AD,S$*$DP}'" + \
-                " " + input_vcf + " >> " + output + "_" + vcftype + "_svaba.mut"
-
+    svaba_cmd = "vawk '{print $1, $2, $2+1, \"" + SDID + '_svaba_' + vcftype +"\",I$SVTYPE, $5, S$*$AD,S$*$DP}'" + \
+                " " + input_vcf + " >> " + output + "_" + vcftype + "_svaba.mut.tmp"
+    
+    tmp_mut = output + "_" + vcftype + "_svaba.mut.tmp"
     subprocess.call(" && ".join([header, svaba_cmd]), shell=True)
+    get_igvcolortype(tmp_mut, "svaba")
 
 
 def parse_lumpy(input_vcf, SDID, output, vcftype):
@@ -29,31 +73,40 @@ def parse_lumpy(input_vcf, SDID, output, vcftype):
     && I$SU>50 && I$SVTYPE !~ "BND") print $1, $2, I$END, "P-00356971_lumpy", I$SVTYPE, $5, I$SVLEN, I$SU}
     """
     header1k_sup_50 = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-                      " > " + output + "_lumpy_len1k_SU50.mut"
+                      " > " + output + "_lumpy_len1k_SU50.mut.tmp"
     header500_sup_24 = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-                       " > " + output + "_lumpy_len500_SU24.mut"
+                       " > " + output + "_lumpy_len500_SU24.mut.tmp"
 
     len1k_sup_50 = "vawk '{if ((I$SVLEN>1000 || I$SVLEN<-1000) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>50 && I$SVTYPE ~ \"BND\") print $1, $2, $2+1, \""+ SDID + '_lumpy_' + vcftype +"\", I$SVTYPE, $5, \"NA\", I$SU ;"  + \
                 " else if ((I$SVLEN>1000 || I$SVLEN<-1000) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>50 && I$SVTYPE !~ \"BND\") print $1, $2, I$END, \""+ SDID + '_lumpy_' + vcftype +"\", I$SVTYPE, $5, I$SU}' " + input_vcf + \
-                " >> " + output + "_lumpy_len1k_SU50.mut"
+                " >> " + output + "_lumpy_len1k_SU50.mut.tmp"
 
     len500_sup_24 = "vawk '{if ((I$SVLEN>500 || I$SVLEN<-500) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>24 && I$SVTYPE ~ \"BND\") print $1, $2, $2+1, \"" + SDID + '_lumpy_' + vcftype + "\", I$SVTYPE, $5, I$SU ;" + \
                 " else if ((I$SVLEN>500 || I$SVLEN<-500) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>24 && I$SVTYPE !~ \"BND\") print $1, $2, I$END, \"" + SDID + '_lumpy_' + vcftype + "\", I$SVTYPE, $5, I$SU }' " + input_vcf + \
-                " >> " + output + "_lumpy_len500_SU24.mut"
+                " >> " + output + "_lumpy_len500_SU24.mut.tmp"
   
     # cmd = "awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"lumpy\", $4, \"" + vcftype + "\", $6, $7}' " + output + "_lumpy_len500_SU24.mut" +  " >> " + output_dir + "/annotate_combined_sv.txt"
 
+    tmp_len500_SU24 = output + "_lumpy_len500_SU24.mut.tmp"
+    tmp_len1k_SU50 = output + "_lumpy_len1k_SU50.mut.tmp"
     subprocess.call(" && ".join([header1k_sup_50, header500_sup_24, len1k_sup_50, len500_sup_24]), shell=True)
+    get_igvcolortype(tmp_len500_SU24, "lumpy")
+    get_igvcolortype(tmp_len1k_SU50, "lumpy")
 
 
 def parse_gridss(input_vcf, SDID, output, vcftype):
+    """
+    GRIDSS - vcf parsing 
+    """
     header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-                      " > " + output + "_pass_gridss.mut"
+                      " > " + output + "_" + vcftype + "_pass_gridss.mut.tmp"
 
     gridss_cmd = "zless " + input_vcf  + " | vawk '{ if($7 == \"PASS\")  print $1, $2, $2+1, \""+ SDID + '_gridss_' + vcftype +"\", I$SVTYPE, $5, I$VF}' " \
-                 " >> " + output + "_pass_gridss.mut"
+                 " >> " + output + "_" + vcftype +"_pass_gridss.mut.tmp"
     
-    subprocess.call(" && ".join([header, gridss_cmd]), shell=True)    
+    tmp_mut = output + "_" + vcftype + "_pass_gridss.mut.tmp"
+    subprocess.call(" && ".join([header, gridss_cmd]), shell=True)
+    get_igvcolortype(tmp_mut, "gridss")    
 
 
 def parse_gtf(gtf, sdid, vcftype):
@@ -90,24 +143,28 @@ def parse_gtf(gtf, sdid, vcftype):
                     start_b = re.search(':(\d+)', gene_b).group(1)
                     end_b = re.search('-(\d+)', gene_b).group(1)
                     sv_length = int(end_b) - int(start_a)
-                    alt = svtype
+                    alt = ",".join([gene_a, gene_b])
+                    
                     if chrom_a != chrom_b:
-                        alt = gene_b
                         sv_length = svtype
                     
                     if svtype == 'TRA':
-                        event_1 = [chrom_a, start_a, end_a, sdid, svtype, alt, support_reads]
-                        event_2 = [chrom_b, start_b, end_b, sdid, svtype, gene_a, support_reads]
+                        event_1 = [chrom_a, start_a, end_a, sdid, igv_color_map[svtype], svtype, gene_b, support_reads]
+                        event_2 = [chrom_b, start_b, end_b, sdid, igv_color_map[svtype], svtype, gene_a, support_reads]
                         events_list.extend([event_1, event_2])
                     else:
-                        event = [chrom_a, start_a, end_b, sdid, svtype, alt, support_reads]
+                        event = [chrom_a, start_a, end_b, sdid, igv_color_map[svtype], svtype, alt, support_reads]
                         events_list.append(event)
                     
     return events_list
 
 
 def parse_svcaller(input_dir, SDID, output, vcftype):
-    gtf_files = glob.glob(input_dir + "/" + SDID + "-*.gtf")
+    """
+    parse sdid and extract corresponding gtf files to process
+    """
+    sdid = "-".join(SDID.split("-")[0:4])
+    gtf_files = glob.glob(input_dir + "/" + sdid + "-*.gtf")
     mut_file = output + "/" + SDID + "_svcaller.mut"
     sdid = re.search("P-[A-Za-z0-9]*", SDID).group()
     events = []
@@ -115,43 +172,44 @@ def parse_svcaller(input_dir, SDID, output, vcftype):
         events.extend(parse_gtf(gtf, sdid, vcftype))
 
     with open(mut_file, 'w') as mut_fh:
-        mut_fh.write("\t".join(['CHROM','START','END','SDID','SVTYPE','ALT', 'SUPPORT_READS']) + '\n')
+        mut_fh.write("\t".join(['CHROM','START','END','SDID','TYPE','SVTYPE','ALT', 'SUPPORT_READS']) + '\n')
         for event in events:
             mut_fh.write('\t'.join(map(str, event)) + '\n')
  
 
 def combine_mut(input_dir, output_dir):
-
+    """
+    Function to combine all mut files prepared for IGVNav
+    """
     files = glob.glob(input_dir + "/*.mut")
     cmd = []
 
-    if not os.path.exists(output_dir + "/annotate_combined_sv.txt"):
-        header2 = "echo \"CHROM\tSTART\tEND\tSVTYPE\tTOOL\tSDID\tSAMPLE\tALT\tSUPPORT_READS\"" + " >> " + output_dir + "/annotate_combined_sv.txt"
-        subprocess.call(header2, shell=True)
+    if os.path.exists(output_dir + "/annotate_combined_sv.txt"):
+        print("annotate_combined_sv.txt file already exists!")
+        return output_dir + "/annotate_combined_sv.txt"
+    
+    header2 = "echo \"CHROM\tSTART\tEND\tSVTYPE\tTOOL\tSDID\tSAMPLE\tALT\tSUPPORT_READS\"" + " >> " + output_dir + "/annotate_combined_sv.txt"
+    subprocess.call(header2, shell=True)
 
     for file in files:
         vcftype = ''
         sup_reads = ''
         filebase = os.path.basename(file)
-        if 'svict_SR8' in file:
-            vcftype = 'cfdna' if '-CFDNA-' in filebase else 'tumor' if '-T-' in filebase else 'germline'
-            cmd.append("awk ' NR>1 {OFS=\"\\t\"; print $1, $2, $3, $5,\"svict\", $4,\"" + vcftype + "\", $6, $7}' " \
-                        + file + " >> " + output_dir + "/annotate_combined_sv.txt")
-        elif 'lumpy_len500_SU24' in file:
-            cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"lumpy\", $4, \"somatic\", $6, $7}' " \
+        if 'lumpy_len500_SU24' in file:
+            cmd.append("awk -F'\\t' 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $6,\"lumpy\", $4, \"somatic\", $7, $8}' " \
                         + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
         elif 'svaba.mut' in file:
             vcftype = 'somatic' if 'somatic' in filebase else 'germline'
-            sup_reads = '$8' if vcftype == 'SOMATIC' else '$7'
-            cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"svaba\", $4, \"" + vcftype + "\", $6, " + sup_reads + "}' " +\
+            sup_reads = '$9' if vcftype == 'SOMATIC' else '$8'
+            cmd.append("awk -F'\\t' 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $6,\"svaba\", $4, \"" + vcftype + "\", $7, " + sup_reads + "}' " +\
                 file + " >> " + output_dir + "/annotate_combined_sv.txt")
         elif 'svcaller.mut' in file:
             vcftype = 'cfdna' if '-CFDNA-' in filebase else 'tumor' if '-T-' in filebase else 'germline'
-            cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"svcaller\", $4, \"" + vcftype + "\", $6, $7}' " \
+            cmd.append("awk -F'\\t' 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $6,\"svcaller\", $4, \"" + vcftype + "\", $7, $8}' " \
                         + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
         elif 'gridss.mut' in file:
-            vcftype = 'cfdna' if '-CFDNA-' in filebase else 'tumor' if '-T-' in filebase else 'germline'            
-            cmd.append("awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"gridss\", $4, \"" + vcftype + "\", $6, $7}' " \
+            vcftype = 'somatic' if 'somatic' in filebase else 'germline'            
+            cmd.append("awk -F'\\t' 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $6,\"gridss\", $4, \"" + vcftype + "\", $7, $8}' " \
                         + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
 
     subprocess.call(" && ".join(cmd), shell=True)
@@ -160,6 +218,9 @@ def combine_mut(input_dir, output_dir):
 
 
 def load_bed(bed_file):
+    """
+    Loading genes from genes.bed file for SV annotations
+    """
     genes = {}
     with open(bed_file, 'r') as genes_fh:
         genes_db = genes_fh.readlines()
@@ -177,38 +238,52 @@ def load_bed(bed_file):
     return genes
 
 
-def gene_annotation(chrom, start, end, genes, design):
+def gene_annotation(chrom, start, end, genes):
+    """
+    Return gene name for given  SV event
+    """
     gene = ''
-    in_gene = ''
 
     try:
         # annotate gene name
         for ranges, gene_name in genes[chrom].items():
-            if int(ranges[0]) - 20 <= int(start) <= int(ranges[1]) + 20 or int(ranges[0]) - 20 <= int(end) <= int(ranges[1]) + 20:
+            if int(ranges[0]) - 20 <= int(start) <= int(ranges[1]) + 20 \
+                or int(ranges[0]) - 20 <= int(end) <= int(ranges[1]) + 20:
                 gene = gene_name
                 break
+        
         if not gene:
             gene = 'None'
 
-        # annotate pancancer info
-        for pan_ranges, gene_name in design[chrom].items():
-            if int(pan_ranges[0]) <= int(start) <= int(pan_ranges[1]) or int(pan_ranges[0]) <= int(end) <= int(pan_ranges[1]):
-                in_gene = 'YES'
-                break
-        if not in_gene:
-            in_gene = 'NO'
-
-        return (gene, in_gene)
+        return gene
     except KeyError:
-        return ('NA', 'NA')
         print("Warning! chromosome {chrom} is not valid".format(chrom=chrom))
+        return 'NA'
+        
+
+def check_targets(chrom, start, end, targets):
+    """
+    function to filter out SVs using target intervals
+    """
+    if chrom not in targets:
+        return False
+
+    for i in targets[chrom]:
+        if int(i["START"]) - 150 <= int(start) <= int(i["END"]) + 150 \
+            or int(i["START"]) - 150 <= int(end) <= int(i["END"]) + 150:
+            return True
+
+    return False
 
 
-def annotate_combined_sv(combined_file, genes, pancancer, output):
+def annotate_combined_sv(combined_file, genes, targets, output):
+    """
+    Parsing combined sv list and apply gene annotation for each SV
+    """
     # output_file = open(output, 'w')
     summary_columns = ['CHROM_A', 'START_A', 'END_A', 'CHROM_B', 'START_B', 'END_B',
                        'IGV_COORD', 'SVTYPE', 'SV_LENGTH', 'SUPPORT_READS', 'TOOL', 'SDID', 'SAMPLE',
-                       'GENE_A', 'IN_DESIGN_A', 'GENE_B', 'IN_DESIGN_B', "GENE_A-GENE_B-sorted"]
+                       'GENE_A', 'GENE_B', "GENE_A-GENE_B-sorted", "CURATOR"]
     summary_sv = list()
     with open(combined_file, 'r') as fh:
         header = fh.readline()
@@ -224,6 +299,7 @@ def annotate_combined_sv(combined_file, genes, pancancer, output):
             sdid = data[5].split('_')[0]
             sample = data[6]
             sup_reads = data[8] if len(data) == 9 else '.'
+            svlength = 'NA'
 
             if ':' in data[7]:
                 chrom_b = ''.join(list(filter(str.isdigit, data[7].split(':')[0])))
@@ -231,10 +307,19 @@ def annotate_combined_sv(combined_file, genes, pancancer, output):
                 end_b = int(start_b) + 1
                 
                 if tool == "svcaller":
-                    chrom_b = data[7].split(':')[0]
-                    start_b = data[7].split(':')[1].split('-')[0]
-                    end_b = data[7].split(':')[1].split('-')[1]
-                
+                    bps = data[7].split(",")
+                    if len(bps) == 2:
+                        bp_a, bp_b = bps
+                        start_a = bp_a.split(':')[1].split('-')[0]
+                        end_a = bp_a.split(':')[1].split('-')[1]
+                        chrom_b = bp_b.split(':')[0]
+                        start_b = bp_b.split(':')[1].split('-')[0]
+                        end_b = bp_b.split(':')[1].split('-')[1]
+                    else:
+                        chrom_b = bps[0].split(':')[0]
+                        start_b = bps[0].split(':')[1].split('-')[0]
+                        end_b = bps[0].split(':')[1].split('-')[1]
+
                 igv_coord_b = chrom_b + ':' + str(start_b)
             else:
                 chrom_b = 'NA'
@@ -242,21 +327,34 @@ def annotate_combined_sv(combined_file, genes, pancancer, output):
                 end_b = 'NA'
 
             igv_coord = ' '.join([igv_coord_a, igv_coord_b])
-            gene_a, in_gene_a = gene_annotation(chrom_a, start_a, end_a, genes, pancancer)
+            gene_a = gene_annotation(chrom_a, start_a, end_a, genes)
 
             if chrom_b != 'NA':
-                gene_b, in_gene_b = gene_annotation(chrom_b, start_b, end_b, genes, pancancer)
+                svlength = abs(int(end_b)-int(start_a)) if chrom_a == chrom_b else 'NA'
+                gene_b = gene_annotation(chrom_b, start_b, end_b, genes)
             else:
-                gene_b, in_gene_b = 'NA', 'NA'
+                gene_b = 'NA'
+
+            
+            if check_targets(chrom_a, start_a, end_a, targets) or \
+                    check_targets(chrom_b, start_b, end_b, targets):
+                curator = "YES"
+            else:
+                curator = "NO"
+            
+            if tool == 'lumpy' and chrom_b == 'NA':
+                svlength = abs(int(end_a)-int(start_a))
 
             gene_a_b = [gene_a, gene_b]
             gene_a_b.sort()
             gene_a_b_sorted = ",".join(gene_a_b)
-            summary_sv.append([chrom_a, start_a, end_a, chrom_b, start_b, end_b, igv_coord, svtype, int(end_a)-int(start_a), sup_reads, tool, sdid, sample, gene_a, in_gene_a, gene_b, in_gene_b, gene_a_b_sorted])
+
+            summary_sv.append([chrom_a, start_a, end_a, chrom_b, start_b, end_b, igv_coord, svtype,
+                                svlength, sup_reads, tool, sdid, sample, gene_a, 
+                                gene_b, gene_a_b_sorted, curator])
         summary_sv_df = pd.DataFrame(summary_sv, columns = summary_columns)
-        summary_sv_df_sorted = summary_sv_df.sort_values(["IN_DESIGN_A", "IN_DESIGN_B", "GENE_A-GENE_B-sorted",
-                                                        "CHROM_A", "START_A", "CHROM_B", "START_B", "TOOL"], 
-                                                        ascending=[False, False, True, True, True, True, True, True])
+        summary_sv_df_sorted = summary_sv_df.sort_values(["GENE_A-GENE_B-sorted", "CHROM_A", "START_A", "CHROM_B", "START_B", "TOOL"], 
+                                                        ascending=[True, True, True, True, True, True])
         summary_sv_df_sorted.to_csv(output, sep = "\t", encoding = 'utf-8', index = False)
 
 
@@ -275,7 +373,8 @@ if __name__ == "__main__":
     parser.add_argument('--input', required=True, help="Input VCF or tab-delimited file")
     parser.add_argument('--annotBed', help="UCSC hg19 genes bed file with chrom, start, \
                         end and genesymbol")
-    parser.add_argument('--targetBed', help="Bed file to annotate targets eg: pancancer")
+    parser.add_argument('--target', help="capture kit ID and json file contains list of target genes interval",
+                        nargs=2)
     parser.add_argument('--sdid', help="SDID from analysis")
     parser.add_argument('--vcftype', help="somatic (or) germline vcf (only for svaba)")
     parser.add_argument('--tool', help="Tool name - Variant callers")
@@ -289,7 +388,8 @@ if __name__ == "__main__":
     sv_caller = args.tool
     sdid = args.sdid
     output = args.output
-    target_bed = args.targetBed
+    if args.target:
+        capture_kit, target_json = args.target
 
     output_dir = os.path.dirname(output)
 
@@ -305,6 +405,7 @@ if __name__ == "__main__":
     if annotBed:
         combined_input = combine_mut(input_file, output_dir)
         genes = load_bed(annotBed)
-        targets = load_bed(target_bed)
-        annotate_combined_sv(combined_input, genes, targets, output)
+        fh = open(target_json, 'r')
+        targets = json.load(fh)
+        annotate_combined_sv(combined_input, genes, targets[capture_kit], output)
 

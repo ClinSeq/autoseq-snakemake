@@ -35,10 +35,12 @@ def classify(line, ALT_INDEX, mdict):
 
     if int(re.search(r':(\d)',id).group(1)) != 1:
         return "NONE"
-
-    mateLine = mdict[line].split('\t')
-    mateChrom = mateLine[0]
-    mateAlt = mateLine[ALT_INDEX]
+    try:
+        mateLine = mdict[line].split('\t')
+        mateChrom = mateLine[0]
+        mateAlt = mateLine[ALT_INDEX]
+    except KeyError:
+        return "NONE"
 
     oldType = re.search(r'SVTYPE=(.+?)(\s+?|:)',line).group(1)
 

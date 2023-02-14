@@ -1,4 +1,4 @@
-site_name: Autoseq
+site_name: Autoseq-Snakemake
 site_url: ""
 site_description: Autoseq documentation .
 site_author: Clinseq Team
@@ -9,9 +9,20 @@ edit_uri: ""
 nav :
   - Autoseq: index.md
   - Quick Start: quick_start.md
+  - Setting up: setting_up.md
+  - Autoseq Pipeline: autoseq_pipeline.md
+  - Barcodes: barcodes.md
+  - Autoseq Scripts: scripts.md
 
 theme:
     name: readthedocs
     highlightjs: true
     hljs_languages:
         - python
+
+markdown_extensions:
+    - toc:
+        permalink: 
+    - admonition
+    - attr_list
+    - def_list

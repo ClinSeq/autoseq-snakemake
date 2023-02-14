@@ -1,0 +1,7 @@
+samples: tests/test_liqbio_sample.json
+
+reference: tests/dummy_genome/dummy_genome.json
+
+libdir: tests/libraries
+
+umi: True

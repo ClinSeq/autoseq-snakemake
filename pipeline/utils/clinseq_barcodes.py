@@ -277,7 +277,7 @@ def extract_kit_id(kit_string):
 
 
 def project_valid(project_str):
-    return project_str in ["AL", "LB", "OT", "PB", "PSFF"]
+    return project_str in ["AL", "LB", "OT", "PB", "PSFF", "UL", "iPCM", "CRCR"]
 
 
 def sdid_valid(sdid_str):
@@ -342,8 +342,6 @@ def extract_clinseq_barcodes(input_filename):
 
     if toks[-1] == "txt":
         return list(set([line.strip() for line in open(input_filename).readlines()]))
-    elif toks[-1] == "xlsx":
-        return list(set(parse_orderform(input_filename)))
     else:
         raise ValueError("Invalid clinseq barcodes file type: " + input_filename)
 

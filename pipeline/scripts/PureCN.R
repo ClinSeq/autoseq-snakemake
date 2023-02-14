@@ -168,10 +168,11 @@ normalizePath(dirname(out), mustWork = TRUE)
 
 flog.info("Loading PureCN %s...", Biobase::package.version("PureCN"))
 suppressPackageStartupMessages(library(PureCN))
-# set allowed deviation from AF=0.5 for heterozygous SNPs in normals
-trace(PureCN:::.testGermline, tracer = substitute(if (allowed != hzDev) allowed <- hzDev, list(hzDev = opt$hzdev)), print = FALSE)
+# set allowed deviation from AF=0.5 and set min depth as sum of AD, for heterozygous SNPs in normals
+trace(PureCN:::.testGermline, tracer = substitute(if (1 != 0) {allowed <- hzDev; idx <- (info(vcf)$SOMATIC | (pBeta > 0.025 & pBeta < 1-0.025) | (arAll > 0.5-allowed & arAll < 0.5+allowed)) & lapply(geno(vcf)$AD[,-match(tumor.id.in.vcf, colnames(geno(vcf)$AD))], sum) > 0}, 
+                                                  list(hzDev = opt$hzdev)), at = list(c(6)), print = FALSE)
 # fix so that if the sample id exists among the vcf sample names, that sample is used as tumor id in vcf, regardless of which sample in vcf was deemed tumor by PureCN internal functions
-trace(runAbsoluteCN, tracer = quote(if (sampleid %in% samples(header(vcf))) tumor.id.in.vcf <- sampleid), at = list(c(44,3,8)), print = FALSE)
+trace(runAbsoluteCN, tracer = quote(if (paste(strsplit(sampleid, split="-")[[1]][1:5], collapse = "-") %in% samples(header(vcf))) tumor.id.in.vcf <- paste(strsplit(sampleid, split="-")[[1]][1:5], collapse = "-")), at = list(c(44,3,8)), print = FALSE)
 # set NA values in the homozygous variable to FALSE in getSexFromVcf to avoid error from sum(homozygous) when both ref and alt allele lack reads
 trace(getSexFromVcf, tracer = quote(if (any(is.na(homozygous))) homozygous[is.na(homozygous)]=FALSE), at = list(c(11)), print = FALSE)
 library(futile.logger)
@@ -239,7 +240,8 @@ if (file.exists(file.rds) && !opt$force) {
         BPPARAM <- bpparam()
         flog.info("Using default BiocParallel backend. You can change the default in your ~/.Rprofile file.") 
     }
-    ret <- runAbsoluteCN(normal.coverage.file = normal.coverage.file,
+    tryCatch({
+        ret <- runAbsoluteCN(normal.coverage.file = normal.coverage.file,
             tumor.coverage.file = tumor.coverage.file, vcf.file = opt$vcf,
             sampleid = sampleid, plot.cnv = TRUE,
             interval.file = opt$intervals,
@@ -271,11 +273,15 @@ if (file.exists(file.rds) && !opt$force) {
             post.optimize = opt$postoptimize,
             speedup.heuristics = opt$speedupheuristics,
             BPPARAM = BPPARAM)
-    dev.off()
-    if (opt$bootstrapn > 0) {
-        ret <- bootstrapResults(ret, n = opt$bootstrapn) 
-    }
-    saveRDS(ret, file = file.rds)
+        dev.off()
+        if (opt$bootstrapn > 0) {
+            ret <- bootstrapResults(ret, n = opt$bootstrapn) 
+        }
+        saveRDS(ret, file = file.rds)
+    }, error = function(err) {
+        print(err)
+        quit()
+    })
 }
 
 ### Create output files -------------------------------------------------------

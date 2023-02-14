@@ -3,14 +3,22 @@ samples: tests/test_liqbio_sample.json
 
 reference: tests/dummy_genome/dummy_genome.json
 
+normal_bams: ["tests/dummy_normal/LB-P-NA12877-N-03098850-TD1-C31_nodups.bam", "tests/dummy_normal/LB-P-NA12877-N-03098850-TD1-C31_clipoverlap.bam"]
+
 libdir: tests/libraries
 
 umi: True
-global_container: False
-gridss_container: False
+
+container: 
+    base: False
+    gridss: False
+    franken: False
+
 outdir: tests
 
 steps: ALL
+
+gnomAD: "/nfs/PROBIO/gnomad/r2.1/genomes/gnomad.genomes.r2.1.sites.noVEP.vcf.gz"
 
 params:
     scratch: /tmp
@@ -30,7 +38,7 @@ params:
         indel_realigner:
             java_options: "-Xmx8G -XX:ParallelGCThreads=4"
             extra: " -allowPotentiallyMisencodedQuals --maxReadsForRealignment 5000000 --maxReadsInMemory 1000000 "
-            threads: 2
+            threads: 3
     picard:
         markdup:
             rmdups: "true"
@@ -48,6 +56,9 @@ params:
         collecthsmetrics:
             java_options: " -XX:ParallelGCThreads=8 "
             threads: 1
+    samtools:
+        flagstat: 
+            threads: 8
     fgbio:
         fastqtobam:
             java_options: " -Xmx10g -XX:+AggressiveOpts -XX:ParallelGCThreads=8 "
@@ -82,7 +93,7 @@ params:
         threads: 1
     cnstoseg:
         threads: 1
-    cnvkit_tracks:
+    cnv_tracks:
         threads: 1
     gatk4:
         threads: 1
@@ -94,12 +105,12 @@ params:
         threads: 8
     vardict:
         threads: 8
-        min_alt_frac: 0.005
+        min_alt_frac: 0.0002
         min_num_reads: null
     varscan:
         threads: 1
         java_options: " -Xmx10g "
-        extra: " --min-coverage 3 --min-var-freq 0.005 --p-value 0.05 --somatic-p-value 0.05 --strand-filter 0 "
+        extra: " --min-coverage 3 --min-var-freq 0.0002 --p-value 0.05 --somatic-p-value 0.05 --strand-filter 0 "
     somaticseq:
         threads: 1
     svcaller:
@@ -109,7 +120,7 @@ params:
     lumpy:
         threads: 8
     gridss:
-        threads: 16
+        threads: 10
     gridss_filter:
         threads: 1
     purecn:
@@ -125,4 +136,6 @@ params:
     msisensor:
         threads: 8
     multiqc:
+        threads: 1
+    jumble:
         threads: 1

@@ -8,6 +8,7 @@
 library(ggplot2)
 library(optparse)
 library(data.table)
+library(rjson)
 
 # read in command line options
 option_list <- list(
@@ -40,6 +41,8 @@ contest_files = dir(Sys.glob(paste0(main_path, "/*/*/contamination")),
                     pattern = "contest.txt$", recursive = TRUE, full.names = TRUE)
 msings_files = dir(path = Sys.glob(paste0(main_path, "/*/*/msings*")),
                    pattern = paste0("MSI_Analysis.txt$"), full.names = TRUE, recursive = TRUE)
+flagstat_files = dir(path = Sys.glob(paste0(main_path, "/*/*/qc/samtools")),
+                   pattern = "flagstats.json$", full.names = TRUE, recursive = TRUE)
 
 # remove files from old pipeline (modified before 2019-04-30)
 hsmetrics_files = hsmetrics_files[file.mtime(hsmetrics_files) > as.POSIXct("2019-04-30")]
@@ -60,56 +63,115 @@ msings_files = msings_files[grep("WGS", msings_files, invert = TRUE)]
 cat("Read in the files...\n")
 HsMetrics = data.frame()
 for (f in hsmetrics_files) {
-  SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
-  DIR = dirname(dirname(dirname(f)))
-  HsMetrics = rbind(HsMetrics, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
-                                                           header = TRUE, stringsAsFactors = FALSE), 
-                                     stringsAsFactors = FALSE))
+  tryCatch({
+    SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
+    DIR = dirname(dirname(dirname(f)))
+    HsMetrics = rbind(HsMetrics, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
+                                                        header = TRUE, stringsAsFactors = FALSE), 
+                                                        stringsAsFactors = FALSE))
+  }, error = function(err) {
+      print(paste("Sample: ", SAMP, " QC: HsMetrics"))
+      print(paste("ERROR: ", err))
+  })
 }
+#fix column class for column sometimes read in as character due to a "?" instead of NA
+HsMetrics$FOLD_80_BASE_PENALTY = as.numeric(HsMetrics$FOLD_80_BASE_PENALTY)
+
 MarkDuplicates = data.frame()
 for (f in markduplicates_files) {
-  SAMP = sub("-picard-markdup.metrics.txt", "", basename(f))
-  DIR = dirname(dirname(dirname(f)))
-  MarkDuplicates = rbind(MarkDuplicates, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
-                                                                     header = TRUE, stringsAsFactors = FALSE), 
-                                               stringsAsFactors = FALSE))
+    tryCatch({
+        SAMP = sub("-picard-markdup.metrics.txt", "", basename(f))
+        DIR = dirname(dirname(dirname(f)))
+        MarkDuplicates = rbind(MarkDuplicates, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
+                                                                    header = TRUE, stringsAsFactors = FALSE), 
+                                                                    stringsAsFactors = FALSE))
+    }, error = function(err) {
+      print(paste("Sample: ", SAMP, " QC: MarkDuplicates"))
+      print(paste("ERROR: ", err))
+    }) 
 }
+
 InsertSize = data.frame()
 InsertSize_histogram = data.frame(stringsAsFactors = FALSE)
 for (f in insertsize_files) {
-  SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
-  DIR = dirname(dirname(dirname(f)))
-  InsertSize = rbind(InsertSize, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
+    tryCatch({
+        SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
+        DIR = dirname(dirname(dirname(f)))
+        InsertSize = rbind(InsertSize, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
                                                              header = TRUE, stringsAsFactors = FALSE), 
                                        stringsAsFactors = FALSE))
-  InsertSize_histogram = rbind(InsertSize_histogram, 
+        InsertSize_histogram = rbind(InsertSize_histogram, 
                                cbind(SAMP, DIR, read.table(f, skip = 10, sep = "\t",
                                                            header = TRUE, stringsAsFactors = FALSE),
                                      stringsAsFactors = FALSE))
+    }, error = function(err) {
+      print(paste("Sample: ", SAMP, " QC: InsertSize"))
+      print(paste("ERROR: ", err))
+    }) 
 }
+
 ContEst = data.frame()
 for (f in contest_files) {
-  fname = strsplit(basename(f), split = "\\.")[[1]][1]
-  clinseq_barcodes = rev(strsplit(f, split = "/")[[1]])[3]
-  samples = unlist(strsplit(clinseq_barcodes, split = "_"))
-  if(grepl('-N-', fname, fixed=TRUE)){
-    SAMP = samples[1]
-  } else {
-    SAMP = samples[2]
-  }
-  DIR = dirname(dirname(f))
-  ContEst = rbind(ContEst, cbind(SAMP, DIR, read.table(f, nrow = 1, sep = "\t", header = TRUE, stringsAsFactors = FALSE), 
-                                 stringsAsFactors = FALSE))
+  tryCatch({
+    fname = strsplit(basename(f), split = "\\.")[[1]][1]
+    clinseq_barcodes = rev(strsplit(f, split = "/")[[1]])[3]
+    samples = unlist(strsplit(clinseq_barcodes, split = "_"))
+    if(grepl('-N-', fname, fixed=TRUE)){
+      SAMP = samples[2]
+    } else {
+      SAMP = samples[1]
+    }
+    DIR = dirname(dirname(f))
+    ContEst = rbind(ContEst, cbind(SAMP, DIR, read.table(f, nrow = 1, sep = "\t", header = TRUE, stringsAsFactors = FALSE), 
+                                  stringsAsFactors = FALSE))
+  }, error = function(err) {
+    print(paste("Sample: ", SAMP, " QC: contamination test"))
+    print(paste("ERROR: ", err))
+  })    
 }
+
 msings = data.frame()
 for (f in msings_files) {
-  SAMP = sub("_nodups.MSI_Analysis.txt", "", basename(f))
-  DIR = dirname(dirname(dirname(f)))
-  msings = rbind(msings, cbind(SAMP, DIR, t(read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)))[2,], stringsAsFactors=FALSE)
+  tryCatch({
+    SAMP = sub("_nodups.MSI_Analysis.txt", "", basename(f))
+    DIR = dirname(dirname(dirname(f)))
+    msings = rbind(msings, cbind(SAMP, DIR, t(read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)))[2,], stringsAsFactors=FALSE)
+  }, error = function(err) {
+    print(paste("Sample: ", SAMP, " QC: mSINGs"))
+    print(paste("ERROR: ", err))
+  })
 }
+
 colnames(msings) = c("SAMP", "DIR", read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)[,1])
 msings$`msi status`[which(msings$msing_score<0.2)] = "NEG"  # use cut-off 0.2 for MSI-H (default 0.1 is too low)
 msings$msing_score = as.numeric(msings$msing_score)
+
+# samtools flagstats
+flagstat_data = data.frame(matrix(ncol = 8, nrow = 0))
+colnames(flagstat_data) = c("SAMP", "DIR", "mapped_reads", "paired_reads", "properly_paired_reads", 
+                       "with_itself_and_mate_mapped_reads", "singletons_reads", "mate_mapped_diff_chr_reads")
+
+for (f in flagstat_files){
+  tryCatch({
+    json_data = fromJSON(file = f)
+    read_total = as.numeric(json_data[['QC-passed reads']]['total'] )
+    SAMP = sub("-flagstats.json", "", basename(f))
+    DIR = dirname(dirname(dirname(f)))
+    mapped = as.numeric(json_data[['QC-passed reads']]['mapped']) / read_total 
+    paired = as.numeric(json_data[['QC-passed reads']]['paired in sequencing']) / read_total 
+    properly_paired = as.numeric(json_data[['QC-passed reads']]['properly paired']) / read_total
+    with_itself_mate_mapped = as.numeric(json_data[['QC-passed reads']]['with itself and mate mapped']) / read_total 
+    matemapped_diff_chr = as.numeric(json_data[['QC-passed reads']]['with mate mapped to a different chr']) / read_total 
+    singletons = as.numeric(json_data[['QC-passed reads']]['singletons']) / read_total
+    nrows = nrow(flagstat_data)
+    flagstat_data[nrows+1, ] = c(SAMP, DIR, mapped, paired, properly_paired, 
+                            with_itself_mate_mapped, singletons, matemapped_diff_chr)
+  }, error = function(err) {
+    print(paste("Sample: ", SAMP, " QC: mSINGs"))
+    print(paste("ERROR: ", err))
+  })
+}
+
 
 # add missing values in the insert size histogram table
 for (d in unique(InsertSize_histogram$DIR)) {
@@ -147,9 +209,16 @@ process_samp <- function(sample) {
 
 
 # merge the QC tables 
-qc_merge = merge(merge(merge(merge(HsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")),
-                 msings, by = c("SAMP", "DIR"), all.x = TRUE)
+qc_merge = merge(merge(merge(merge(merge(HsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
+                InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")),
+                msings, by = c("SAMP", "DIR"), all.x = TRUE), flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
 
+qc_merge$mapped_reads = as.numeric(qc_merge$mapped_reads)
+qc_merge$paired_reads = as.numeric(qc_merge$paired_reads)
+qc_merge$properly_paired_reads = as.numeric(qc_merge$properly_paired_reads)
+qc_merge$with_itself_and_mate_mapped_reads = as.numeric(qc_merge$with_itself_and_mate_mapped_reads)
+qc_merge$singletons_reads = as.numeric(qc_merge$singletons_reads)
+qc_merge$mate_mapped_diff_chr_reads = as.numeric(qc_merge$mate_mapped_diff_chr_reads)
 # add sample type and capture kit
 qc_merge$SAMP = sapply(qc_merge$SAMP, process_samp)
 qc_merge$sample_type = sapply(strsplit(qc_merge$SAMP, split = "-"), "[", 4)
@@ -269,7 +338,20 @@ my_barplot(x = "factor(contamination, levels = sort(unique(contamination)))", yb
 my_scatter(x = "READ_PAIRS_EXAMINED", y = "msing_score", xbreaks = seq(0, 1e12, 1e7), ybreaks = waiver(),
              x_string = "number of read pairs", y_string = "mSINGS score", title_string = "mSINGS score vs Read count")
 
+my_scatter(x = "mapped_reads", y= "paired_reads", xbreaks = waiver(), ybreaks = waiver(),
+             x_string = "fraction of mapped reads", y_string = "fraction of paired reads", title_string = "Paired Reads vs Mapped reads")
 
+my_scatter(x = "mapped_reads", y= "properly_paired_reads", xbreaks = waiver(), ybreaks = waiver(),
+             x_string = "fraction of mapped reads", y_string = "fraction of properly paired reads", title_string = "Properly Paired Reads vs Mapped reads")
+
+my_scatter(x = "mapped_reads", y= "with_itself_and_mate_mapped_reads", xbreaks = waiver(), ybreaks = waiver(),
+             x_string = "fraction of mapped reads", y_string = "fraction of with itself and mate mapped reads", title_string = "WithItself and MateMappedReads vs Mapped reads")
+
+my_scatter(x = "mapped_reads", y= "singletons_reads", xbreaks = waiver(), ybreaks = waiver(),
+             x_string = "fraction of mapped reads", y_string = "fraction of singletons reads", title_string = "Singletons Reads vs Mapped reads")
+
+my_scatter(x = "mapped_reads", y= "mate_mapped_diff_chr_reads", xbreaks = waiver(), ybreaks = waiver(),
+             x_string = "fraction of mapped reads", y_string = "fraction of mate mapped diff chr reads", title_string = "Mate Mapped Diff chr Reads vs Mapped reads")
 
 dev.off()
 

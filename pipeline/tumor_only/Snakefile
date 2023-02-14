@@ -1,0 +1,226 @@
+import json
+import collections
+
+
+include: "../utils/utils.py"
+include: "../utils/clinseq_barcodes.py"
+
+samples = json.load(open(config['samples']))
+params = config['params']
+refjson = json.load(open(config['reference']))
+
+# loading reference files
+basepath = os.path.dirname(config['reference'])
+reference = make_paths_absolute(refjson, basepath)
+umi = config['umi']
+libdir = config['libdir']
+outdir = config['outdir']
+
+# Need to check clinseq_barcodes and data available for those valid barcodes
+sampledata, all_clinseq_barcodes = check_sampledata(libdir, samples)
+
+shell.prefix("set -eo pipefail;")
+
+# create symlink for normal bam files
+normal_bams = config['normal_bams']
+for bam in normal_bams:
+    bname = os.path.basename(bam)
+    dstdir = os.path.join(outdir, "bams")
+
+    if not os.path.exists(dstdir):
+        os.makedirs(dstdir, exist_ok=True)
+    
+    if not os.path.exists(os.path.join(dstdir, bname)):
+        os.symlink(os.path.join(bam), os.path.join(dstdir, bname))
+
+# NORMAL, CANCER SAMPLES
+for sample in all_clinseq_barcodes:
+    if '-N-' in sample:
+        NORMAL_CAPTURE = extract_unique_capture(sample)
+    
+    if '-CFDNA-' in sample or '-T-' in sample:
+        CANCER_CAPTURE = extract_unique_capture(sample)
+
+NORMAL_CAPTURE_STR = compose_lib_capture_str(NORMAL_CAPTURE)
+CANCER_CAPTURE_STR = compose_lib_capture_str(CANCER_CAPTURE)
+NORMAL_SAMPLE_STR = compose_sample_str(NORMAL_CAPTURE)
+CANCER_SAMPLE_STR = compose_sample_str(CANCER_CAPTURE)
+
+# Extract chromosome from target capture bed
+capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
+targets = reference['targets'][capture_name]['targets-bed-slopped20']
+all_chromosomes = list(get_chromosomes(targets))
+
+# only tumor sample need to be processed
+cancer_sample = [_ for _ in all_clinseq_barcodes if '-T-' in _ or '-CFDNA-' in _]
+
+wildcard_constraints:
+    samples = "|".join(cancer_sample)
+
+OUTPUT = list()
+
+BAM_FILES = expand(outdir + "/bams/{sample}_nodups.bam", sample=cancer_sample)
+UMIBAM_FILES = expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=cancer_sample)
+OUTPUT.append(BAM_FILES)
+OUTPUT.append(UMIBAM_FILES)
+
+# Quality Check modules
+
+FASTQC = expand(outdir + "/qc/fastqc/{sample}/", sample=cancer_sample)
+OUTPUT.append(FASTQC)
+
+PICARD_QC = list()
+PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-insertsize.txt", 
+                        sample=cancer_sample))
+PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-oxog.txt",
+                        sample=cancer_sample))
+PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-hsmetrics.txt",
+                        sample=cancer_sample))
+
+OUTPUT.append(PICARD_QC)
+
+CONTEST = list()
+CONTEST.append(outdir + "/contamination/pop_vcf_{}-{}.vcf".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+CONTEST.append("{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR))
+CONTEST.append("{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR))
+
+# copy-number variation calling
+CNV_OUTPUT = list()
+CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cns", sample=cancer_sample))
+CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cnr", sample=cancer_sample))
+# CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.seg", sample=cancer_sample))
+CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_profile.bedGraph", sample=cancer_sample))
+CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_segments.bedGraph", sample=cancer_sample))
+CNV_OUTPUT.append("{}/qc/{}-liqbio-cna.png".format(outdir, CANCER_CAPTURE_STR))
+CNV_OUTPUT.append("{}/qc/{}-normal-liqbio-cna.png".format(outdir, CANCER_CAPTURE_STR))
+CNV_OUTPUT.append("{}/qc/{}-frankenplot.html".format(outdir, CANCER_CAPTURE_STR))
+
+OUTPUT.append(CNV_OUTPUT)
+
+# map capture to results
+capture_to_results = collections.defaultdict(SinglePanelResults)
+
+BAM_FILES.append([bam for bam in normal_bams if 'nodups' in bam][0])
+UMIBAM_FILES.append([bam for bam in normal_bams if 'clipoverlap' in bam][0])
+
+capture_to_results[NORMAL_CAPTURE].bamfile = get_capture_bam(NORMAL_CAPTURE, BAM_FILES)
+capture_to_results[CANCER_CAPTURE].bamfile = get_capture_bam(CANCER_CAPTURE, BAM_FILES)
+capture_to_results[NORMAL_CAPTURE].umibam = get_capture_bam(NORMAL_CAPTURE, UMIBAM_FILES)
+capture_to_results[CANCER_CAPTURE].umibam = get_capture_bam(CANCER_CAPTURE, UMIBAM_FILES)
+
+for sample in all_clinseq_barcodes:
+    # cnv results to sample capture 
+    if '-CFDNA-' in sample or '-T-' in sample:
+        capture_to_results[CANCER_CAPTURE].cns = outdir + "/cnv/{}.cns".format(sample)
+        capture_to_results[CANCER_CAPTURE].cnr = outdir + "/cnv/{}.cnr".format(sample)
+        capture_to_results[CANCER_CAPTURE].seg = outdir + "/cnv/{}_dnacopy.seg".format(sample)
+    
+    # svs results to sample capture
+    for event in ["DEL", "DUP", "INV", "TRA"]:        
+        if '-CFDNA-' in sample or '-T-' in sample:
+            capture_to_results[CANCER_CAPTURE].svs[event] = "{}/svs/{}-{}.gtf".format(outdir, sample, event)
+
+
+# MSI 
+basename = os.path.basename(capture_to_results[CANCER_CAPTURE].bamfile).split('.bam')[0]
+msings_outdir = "{}/msings-{}".format(outdir, CANCER_CAPTURE_STR)
+MSI_OUTPUT = "{}/{}/{}.MSI_Analysis.txt".format(msings_outdir, basename, basename)
+
+OUTPUT.append(MSI_OUTPUT)
+
+# SNV, SV calling
+VARIANTS = list()
+VARIANTS.append("{}/variants/{}-merged.germline.split_norm.gnomADg.vep.SNPs.dbsnpids.vcf.gz".format(outdir, CANCER_CAPTURE_STR))
+VARIANTS.append("{}/variants/{}-merged.germline.split_norm.brcaEx.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR))
+VARIANTS.append("{}/variants/{}-{}-all.somatic.gnomADg.noSNPs.brcaEx.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
+VARIANTS.append(expand(outdir + "/svs/{sample}-{events}.gtf", sample=cancer_sample, events=["DEL", "DUP", "INV", "TRA"]))
+VARIANTS.append(expand(outdir + "/svs/{sample}_effects.json", sample=cancer_sample))
+VARIANTS.append("{}/svs/igv/{}-sv-annotated.txt".format(outdir, CANCER_CAPTURE_STR))
+
+OUTPUT.append(VARIANTS)
+
+IGV = list()
+IGV.append("{}/{}-somatic-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR))
+IGV.append("{}/{}-germline-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR))
+
+OUTPUT.append(IGV)
+
+samples_of_interest = [compose_lib_capture_str(unique_capture) 
+                            for unique_capture in [NORMAL_CAPTURE, CANCER_CAPTURE]]
+QC_overview = "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest))
+
+OUTPUT.append(QC_overview)
+OUTPUT.append(outdir + "/bams/intermediate_bamfiles.removed")
+
+container: config['container']['base']
+
+
+rule all:
+    input:
+        "{}/IGVnav/igv_session_sv.xml".format(outdir),
+        "{}/IGVnav/igv_session_snps.xml".format(outdir)
+    output:
+        outdir + "/analysis_finished"
+    shell:
+        "date +'%Y-%m-%d T%T %:z' > {output}"
+
+
+rule generate_symlinks:
+    input:
+        OUTPUT
+    output:
+        "{}/IGVnav/igv_session_sv.xml".format(outdir),
+        "{}/IGVnav/igv_session_snps.xml".format(outdir)
+    params:
+        outdir = outdir,
+        target_bed = targets
+    log:
+        "{}/logs/generate_symlinks.log".format(outdir)
+    shell:
+        "generate_symlinks.py --targets {params.target_bed} --outdir {params.outdir}  2> {log} "
+
+
+rule remove_bamfiles:
+    input:
+        expand(outdir + "/bams/{sample}_unmapped.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_umimapped.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_umimapped.bai", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_realigned-1.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_realigned-1.bam.bai", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_groupedbyumi.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_consensus.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_umimapped-2.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_umimapped-2.bai", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_realigned-2.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_realigned-2.bam.bai", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_consensus_filtered.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_consensus_filtered.bai", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=cancer_sample),
+        expand(outdir + "/bams/{sample}_nodups.bam", sample=cancer_sample),
+        expand(outdir + "/fastqs/{sample}_concatenated_1.fastq.gz", sample=cancer_sample),
+        expand(outdir + "/fastqs/{sample}_concatenated_2.fastq.gz", sample=cancer_sample)
+    output:
+        outdir + "/bams/intermediate_bamfiles.removed"
+    params:
+        split_targets = outdir + "/bams/split_targets/"
+    log:
+        outdir + "/logs/remove_intermediate_{sample}.log".format(sample=cancer_sample)
+    run:
+        del_bam = [bam for bam in input if 'clipoverlap' not in bam and 'nodups' not in bam]
+        bamfiles = " ".join(del_bam)
+        shell("rm {bamfiles} ")
+        shell("rm -rf {params.split_targets} 2>> {log} ")
+        shell("touch {output} ")
+
+
+
+include: "../autoseq/rules/split_targets.smk"
+include: "rules/pre_processing.smk"
+include: "../autoseq/rules/umi_processing.smk"
+include: "rules/qc.smk"
+include: "rules/cnvcalling.smk"
+include: "rules/variant_calling.smk"
+include: "rules/vep.smk"
+include: "rules/structuralvariants.smk"
+
+

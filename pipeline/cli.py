@@ -12,7 +12,7 @@ import pipeline
 from pipeline.utils.utils import make_paths_absolute, Pipeline
 from pipeline.utils.clinseq_barcodes import data_available_for_clinseq_barcode, \
     extract_clinseq_barcodes, validate_clinseq_barcodes, convert_barcodes_to_sampledict, \
-    check_sampledata, normpath
+    check_sampledata, normpath, parse_project
 
 
 def console_autoseq():
@@ -82,7 +82,7 @@ def list(context):
     pipelines.add_column("Type")
     pipelines.add_column("Last update")
     
-    pipelines.add_row("1", "Liqbio", "Targeted Re-sequencing", "May 25 2021")
+    pipelines.add_row("1", "Autoseq", "Targeted Re-sequencing", "May 25 2021")
 
     console.print(pipelines)
     
@@ -98,13 +98,16 @@ def list(context):
 @click.option("--dryrun/--run", default=False, help=" --dryrun for testing snakemake workflow")
 @click.option("--umi", is_flag=True, help="To process the data with UMI- Unique Molecular Identifier")
 @click.option("--profile", default='shell', help="job schedulers eg. SLURM")
+@click.option("--pipeline", default='autoseq', help="Pipeline to be launched")
+@click.option("-n", "--normal-bam", default=None, help="Normal bam files dir, Applicable only to tumor only pipeline")
 @click.option("--use-singularity", is_flag=True, help="To use singularity")
 @click.option("--singularity", help="Path to singularity image")
 @click.option("--smk-opt", help="snakemake option")
 @click.option("--cores", help="max number of cores")
 @click.pass_context
 def launch(context, ref, samples, outdir, libdir, 
-            configfile, scratch, dryrun, umi, profile, use_singularity,
+            configfile, scratch, dryrun, umi, profile, 
+            pipeline, normal_bam, use_singularity, 
             singularity, cores, smk_opt):
     """
     launch the respective pipeline with samples json 
@@ -122,7 +125,11 @@ def launch(context, ref, samples, outdir, libdir,
     
     config_dict = yaml.load(open(configfile), Loader=yaml.FullLoader)
 
-    sample_str = "_".join(all_clinseq_barcodes)
+    normal_barcode = [i for i in all_clinseq_barcodes if '-N-' in i]
+    tumor_barcode = [i for i in all_clinseq_barcodes if '-T-' in i or '-CFDNA-' in i]
+    project_id = parse_project(tumor_barcode[0])
+
+    sample_str = "_".join(tumor_barcode + normal_barcode)
     outdir = os.path.join(outdir, sampledata['sdid'], sample_str)
 
     if use_singularity and not singularity:
@@ -131,25 +138,46 @@ def launch(context, ref, samples, outdir, libdir,
     
     if use_singularity:
         if not os.path.exists(os.path.join(singularity, "autoseq-smk.sif")) or \
-            not os.path.exists(os.path.join(singularity, "autoseq-smk.sif")):
+            not os.path.exists(os.path.join(singularity, "gridss.sif")):
             Log.error('Singularity file does not exist !!')
             raise click.Abort()
 
+    # config dictionary update
     config_dict['samples'] = normpath(samples)
     config_dict['reference'] = normpath(ref)
     config_dict['outdir'] = normpath(outdir)
     config_dict['libdir'] = normpath(libdir)
     config_dict['umi'] = umi
-    config_dict['global_container'] = os.path.join(singularity, "autoseq-smk.sif") if use_singularity else ' '
-    config_dict['gridss_container'] = os.path.join(singularity, "gridss.sif") if use_singularity else ' '
+    config_dict['container']['base'] = os.path.join(singularity, "autoseq-smk.sif") if use_singularity else ' '
+    config_dict['container']['gridss'] = os.path.join(singularity, "gridss.sif") if use_singularity else ' '
+    config_dict['container']['franken'] = os.path.join(singularity, "franken.sif") if use_singularity else ' '
     
+    # update scratch dir
+    if scratch:
+        config_dict["params"]["scratch"] = scratch
+    
+    # pipeline based args
+    if pipeline == 'tumor_only' and normal_bam:
+        nClip_bam = os.path.join(normal_bam, normal_barcode[0] + "_clipoverlap.bam")
+        nNodups_bam = os.path.join(normal_bam , normal_barcode[0] + "_nodups.bam")
+        nClip_idx = os.path.join(normal_bam, normal_barcode[0] + "_clipoverlap.bai")
+        nNodups_idx = os.path.join(normal_bam , normal_barcode[0] + "_nodups.bam.bai")
+        for bam in [nClip_bam, nNodups_bam, nClip_idx, nNodups_idx]:
+            if os.path.isfile(bam):
+                Log.info(f"Normal sample bam file - {bam}")
+            else:
+                Log.error(f"{bam} does not exist")
+                raise click.Abort()
+
+        config_dict['normal_bams'] = [nClip_bam, nNodups_bam, nClip_idx, nNodups_idx]
+        
+
     out_configpath = os.path.join(normpath(outdir), f"config_{sample_str}.yml")
-    jobdb = os.path.join(normpath(outdir), f"{sample_str}.jobdb")
+    jobdb = os.path.join(normpath(outdir), f"{sample_str}_jobdb.json")
 
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)
 
-    
     with open(out_configpath, 'w') as cf:
         yaml.safe_dump(config_dict, cf, default_flow_style=False)
     
@@ -157,12 +185,19 @@ def launch(context, ref, samples, outdir, libdir,
     if use_singularity:
         for path in ('samples', 'reference', 'outdir', 'libdir'):
             bind_paths.add(os.path.dirname(config_dict[path]))
+        
+        bind_paths.add(os.path.dirname(os.path.dirname(config_dict['reference'])))
 
-    snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Snakefile')
 
-    liqbio = Pipeline(snakefile = snakefile, 
+    if pipeline == "tumor_only":
+        snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tumor_only/Snakefile')
+    else:
+        snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'autoseq/Snakefile')
+
+    autoseq = Pipeline(snakefile = snakefile, 
                       config = out_configpath, 
-                      sdid = sdid, 
+                      sdid = sdid,
+                      project_id = project_id,
                       workdir = outdir, 
                       dryrun = dryrun, 
                       profile = profile,
@@ -172,9 +207,9 @@ def launch(context, ref, samples, outdir, libdir,
                       bind_paths = bind_paths,
                       cores = cores)
     
-    cmd = liqbio.build_cmd()
+    cmd = autoseq.build_cmd()
 
-    Log.info("Launching Liqbio pipeline ...")
+    Log.info(f"Launching autoseq - {pipeline} pipeline ...")
     # print(cmd) 
     try:
         subprocess.run(cmd, shell=True)
