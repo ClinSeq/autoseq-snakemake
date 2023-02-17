@@ -336,7 +336,7 @@ rule vcf_add_sample:
     shell:
         "vcf_filter.py --no-filtered {input.vcf} sq --site-quality 5 "
         " | bcftools view --exclude 'FORMAT/AD=\".\"' -Oz > {params.tmpdir}.vcf.gz  && "
-        " vcf_add_sample.py --filter_hom --samplename {params.tumorid} "
+        " vcf_add_sample.py --filter_hom --samplename {params.tumorid}-BAF "
         " {params.tmpdir}.vcf.gz {input.tumor_bam} | bgzip > {output} 2> {log} && "
         " tabix -p vcf {output} && rm -v {params.tmpdir}.vcf.gz "
 

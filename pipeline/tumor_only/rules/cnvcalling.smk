@@ -3,55 +3,55 @@ import uuid
 
 capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
 
-rule cnvkit:
-    input:
-        bam = outdir + "/bams/{sample}_nodups.bam",
-        reference = lambda wildcards: get_cnvkitref(wildcards, reference)
-    output:
-        cns = outdir + "/cnv/{sample}.cns",
-        cnr = outdir + "/cnv/{sample}.cnr"
-    params:
-        prefix = os.path.basename(outdir + "/bams/{sample}_nodups"),
-        tmpdir = os.path.join(params['scratch'], 
-                    "cnvkit-{}".format(str(uuid.uuid4())))
-    threads: params['cnvkit']['threads']
-    shell:
-        "mkdir -p {params.tmpdir} && "
-        "cnvkit.py batch {input.bam}  -r {input.reference} "
-        " -d {params.tmpdir} "
-        " && cp {params.tmpdir}/{params.prefix}.cns {output.cns}  "
-        " && cp {params.tmpdir}/{params.prefix}.cnr {output.cnr}  "
-        " && rm -r {params.tmpdir}"
-
-
-rule cnvkit_cnstoseg:
-    input:
-        cns = outdir + "/cnv/{sample}.cns",
-    output:
-        seg = outdir + "/cnv/{sample}_dnacopy.seg",
-    threads: params['cnstoseg']['threads']
-    shell:
-        "cnvkit.py export seg  -o {output.seg}  {input.cns}"
-
-
-# rule jumblerun_cnv:
+# rule cnvkit:
 #     input:
 #         bam = outdir + "/bams/{sample}_nodups.bam",
-#         reference = reference['targets'][capture_name]['jumble-ref']
+#         reference = lambda wildcards: get_cnvkitref(wildcards, reference)
 #     output:
 #         cns = outdir + "/cnv/{sample}.cns",
-#         cnr = outdir + "/cnv/{sample}.cnr",
-#         seg = outdir + "/cnv/{sample}_dnacopy.seg"
+#         cnr = outdir + "/cnv/{sample}.cnr"
 #     params:
-#         outdir = outdir + "/cnv/"
-#     threads: params['jumble']['threads']
-#     log:
-#         outdir + "/logs/variants/{sample}-jumblerun-cnv.log"
+#         prefix = os.path.basename(outdir + "/bams/{sample}_nodups"),
+#         tmpdir = os.path.join(params['scratch'], 
+#                     "cnvkit-{}".format(str(uuid.uuid4())))
+#     threads: params['cnvkit']['threads']
 #     shell:
-#         "source activate jumble-env && "
-#         "jumble-run.R -r {input.reference} "
-#         " -b {input.bam} " 
-#         " -o {params.outdir} 2> {log} "
+#         "mkdir -p {params.tmpdir} && "
+#         "cnvkit.py batch {input.bam}  -r {input.reference} "
+#         " -d {params.tmpdir} "
+#         " && cp {params.tmpdir}/{params.prefix}.cns {output.cns}  "
+#         " && cp {params.tmpdir}/{params.prefix}.cnr {output.cnr}  "
+#         " && rm -r {params.tmpdir}"
+
+
+# rule cnvkit_cnstoseg:
+#     input:
+#         cns = outdir + "/cnv/{sample}.cns",
+#     output:
+#         seg = outdir + "/cnv/{sample}_dnacopy.seg",
+#     threads: params['cnstoseg']['threads']
+#     shell:
+#         "cnvkit.py export seg  -o {output.seg}  {input.cns}"
+
+
+rule jumblerun_cnv:
+    input:
+        bam = outdir + "/bams/{sample}_nodups.bam",
+        reference = reference['targets'][capture_name]['jumble-ref']
+    output:
+        cns = outdir + "/cnv/{sample}.cns",
+        cnr = outdir + "/cnv/{sample}.cnr",
+        seg = outdir + "/cnv/{sample}_dnacopy.seg"
+    params:
+        outdir = outdir + "/cnv/"
+    threads: params['jumble']['threads']
+    log:
+        outdir + "/logs/variants/{sample}-jumblerun-cnv.log"
+    shell:
+        "source activate jumble-env && "
+        "jumble-run.R -r {input.reference} "
+        " -b {input.bam} " 
+        " -o {params.outdir} 2> {log} "
 
 
 rule cnv_tracks:
@@ -126,3 +126,42 @@ rule liqbiocna_plot:
                     "  --gene_track {input.gene_track} && "
         "rm {params.tmp_germvcf} && "
         " source deactivate ")
+
+
+rule franken_plot:
+    input:
+        capture_to_results[CANCER_CAPTURE].svs.values(),
+        somatic_vcf = "{}/variants/{}-{}-all.somatic.gnomADg.noSNPs.brcaEx.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        cns = capture_to_results[CANCER_CAPTURE].cns,
+        cnr = capture_to_results[CANCER_CAPTURE].cnr,
+        vcf_add_sample = "{}/variants/{}-merged.germline.split_norm.gnomADg.vep.SNPs.BAF.vcf.gz".format(outdir, CANCER_CAPTURE_STR),
+        purecn_csv = "{}/purecn/{}.csv".format(outdir, CANCER_CAPTURE_STR),
+        purecn_genes_csv = "{}/purecn/{}_genes.csv".format(outdir, CANCER_CAPTURE_STR),
+        purecn_variants_csv = "{}/purecn/{}_variants.csv".format(outdir, CANCER_CAPTURE_STR),
+        purecn_loh_csv = "{}/purecn/{}_loh.csv".format(outdir, CANCER_CAPTURE_STR)
+    output:
+        frankenplot = "{}/qc/{}-frankenplot.html".format(outdir, CANCER_CAPTURE_STR)
+    params:
+        tumor_del = capture_to_results[CANCER_CAPTURE].svs['DEL'],
+        tumor_dup = capture_to_results[CANCER_CAPTURE].svs['DUP'],
+        tumor_inv = capture_to_results[CANCER_CAPTURE].svs['INV'],
+        tumor_tra = capture_to_results[CANCER_CAPTURE].svs['TRA'],
+        frankenplot_rmd = os.environ.get('FRANKEN_RMD')
+    threads: params['liqbiocna']['threads']
+    run:
+        shell("source activate jumble-env && " 
+        "frankenscript.R  --tumor_cnr {input.cnr} "
+                    "  --tumor_cns {input.cns} "
+                    "  --frankenplot_Rmd {params.frankenplot_rmd} "
+                    "  --het_snps_vcf {input.vcf_add_sample} "
+                    "  --purecn_csv {input.purecn_csv} "
+                    "  --purecn_genes_csv {input.purecn_genes_csv} "
+                    "  --purecn_loh_csv {input.purecn_loh_csv} "
+                    "  --purecn_variants_csv {input.purecn_variants_csv} "
+                    "  --svcaller_T_DEL {params.tumor_del} "
+                    "  --svcaller_T_DUP {params.tumor_dup} "
+                    "  --svcaller_T_INV {params.tumor_inv} "
+                    "  --svcaller_T_TRA {params.tumor_tra} "
+                    "  --somatic_mut_vcf {input.somatic_vcf} "
+                    "  --output {output.frankenplot} || true ")
+        shell("touch {output.frankenplot} ")

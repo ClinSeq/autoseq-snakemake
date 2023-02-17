@@ -163,7 +163,7 @@ cancergenes <- data.table(
            "USP9X", "VAV1", "VHL", "VTI1A", "WAS", "WDCP", "WIF1", "WNK2", 
            "WRN", "WT1", "WWTR1", "XPA", "XPC", "XPO1", "YWHAE", "ZBTB16", 
            "ZCCHC8", "ZEB1", "ZFHX3", "ZMYM2", "ZMYM3", "ZNF331", "ZNF384", 
-           "ZNF429", "ZNF479", "ZNF521", "ZNRF3", "ZRSR2"),
+           "ZNF429", "ZNF479", "ZNF521", "ZNRF3", "ZRSR2","CHD1"),
     location=c("10:52566322-52645435", "10:27035522-27149864", "9:133589333-133761070", 
                "1:179068462-179198736", "2:237478284-237491001", "2:223725652-223809357", 
                "5:131285666-131347355", "2:158592958-158731623", "12:52345485-52388001", 
@@ -406,14 +406,15 @@ cancergenes <- data.table(
                "12:122957437-122985518", "10:31608101-31818741", "16:72816784-73082274", 
                "13:20532810-20665968", "X:70459474-70474499", "19:54024278-54083523", 
                "12:6775814-6798676", "19:21688366-21720880", "7:57187321-57207571", 
-               "18:22641890-22932116", "22:29279580-29453475", "X:15808595-15841383")
+               "18:22641890-22932116", "22:29279580-29453475", "X:15808595-15841383",
+               "5:98192057-98240801")
 )
 
 cancergenes <- cancergenes[!str_detect(location,'[0-9]*:-')]
 cancergenes[,chromosome:=str_extract(location,'^[0-9XY]*')]
 cancergenes[,start:=as.numeric(substr(str_extract(location,':[0-9]*'),2,100))]
 cancergenes[,end:=as.numeric(substr(str_extract(location,'-[0-9]*'),2,100))]
-cancergeneranges <- makeGRangesFromDataFrame(cancergenes)
+cancergeneranges <- makeGRangesFromDataFrame(cancergenes[,start:=start-1e3][,end:=end+1e3])
 
 # Read SNP allele ratio ---------------------------------------------------
 
@@ -446,10 +447,10 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes)
             # stored for use with VEP-annotated
             all_alf <- alf
             
-            # filter unwanted for SNP allele ratio tables
+            # filter unwanted for SNP allele ratio
             alf <- alf[width(vcf)==1 & str_detect(names(vcf),'rs')]
             alf <- alf[chromosome %in% c(1:22,'X','Y')]
-            alf <- alf[nd > 15 & td > 30 & nd*n>5 & nd*(1-n)>5]
+            alf <- alf[nd > 15 & td > 30 & nd*n>5 & nd*(1-n)>5][td > 30 & td*t>5 & td*(1-t)>5]
             # 
             
             # tumor table
@@ -473,7 +474,7 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes)
             # stored for use with VEP-annotated
             all_alf <- alf
             
-            # filter unwanted for SNP allele ratio tables
+            # filter unwanted for SNP allele ratio
             alf <- alf[width(vcf)==1 & str_detect(names(vcf),'rs')]
             alf <- alf[chromosome %in% c(1:22,'X','Y')]
             alf <- alf[td > 30 & td*t>5 & td*(1-t)>5]
@@ -571,7 +572,7 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes)
         
         
         # Remove low-support variants, and rsid variants but no COSM variants
-        salf <- salf[AO.T >= 5 & (!str_detect(Existing_variation,'rs') | str_detect(Existing_variation,'COSM'))]
+        salf <- salf[AO.T >= 5 & (!str_detect(Existing_variation,'rs') | str_detect(Existing_variation,'COSM'))][MAX_AF<.01]
         
         salf=(salf[,-1])
         
@@ -1009,7 +1010,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     ## genelabels ---------------------------------------------------------    
     
     label_genes <- c("ABL1", "AKT1", "ALK", "APC", "AR", "ARAF", "ATM", "BAP1", "BIRC7", 
-                     "BRAF", "BRCA1", "BRCA2", "CBFB", "CCND1", "CCND2", "CCND3", 
+                     "BRAF", "BRCA1", "BRCA2", "CBFB", "CCND1", "CCND2", "CCND3","CHD1", 
                      "CCNE1", "CD274", "CDK12", "CDK4", "CDK6", "CDKN2A", "CEBPA", "DCC",
                      "DNMT3A", "EGFR", "ERBB2", "ERBB4", "ERCC2", "ERG", "ESR1", "EWSR1", 
                      "FGF3", "FGFR1", "FGFR2", "FGFR3", "FLT3", "GATA2", "IDH1", "IDH2", 
@@ -1031,6 +1032,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         cancergenes[gene==g,log2:=median(targets[`selected genes`==g]$smooth_log2,na.rm = T)]
     }
     cancergenes_here <- cancergenes[gene %in% label_genes]
+    cancergenes_here[depth==0,depth:=NA]
     cancergenes_here[,`selected genes`:=factor(gene)]
     targets[,`selected genes`:=factor(`selected genes`,levels=levels(cancergenes_here$`selected genes`))]
     
@@ -1112,7 +1114,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         geom_point(aes(x=2^smooth_log2,y=smooth_maf),fill='#606060',col='#202020',shape=21,alpha=.3) +
         geom_point(data=gridsnps[`selected genes`!=''],aes(x=2^smooth_log2,y=smooth_maf,fill=`selected genes`),
                    shape=21,col='#000000',size=1,show.legend = F) +
-        scale_fill_hue(l=80) +
+        scale_fill_hue(l=70) +
         facet_wrap(facets = vars(factor(chromosome,levels=unique(chromosome),ordered=T)),ncol = 8) +
         theme(panel.spacing = unit(0, "lines"),strip.text.x = element_text(size = 8))
     
@@ -1137,7 +1139,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         geom_point(aes(x=2^smooth_log2,y=smooth_maf),fill='#60606060',col='#20202060',shape=21) #+
     # geom_point(data=gridsnps[`selected genes`!=''],aes(x=2^smooth_log2,y=smooth_maf,fill=`selected genes`),
     #            shape=21,col='#00000050',size=1,show.legend = F) +
-    # scale_fill_hue(l=80)
+    # scale_fill_hue(l=70)
     #geom_point(data=temp,mapping=aes(x=2^V1,y=1,fill=`selected genes`),size=2,shape=25,show.legend=F)
     
     
@@ -1164,7 +1166,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                    show.legend = F,shape=21,col='#00000050',size=1) +
         geom_segment(data=segments,col='green',size=.6,
                      mapping = aes(x=gstart,xend=gstop,y=2^log2,yend=2^log2)) +
-        scale_fill_hue(l=80) + scale_y_log10(limits=ylims) +
+        scale_fill_hue(l=70) + scale_y_log10(limits=ylims) +
         scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
                            limits=c(0,max(targets$gpos)),
                            expand = c(.01,.01),labels = chroms$chromosome) +
@@ -1200,7 +1202,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         geom_point(data=targets[is.na(`selected genes`)],mapping = aes(x=gpos,y=depth),fill='#606060',col='#202020',size=1,shape=21,alpha=alpha) +
         geom_point(data=targets[!is.na(`selected genes`)],mapping = aes(x=gpos,y=depth,fill=`selected genes`),
                    show.legend = F,shape=21,col='#00000050',size=1) +
-        scale_fill_hue(l=80) + scale_y_log10(limits=depthlimits) +
+        scale_fill_hue(l=70) + scale_y_log10(limits=depthlimits) +
         scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
                            limits=c(0,max(targets$gpos)),
                            expand = c(.01,.01),labels = chroms$chromosome) +
@@ -1230,11 +1232,11 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         geom_point(data=snps[is.na(`selected genes`) & plot==T],mapping = aes(x=gpos,y=allele_ratio),fill='#606060',col='#202020',shape=21,size=1,alpha=alpha) +
         geom_point(data=snps[!is.na(`selected genes`)],mapping = aes(x=gpos,y=allele_ratio,fill=`selected genes`),
                    show.legend = F,shape=21,col='#00000050',size=1) +
-        scale_fill_hue(l=80)
+        scale_fill_hue(l=70)
     # somatic mutations
     if (!is.null(somatic)) if (nrow(somatic)>0) {
         p$pos_alleleratio <- p$pos_alleleratio + 
-            geom_point(data=somatic,mapping = aes(x=gpos,y=AF.T,shape=`point mutation`,col=`point mutation`),fill='red',size=.6,show.legend = F) +
+            geom_point(data=somatic,mapping = aes(x=gpos,y=AF.T,shape=`point mutation`,col=`point mutation`),fill='red',size=.8,show.legend = F) +
             scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22)) +
             scale_color_manual(values = c('snv'='darkred','ins'='red','del'='red','other'='darkred'))
         
@@ -1255,7 +1257,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                                  fill='white',
                                  col='darkred',
                                  nudge_y = labels$nudge,
-                                 size=2,
+                                 size=2.3,
                                  box.padding = .1,
                                  label.padding = .1,
                                  point.padding = .1,
@@ -1267,7 +1269,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     # germline mutations
     if (!is.null(germline)) if (nrow(germline)>0) {
         p$pos_alleleratio <- p$pos_alleleratio + 
-            geom_point(data=germline,mapping = aes(x=gpos,y=allele_ratio,shape=`point mutation`),col='grey',fill='blue',size=.6,show.legend = F) +
+            geom_point(data=germline,mapping = aes(x=gpos,y=allele_ratio,shape=`point mutation`),col='grey',fill='blue',size=.8,show.legend = F) +
             scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22))
         
         labels <- germline[SYMBOL %in% cancergenes$gene & CANONICAL=='YES' & IMPACT %in% c('MODERATE','HIGH')]
@@ -1287,7 +1289,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                                  fill='white',
                                  col='blue',
                                  nudge_y = labels$nudge,
-                                 size=2,
+                                 size=2.5,
                                  box.padding = .1,
                                  label.padding = .1,
                                  point.padding = .1,
@@ -1336,7 +1338,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                    show.legend = F,shape=21,col='#00000050',size=1) +
         geom_segment(data=segments,col='green',size=.6,
                      mapping = aes(x=start,xend=end,y=2^log2,yend=2^log2)) +
-        scale_fill_hue(l=80) + scale_y_log10(limits=ylims) +
+        scale_fill_hue(l=70) + scale_y_log10(limits=ylims) +
         scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
                            limits=c(0,max(targets$bin)),
                            expand = c(.01,.01),labels = chroms$chromosome) +
@@ -1355,7 +1357,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         #                 mapping = aes(x=gc,y=2^log2)) +
         # geom_smooth(data=targets[!is.na(`selected genes`)],
         #             mapping = aes(x=gc,y=2^log2,col=`selected genes`),size=.5,se=F,show.legend = F,method = 'loess') +
-        scale_fill_hue(l=80) + scale_y_log10(limits=ylims) 
+        scale_fill_hue(l=70) + scale_y_log10(limits=ylims) 
     m <- targets[gene!='Background',median(depth)]
     
     ### alleleratio ---------------------------------------------------------    
@@ -1367,11 +1369,11 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         geom_point(data=snps[is.na(`selected genes`) & plot==T],mapping = aes(x=bin,y=allele_ratio),fill='#606060',col='#202020',shape=21,size=1,alpha=alpha) +
         geom_point(data=snps[!is.na(`selected genes`)],mapping = aes(x=bin,y=allele_ratio,fill=`selected genes`),
                    show.legend = F,shape=21,col='#00000050',size=1) +
-        scale_fill_hue(l=80)
+        scale_fill_hue(l=70)
     # add mutations here
     if (!is.null(somatic)) if (nrow(somatic)>0) {
         p$order_alleleratio <- p$order_alleleratio + 
-            geom_point(data=somatic,mapping = aes(x=bin,y=AF.T,shape=`point mutation`,col=`point mutation`),fill='red',size=.6,show.legend = F) +
+            geom_point(data=somatic,mapping = aes(x=bin,y=AF.T,shape=`point mutation`,col=`point mutation`),fill='red',size=.8,show.legend = F) +
             scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22)) +
             scale_color_manual(values = c('snv'='darkred','ins'='red','del'='red','other'='darkred'))
         
@@ -1392,7 +1394,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                                  fill='white',
                                  col='darkred',
                                  nudge_y = labels$nudge,
-                                 size=2,
+                                 size=2.2,
                                  box.padding = .1,
                                  label.padding = .1,
                                  point.padding = .1,
@@ -1404,7 +1406,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     # germline mutations
     if (!is.null(germline)) if (nrow(germline)>0) {
         p$order_alleleratio <- p$order_alleleratio + 
-            geom_point(data=germline,mapping = aes(x=bin,y=allele_ratio,shape=`point mutation`),col='grey',fill='blue',size=.6,show.legend = F) +
+            geom_point(data=germline,mapping = aes(x=bin,y=allele_ratio,shape=`point mutation`),col='grey',fill='blue',size=.8,show.legend = F) +
             scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22))
         
         labels <- germline[SYMBOL %in% cancergenes$gene & CANONICAL=='YES' & IMPACT %in% c('MODERATE','HIGH')]
@@ -1424,7 +1426,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                                  fill='white',
                                  col='blue',
                                  nudge_y = labels$nudge,
-                                 size=2,
+                                 size=2.2,
                                  box.padding = .1,
                                  label.padding = .1,
                                  point.padding = .1,
@@ -1465,7 +1467,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     
     if (!is.null(somatic)) if (nrow(somatic)>0) p$depth_alleleratio <- p$depth_alleleratio + 
         geom_point(data=somatic,mapping = aes(x=2^somatic$log2,y=AF.T,shape=`point mutation`,col=`point mutation`),
-                   fill='red',size=.3,show.legend = F) +
+                   fill='red',size=.5,show.legend = F) +
         scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22)) +
         scale_color_manual(values = c('snv'='darkred','ins'='red','del'='red','other'='darkred'))
     
@@ -1477,7 +1479,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                    fill='#606060',col='#202020',size=1,shape=21,alpha=alpha) +
         geom_point(data=targets[!is.na(`selected genes`)],mapping = aes(x=bin,y=depth,fill=`selected genes`),
                    show.legend = F,shape=21,col='#00000050',size=1) +
-        scale_fill_hue(l=80) + scale_y_log10(limits=depthlimits) +
+        scale_fill_hue(l=70) + scale_y_log10(limits=depthlimits) +
         scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
                            limits=c(0,max(targets$bin)),
                            expand = c(.01,.01),labels = chroms$chromosome) +
@@ -1505,7 +1507,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         #                 mapping = aes(x=gc,y=depth)) +
         # geom_smooth(data=targets[!is.na(`selected genes`) & !is.na(log2)],
         #             mapping = aes(x=gc,y=depth,col=`selected genes`),size=.5,se=F,show.legend = F,method = 'loess') +
-        scale_fill_hue(l=80) + scale_y_log10(limits=depthlimits)
+        scale_fill_hue(l=70) + scale_y_log10(limits=depthlimits)
     
     ## finalize ---------------------------------------------------------    
     
@@ -1520,9 +1522,11 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     )
     if (!is.null(purecn)) stats <- paste0(stats,'         PureCN: ',round(purecn$Ploidy,1),'N, ',100*purecn$Purity,'%')
     
+    date <- format(Sys.time(), "%a %b %e %Y, %H:%M")
+    
     pa <- plot_annotation(
-        title = paste(basename(name),'         ',date(),'         ',stats),
-        caption = paste('Frankenplot 2.0 on',format(Sys.time(), "%a %b %e %Y, %H:%M"))
+        title = paste(basename(opts$output),'         ',date,'         ',stats),
+        caption = paste('Frankenplot 2.0 on',date, '')
     )
     
     if (!wgs) { # Targeted:
@@ -1564,7 +1568,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
 
 chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline=NULL) {
     
-    # if all targets > 500, assume WGS.
+    # if all targets > 500 bases, assume WGS.
     wgs <- all(targets$end-targets$start > 500)
     
     alpha <- .8
@@ -1585,10 +1589,10 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
     cancergenes_here <- merge(cancergenes_here,cancergenemeans,all=T,by='gene')[order(gene)]
     rm(cancergenemeans)
     cancergenes_here <- cancergenes_here[chromosome==chr][order(start)]
-    cancergenes_here[,nudge:=.25]
-    cancergenes_here[seq(2,.N,2),nudge:=-.25]
-    cancergenes_here[mean< -.2,nudge:=.25]
-    cancergenes_here[mean>.3,nudge:=-.25]
+    cancergenes_here[,nudge:=.2]
+    cancergenes_here[seq(2,.N,2),nudge:=-.2]
+    cancergenes_here[mean< -.2,nudge:=.2]
+    cancergenes_here[mean>.3,nudge:=-.2]
     cancergenes_here[,`selected genes`:=factor(gene)]
     
     # SVs
@@ -1599,8 +1603,8 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
     #targets[,smooth_log2:=runmed(log2,k=25),by=chromosome]
     #snps[,smooth_log2:=targets$smooth_log2[bin]]
     ylims <- c(.4,2)
-    ylims[1] <- min(ylims[1],min(2^targets[chromosome==chr]$smooth_log2*.9))
-    ylims[2] <- max(ylims[2],max(2^targets[chromosome==chr]$smooth_log2*1.1))
+    ylims[1] <- min(ylims[1],min(2^targets[chromosome==chr]$smooth_log2*.8))
+    ylims[2] <- max(ylims[2],max(2^targets[chromosome==chr]$smooth_log2*1.2))
     
     y_nudge <- -.38 # where to put gene labels
     m <- median(targets[chromosome==chr]$log2,na.rm=T)
@@ -1648,7 +1652,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
                    mapping = aes(x=start_pos,y=2^log2)) +
         geom_point(data=segments[chromosome==chr],col='green',size=.4,shape=18,
                    mapping = aes(x=end_pos,y=2^log2)) +
-        scale_fill_hue(l=80) + 
+        scale_fill_hue(l=70) + 
         scale_x_continuous(breaks = seq(0,max(targets[chromosome==chr]$end+10e6),10e6),
                            #minor_breaks = seq(0,max(targets[chromosome==chr]$end+10e6),1e6),
                            expand = c(.01,.01),
@@ -1686,11 +1690,11 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
                    mapping = aes(x=start,y=.5,fill=`selected genes`),shape=1,col='#FFFFFF',size=.1,show.legend = F) +
         geom_point(data=snps[chromosome==chr & is.na(`selected genes`)],mapping = aes(x=start,y=allele_ratio),fill='#606060',col='#202020',shape=21,size=1,alpha=alpha) +
         geom_point(data=snps[chromosome==chr & !is.na(`selected genes`)],mapping = aes(x=start,y=allele_ratio,fill=`selected genes`),shape=21,col='#00000050',size=1,show.legend = F) +
-        scale_fill_hue(l=80)
+        scale_fill_hue(l=70)
     # somatic mutations
     if (!is.null(somatic)) if (nrow(somatic[chromosome==chr])>0) {
         p$pos_alleleratio <- p$pos_alleleratio + 
-            geom_point(data=somatic[chromosome==chr],mapping = aes(x=start,y=AF.T,shape=`point mutation`,col=`point mutation`),fill='red',size=1,show.legend = F) +
+            geom_point(data=somatic[chromosome==chr],mapping = aes(x=start,y=AF.T,shape=`point mutation`,col=`point mutation`),fill='red',size=1.2,show.legend = F) +
             scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22)) +
             scale_color_manual(values = c('snv'='darkred','ins'='red','del'='red','other'='darkred'))
         
@@ -1711,7 +1715,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
                                  fill='white',
                                  col='darkred',
                                  nudge_y = labels$nudge,
-                                 size=2,
+                                 size=2.2,
                                  box.padding = .1,
                                  label.padding = .1,
                                  point.padding = .1,
@@ -1743,7 +1747,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
                                  fill='white',
                                  col='blue',
                                  nudge_y = labels[chromosome==chr]$nudge,
-                                 size=2,
+                                 size=2.2,
                                  box.padding = .1,
                                  label.padding = .1,
                                  point.padding = .1,
@@ -1790,7 +1794,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
                    mapping = aes(x=start,y=2^log2)) +
         geom_point(data=segments[chromosome==chr],col='green',size=.4,shape=18,
                    mapping = aes(x=end,y=2^log2)) +
-        scale_fill_hue(l=80) + scale_y_log10(limits=ylims) +
+        scale_fill_hue(l=70) + scale_y_log10(limits=ylims) +
         scale_x_continuous(expand = c(.01,.01),
                            limits = c(min(targets[chromosome==chr]$bin),
                                       max(targets[chromosome==chr]$bin))) +
@@ -1825,11 +1829,11 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
                    mapping = aes(x=bin,y=.5,fill=`selected genes`),shape=1,col='#FFFFFF',size=.1,show.legend = F) +
         geom_point(data=snps[chromosome==chr & is.na(`selected genes`)],mapping = aes(x=bin,y=allele_ratio),fill='#606060',col='#202020',shape=21,size=1,alpha=alpha) +
         geom_point(data=snps[chromosome==chr & !is.na(`selected genes`)],mapping = aes(x=bin,y=allele_ratio,fill=`selected genes`),shape=21,col='#00000050',size=1,show.legend = F) +
-        scale_fill_hue(l=80)
+        scale_fill_hue(l=70)
     # somatic mutations
     if (!is.null(somatic)) if (nrow(somatic[chromosome==chr])>0) {
         p$order_alleleratio <- p$order_alleleratio + 
-            geom_point(data=somatic[chromosome==chr],mapping = aes(x=bin,y=AF.T,shape=`point mutation`,col=`point mutation`),fill='red',size=1,show.legend = F) +
+            geom_point(data=somatic[chromosome==chr],mapping = aes(x=bin,y=AF.T,shape=`point mutation`,col=`point mutation`),fill='red',size=1.2,show.legend = F) +
             scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22)) +
             scale_color_manual(values = c('snv'='darkred','ins'='red','del'='red','other'='darkred'))
         
@@ -1850,7 +1854,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
                                  fill='white',
                                  col='darkred',
                                  nudge_y = labels$nudge,
-                                 size=2,
+                                 size=2.2,
                                  box.padding = .1,
                                  label.padding = .1,
                                  point.padding = .1,
@@ -1882,7 +1886,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
                                  fill='white',
                                  col='blue',
                                  nudge_y = labels[chromosome==chr]$nudge,
-                                 size=2,
+                                 size=2.2,
                                  box.padding = .1,
                                  label.padding = .1,
                                  point.padding = .1,
@@ -1916,7 +1920,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
         guides(shape=guide_legend(override.aes=list(size=2)))
     
     pa <- plot_annotation(
-        title = paste(basename(name),'       Chromosome',chr),
+        title = paste(basename(opts$output),'       Chromosome',chr),
     )
     
     if (!wgs) {
@@ -1947,14 +1951,13 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
 
 
 # Run rmarkdown script ----------------------------------------------------
-
+#save.image('ws.Rdata')
 
 rmarkdown::render(
     input = opts$frankenplot_Rmd,
     output_file = opts$output,
     envir = parent.frame()
 )
-
 
 
 
