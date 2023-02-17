@@ -393,7 +393,7 @@ rule germline_generateIGVnav:
         "zcat {input.vcf} | awk -F '\\t' -v OFS='\\t' '{{if ($1 ~ /^#/) print $0; else if ($5 != \"*\") {{print $0}}}}' " 
         " | bcftools view --exclude 'FORMAT/AD=\".\"' -Ov > {params.tmp_vcf} && "
         "generateIGVnavInput.py {params.tmp_vcf} {input.oncokb} {params.vcftype} "
-        " --cgc {input.cgc} --output {output} 2> {log} && "
+        " --cgc {input.cgcann} --output {output} 2> {log} && "
         "rm -v {params.tmp_vcf} "
         
 
