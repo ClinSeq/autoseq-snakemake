@@ -20,7 +20,8 @@
     "qdnaseq_background": "genome/qdnaseq_background.Rdata", 
     "reference_dict": "genome/human_g1k_v37_decoy.dict", 
     "reference_genome": "genome/human_g1k_v37_decoy.fasta", 
-    "swegene_common": "variants/swegen_common.vcf.gz", 
+    "swegene_common": "variants/swegen_common.vcf.gz",
+    "pop_vcf": "variants/swegen_common_pop.vcf.gz", 
     "pondir":"pondir",
     "no_chr":"genome/human_g1k_v37_decoy_non_chr.bed",
     "gene_track": "gene_track_output.csv",
@@ -46,6 +47,20 @@
             "targets-interval_list": "intervals/targets/probio_comprehensive3.interval_list", 
             "targets-interval_list-slopped20": "intervals/targets/probio_comprehensive3.slopped20.interval_list",
             "jumble-ref": "intervals/targets/comprehensive3_baits_twist.bed.reference.RDS"
+        }
+    },
+    "wgs": {
+        "cnvkit-ref": "wgs/cnvkit/wgs_reference.N.cnn",
+        "jumble-ref": "intervals/targets/wgs.reference.RDS",
+        "targets": {
+                "bed": "wgs/targets/",
+                "interval_list": "wgs/intervals/"
+        },
+        "hartwig": {
+                "ensembl-dir": "wgs/hartwig/ensembl/",
+                "actionable-somatic-panel-bed": "wgs/hartwig/ActionableCodingPanel.somatic.37.bed.gz",
+                "known-hotspots-somatic-vcf": "wgs/hartwig/KnownHotspots.somatic.37.vcf.gz",
+                "NA12878-highconf-bed": "wgs/hartwig/NA12878_GIAB_highconf_IllFB-IllGATKHC-CG-Ion-Solid_ALLCHROM_v3.2.2_highconf.bed.gz"
         }
     }, 
     "ts_regions": "intervals/ts_regions.bed", 

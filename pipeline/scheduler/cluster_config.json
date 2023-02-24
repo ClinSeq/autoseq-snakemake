@@ -13,5 +13,17 @@
     },
     "gatk4_mutect2": {
         "time": "60:00:00"
+    },
+    "gatk3_indelrealigner": {
+        "time": "100:00:00"
+    },
+    "vcf_add_sample": {
+        "time": "60:00:00"
+    },
+    "vardict_somatic": {
+        "time": "60:00:00"
+    },
+    "svcaller_run": {
+        "time": "60:00:00"
     }
 }

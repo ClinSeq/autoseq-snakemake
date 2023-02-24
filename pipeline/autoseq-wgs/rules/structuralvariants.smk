@@ -1,0 +1,315 @@
+
+
+rule svcaller_run:
+    input:
+        bam = outdir + "/bams/{sample}_nodups.bam",
+        reference = reference["reference_genome"]
+    output:
+        gtf = outdir + "/svs/{sample}-{events}.gtf",
+        bam = outdir + "/svs/{sample}-{events}.bam",
+    params: 
+        tmpdir = params['scratch']
+    threads: params['svcaller']['threads']
+    log:
+        outdir + "/logs/svs/svcaller-{sample}-{events}.log"
+    shell:
+        "source activate svcallerenv  && "
+        "svcaller run-all --tmp-dir {params.tmpdir} --event-type {wildcards.events} "
+        " --fasta-filename {input.reference}  "
+        " --filter-event-overlap "
+        " --events-gtf {output.gtf} "
+        " --events-bam {output.bam} {input.bam} 2> {log} && "
+        "source deactivate"
+
+
+rule sveffect_predict:
+    input:
+        unpack(lambda wildcards: get_capture_svs(wildcards, outdir)),
+        ts_regions = reference["ts_regions"],
+        ar_regions = reference["ar_regions"],
+        fusion_regions = reference["fusion_regions"]
+    output:
+        combined_bed = outdir + "/svs/{sample}_combined.bed",
+        effects_json = outdir + "/svs/{sample}_effects.json"
+    threads: params['svcaller']['threads']
+    log:
+        outdir + "/logs/svs/sveffect-{sample}.log"
+    shell:
+        "source activate svcallerenv  && "
+        "sveffect make-bed --del-gtf {input.DEL} "
+        " --dup-gtf {input.DUP} "
+        " --inv-gtf {input.INV} " 
+        " --tra-gtf {input.TRA} "
+        " {output.combined_bed} 2> {log} &&  "
+        "sveffect predict --ts-regions {input.ts_regions} "
+        " --ar-regions {input.ar_regions} "
+        " --fusion-regions {input.fusion_regions} "
+        " --effects-filename {output.effects_json} "
+        " {output.combined_bed} 2>> {log} && "
+        "source deactivate"
+
+
+rule generateIGVnavInput_svcaller:
+    input:
+        capture_to_results[NORMAL_CAPTURE].svs.values(),
+        capture_to_results[CANCER_CAPTURE].svs.values()
+    output:
+        svcaller_normal = "{}/svs/igv/{}_svcaller.mut".format(outdir, NORMAL_CAPTURE_STR),
+        svcaller_tumor = "{}/svs/igv/{}_svcaller.mut".format(outdir, CANCER_CAPTURE_STR)
+    params:
+        cancer_str = CANCER_CAPTURE_STR,
+        normal_str = NORMAL_CAPTURE_STR,
+        svs_dir = outdir + "/svs/",
+        igvout = outdir + "/svs/igv/"
+    shell:
+        "generateIGVnavInput_SV.py --input {params.svs_dir} "
+                        " --sdid {params.cancer_str} "
+                        " --tool svcaller " 
+                        " --vcftype somatic " 
+                        " --output {params.igvout} && "
+        "generateIGVnavInput_SV.py --input {params.svs_dir} "
+                        " --sdid {params.normal_str} "
+                        " --tool svcaller " 
+                        " --vcftype normal "
+                        " --output {params.igvout} "
+
+
+# rule svaba_svcalling:
+#     input:
+#         normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
+#         tumor_bam = capture_to_results[CANCER_CAPTURE].bamfile,
+#         reference = reference["bwaIndex"]
+#     output:
+#         somatic = "{}/svs/svaba/{}-{}.svaba.somatic.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+#         germline = "{}/svs/svaba/{}-{}.svaba.germline.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+#     params:
+#         prefix = "{}/svs/svaba/{}-{}".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+#         tmpdir = params['scratch']
+#     threads: params['svaba']['threads']
+#     log:
+#         outdir + "/logs/svs/svaba-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+#     shell:
+#         "svaba run -t {input.tumor_bam} "
+#         " -n {input.normal_bam} "
+#         " -G {input.reference} "
+#         " -p {threads} -a {params.prefix} 2> {log} "
+#         " && samtools sort -T {params.tmpdir} "
+#         " {params.prefix}.contigs.bam "
+#         " -o {params.prefix}.contigs.sort.bam && "
+#         "samtools index {params.prefix}.contigs.sort.bam"
+
+
+# rule svaba_annotate:
+#     input:
+#         somatic = "{}/svs/svaba/{}-{}.svaba.somatic.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+#         germline = "{}/svs/svaba/{}-{}.svaba.germline.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+#     output:
+#         somatic = "{}/svs/svaba/{}-{}.svaba.somatic.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+#         germline = "{}/svs/svaba/{}-{}.svaba.germline.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+#     shell:
+#         "annotate_svaba.py {input.somatic} > {output.somatic} && "
+#         "annotate_svaba.py {input.germline} > {output.germline} "
+
+
+# rule generateIGVnavInput_svaba:
+#     input:
+#         somatic = "{}/svs/svaba/{}-{}.svaba.somatic.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+#         germline = "{}/svs/svaba/{}-{}.svaba.germline.annotated.sv.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+#     output:
+#         somatic = "{}/svs/igv/{}-{}_somatic_svaba.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+#         germline = "{}/svs/igv/{}-{}_germline_svaba.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+#     params:
+#         cancer_str = CANCER_CAPTURE_STR,
+#         normal_str = NORMAL_CAPTURE_STR,
+#         prefix = outdir + "/svs/igv/{}-{}".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+#         sdid = "-".join(NORMAL_CAPTURE_STR.split("-")[1:3])
+#     shell:
+#         "generateIGVnavInput_SV.py --input {input.somatic} "
+#                 " --sdid {params.sdid}  --tool svaba "
+#                 " --vcftype somatic  --output {params.prefix}  && "        
+#         "generateIGVnavInput_SV.py --input {input.germline} "
+#                 " --sdid {params.sdid}  --tool svaba " 
+#                 " --vcftype germline --output {params.prefix} "
+
+
+
+# rule lumpy_svcalling:
+#     input:
+#         normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
+#         tumor_bam = capture_to_results[CANCER_CAPTURE].bamfile
+#     output:
+#         normal_discordants_bam = "{}/svs/lumpy/{}-discordants.bam".format(outdir, NORMAL_CAPTURE_STR),
+#         tumor_discordants_bam = "{}/svs/lumpy/{}-discordants.bam".format(outdir, CANCER_CAPTURE_STR),
+#         normal_splitters_bam = "{}/svs/lumpy/{}-splitters.bam".format(outdir, NORMAL_CAPTURE_STR),
+#         tumor_splitters_bam = "{}/svs/lumpy/{}-splitters.bam".format(outdir, CANCER_CAPTURE_STR),
+#         vcf = "{}/svs/lumpy/{}-{}-lumpy.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+#     params:
+#         tmpdir = os.path.join(params['scratch'], 
+#                     "lumpy-{}".format(str(uuid.uuid4())))
+#     threads: params['lumpy']['threads']
+#     log:
+#         outdir + "/logs/svs/lumpy-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+#     shell:
+#         "source activate gatk_3 && "
+#         "samtools view -@ {threads} -b -F 1294 {input.normal_bam}  "
+#         "  > {output.normal_discordants_bam}  && "
+#         "samtools view -@ {threads} -b -F 1294 {input.tumor_bam}  "
+#         "  > {output.tumor_discordants_bam} &&  "
+#         "samtools view -@ {threads} -h {input.normal_bam} "
+#         " | extractSplitReads_BwaMem -i stdin | "
+#         " samtools view -@ {threads} -Sb -  > {output.normal_splitters_bam} && "
+#         "samtools view -@ {threads} -h {input.tumor_bam} "
+#         " | extractSplitReads_BwaMem -i stdin | "
+#         " samtools view -@ {threads} -Sb -  > {output.tumor_splitters_bam}  && "
+#         "lumpyexpress -T {params.tmpdir} -B {input.tumor_bam},{input.normal_bam} "
+#         " -S {output.tumor_splitters_bam},{output.normal_splitters_bam}  " 
+#         " -D {output.tumor_discordants_bam},{output.normal_discordants_bam} "
+#         " -o {output.vcf} 2> {log} && "
+#         "samtools index {output.normal_discordants_bam} && "
+#         "samtools index {output.normal_splitters_bam} && "
+#         "samtools index {output.tumor_discordants_bam} && "
+#         "samtools index {output.tumor_splitters_bam} "
+
+
+# rule generateIGVnavInput_lumpy:
+#     input:
+#         vcf = "{}/svs/lumpy/{}-{}-lumpy.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+#     output:
+#         "{}/svs/igv/{}-{}_lumpy_len500_SU24.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+#         "{}/svs/igv/{}-{}_lumpy_len1k_SU50.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+#     params:
+#         prefix = outdir + "/svs/igv/{}-{}".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+#         sdid = "-".join(NORMAL_CAPTURE_STR.split("-")[1:3])
+#     shell:
+#         "generateIGVnavInput_SV.py --input {input.vcf} "
+#                 " --sdid {params.sdid}  --tool lumpy " 
+#                 " --vcftype somatic --output {params.prefix} "
+
+
+rule gridss_svcalling_normal:
+    input:
+        normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
+        reference = reference["bwaIndex"]
+    output:
+        assembly_bam = "{}/svs/gridss/{}-assembly.bam".format(outdir, NORMAL_CAPTURE_STR),
+        vcf = "{}/svs/gridss/{}-gridss.vcf".format(outdir, NORMAL_CAPTURE_STR)
+    params:
+        gridss_jar = os.environ.get('GRIDSS_JAR'),
+        jvmheap = '10g',
+        workdir = directory("{}/svs/gridss/".format(outdir))
+    threads: params['gridss']['threads']
+    log:
+        outdir + "/logs/svs/gridss-{}.log".format(NORMAL_CAPTURE_STR)
+    shell:
+        "source activate gridss-env && "
+        "gridss --reference {input.reference} "
+        " --jvmheap {params.jvmheap} "
+        " --jar {params.gridss_jar} "
+        " --assembly {output.assembly_bam} "
+        " --threads {threads} --steps  ALL "
+        " --workingdir {params.workdir} "
+        " --output {output.vcf}.gz {input.normal_bam} 2> {log} && "
+        " gzip -d {output.vcf}.gz "
+
+
+rule gridss_svcalling_somatic:
+    input:
+        normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
+        tumor_bam = capture_to_results[CANCER_CAPTURE].bamfile,
+        reference = reference["bwaIndex"]
+    output:
+        assembly_bam = "{}/svs/gridss/{}-{}-assembly.bam".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        vcf = "{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    params:
+        gridss_jar = os.environ.get('GRIDSS_JAR'),
+        jvmheap = '10g',
+        workdir = directory("{}/svs/gridss/".format(outdir))
+    threads: params['gridss']['threads']
+    log:
+        outdir + "/logs/svs/gridss-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    shell:
+        "source activate gridss-env && "
+        "gridss --reference {input.reference} "
+        " --jvmheap {params.jvmheap} "
+        " --jar {params.gridss_jar} "
+        " --assembly {output.assembly_bam} "
+        " --threads {threads} --steps  ALL "
+        " --workingdir {params.workdir} "
+        " --output {output.vcf} {input.normal_bam} {input.tumor_bam} 2> {log}"
+
+
+rule gridss_somatic_filter:
+    input:
+        vcf = "{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    output:
+        vcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    params:
+        pondir = reference["pondir"],
+        script_dir = os.environ.get('GRIDSS_SCRIPT'),
+        plotdir = "{}/svs/gridss/".format(outdir)
+    threads: params["gridss_filter"]["threads"]
+    log:
+        outdir + "/logs/svs/gridss-somatic-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    shell:
+        "source activate gridss-env && "
+        "Rscript {params.script_dir}gridss_somatic_filter -p {params.pondir} "
+        " -i {input.vcf} "
+        " -o {output.vcf} "
+        " --plotdir {params.plotdir} -s {params.script_dir} 2> {log} && "
+        " bgzip -d {output.vcf}.bgz "
+
+
+rule gridss_svannotation:
+    input:
+        somatic_vcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        normal_vcf = "{}/svs/gridss/{}-gridss.vcf".format(outdir, NORMAL_CAPTURE_STR)
+    output:
+        somatic_vcf = "{}/svs/gridss/{}-{}-gridss.filtered.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        normal_vcf = "{}/svs/gridss/{}-gridss.svannoated.vcf".format(outdir, NORMAL_CAPTURE_STR)
+    threads: params["gridss_filter"]["threads"]
+    log:
+        outdir + "/logs/svs/gridss-svannotation-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    shell:
+        "source activate gridss-env && "
+        "gridss_svannotate.R -v {input.somatic_vcf} -o {output.somatic_vcf} 2> {log} && "
+        "gridss_svannotate.R -v {input.normal_vcf} -o {output.normal_vcf} 2>> {log} "
+
+
+
+rule generateIGVnavInput_gridss:
+    input:
+        somatic_vcf = "{}/svs/gridss/{}-{}-gridss.filtered.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        normal_vcf = "{}/svs/gridss/{}-gridss.svannoated.vcf".format(outdir, NORMAL_CAPTURE_STR)
+    output:
+        somatic_mut = "{}/svs/igv/{}_somatic_pass_gridss.mut".format(outdir, CANCER_CAPTURE_STR),
+        normal_mut = "{}/svs/igv/{}_normal_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR)
+    params:
+        nprefix = outdir + "/svs/igv/{}".format(NORMAL_CAPTURE_STR),
+        tprefix = outdir + "/svs/igv/{}".format(CANCER_CAPTURE_STR),
+        sdid = "-".join(CANCER_CAPTURE_STR.split("-")[1:3])
+    shell:
+        "generateIGVnavInput_SV.py --input {input.normal_vcf} "
+                " --sdid {params.sdid} --tool gridss " 
+                " --vcftype normal --output {params.nprefix} && "
+        "generateIGVnavInput_SV.py --input {input.somatic_vcf} "
+                " --sdid {params.sdid} --tool gridss " 
+                " --vcftype somatic --output {params.tprefix} "
+
+
+rule annotate_generateIGVnavInput:
+    input:
+        svcaller_normal = "{}/svs/igv/{}_svcaller.mut".format(outdir, NORMAL_CAPTURE_STR),
+        svcaller_tumor = "{}/svs/igv/{}_svcaller.mut".format(outdir, CANCER_CAPTURE_STR),
+        genes = reference["genes_bed"],
+        targets = reference['sv_filter'],
+        gridss_somatic = "{}/svs/igv/{}_somatic_pass_gridss.mut".format(outdir, CANCER_CAPTURE_STR),
+        gridss_normal = "{}/svs/igv/{}_normal_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR)
+    output:
+        "{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    params:
+        svs_dir = "{}/svs/igv/".format(outdir),
+        capture_kit_id = CANCER_CAPTURE.capture_kit_id
+    shell:        
+        "generateIGVnavInput_SV.py --input {params.svs_dir} "
+                " --annotBed {input.genes} --target {params.capture_kit_id} {input.targets} "
+                " --output {output} "
