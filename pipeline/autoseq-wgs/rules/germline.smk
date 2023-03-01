@@ -96,10 +96,11 @@ rule gatk3_mergevcf:
 rule germline_generateIGVnav:
     input:
         vcf = "{}/variants/{}-all.germline.vep.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
-        oncokb = reference['oncokb']
+        oncokb = reference['oncokb'],
+        cgcann = reference['cgcann']
     output:
         "{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR)
     params:
         vcftype = "germline"
     shell:
-        "generateIGVnavInput.py {input.vcf} {input.oncokb} {params.vcftype} --wgs --output {output} "
+        "generateIGVnavInput.py {input.vcf} {input.oncokb} {params.vcftype} --wgs --cgc {input.cgcann} --output {output} "
