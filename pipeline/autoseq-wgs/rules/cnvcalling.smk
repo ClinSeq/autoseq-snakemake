@@ -142,8 +142,8 @@ rule franken_plot:
         tumor_cnr = capture_to_results[CANCER_CAPTURE].cnr,
         normal_cns = capture_to_results[NORMAL_CAPTURE].cns,
         normal_cnr = capture_to_results[NORMAL_CAPTURE].cnr,
-        vcf_add_sample = "{}/variants/{}-and-{}.germline-variants-with-somatic-afs.vcf.gz".format(
-            outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        vcf_add_sample = "{}/variants/haplotypecaller/{}-{}.haplotypecaller-joint-calling.vcf.gz".format(
+                          outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         purecn_csv = "{}/purecn/{}.csv".format(outdir, CANCER_CAPTURE_STR),
         purecn_genes_csv = "{}/purecn/{}_genes.csv".format(outdir, CANCER_CAPTURE_STR),
         purecn_variants_csv = "{}/purecn/{}_variants.csv".format(outdir, CANCER_CAPTURE_STR),
