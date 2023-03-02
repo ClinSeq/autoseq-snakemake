@@ -68,9 +68,10 @@ rule samtools_merge_normal:
         expand(outdir + "/bams/" + normal_barcode + "/{prefix}.bam", prefix = nfq_prefix)
     output:
         outdir + "/bams/{}.bam".format(normal_barcode)
+    threads: 8
     run:
         bamfiles = " ".join(input)
-        shell("samtools merge -c -p {output} {bamfiles}")
+        shell("samtools merge -@ {threads} -c -p {output} {bamfiles}")
         shell("samtools index {output} ")
         shell("rm {bamfiles}")
 
@@ -80,9 +81,10 @@ rule samtools_merge_tumor:
         expand(outdir + "/bams/" + tumor_barcode + "/{prefix}.bam", prefix = tfq_prefix)
     output:
         outdir + "/bams/{}.bam".format(tumor_barcode)
+    threads: 8
     run:
         bamfiles = " ".join(input)
-        shell("samtools merge -c -p {output} {bamfiles}")
+        shell("samtools merge -@ {threads} -c -p {output} {bamfiles}")
         shell("samtools index {output} ")
         shell("rm {bamfiles}")
 
@@ -100,10 +102,10 @@ rule samtools_splitbam:
         bam = input.mapped
         prefix = os.path.basename(bam).split('.bam')[0]
         no_chr = output_dir + "/{}.nochr.bam".format(prefix)
-        cmd = "samtools view  -L {} -o {} {} ".format(input.nochr, no_chr, bam)
+        cmd = "samtools view -@ {} -L {} -o {} {} ".format(threads, input.nochr, no_chr, bam)
         shell(cmd)
         for chr in all_chromosomes:
-            run_cmd = "samtools view -b {} {} ".format(bam, chr) + \
+            run_cmd = "samtools view -@ {} -b {} {} ".format(threads, bam, chr) + \
                         " > {}/{}.{}.bam && ".format(output_dir, prefix, chr) + \
                         " samtools index {}/{}.{}.bam ".format(output_dir, prefix, chr)
             shell(run_cmd)
@@ -176,9 +178,10 @@ rule samtools_merge_realign:
         outdir + "/bams/split_targets/bam/{sample}.nochr.bam"
     output:
         outdir + "/bams/{sample}_realigned.bam"
+    threads: 8
     run:
         bamfiles = " ".join(input)
-        shell("samtools merge -c -p {output} {bamfiles}")
+        shell("samtools merge -@ {threads} -c -p {output} {bamfiles}")
         shell("samtools index {output} ")
         shell("rm {bamfiles}") 
 

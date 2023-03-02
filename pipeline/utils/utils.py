@@ -182,6 +182,20 @@ def get_cnvkitref(wildcards, reference):
     return cnvkit_ref
 
 
+def get_jumbleref(wildcards, reference):
+    """
+    return jumble reference file
+    """
+    unique_capture = extract_unique_capture(wildcards.sample)
+    capture_name = get_capture_name(unique_capture.capture_kit_id)
+
+    jumble_ref = None
+    if 'jumble-ref' in reference['targets'][capture_name]:
+        jumble_ref = reference['targets'][capture_name]['jumble-ref']
+
+    return jumble_ref
+
+
 def get_capture_svs(wildcards, outdir):
     """
     return gtfs dictionary for given sample

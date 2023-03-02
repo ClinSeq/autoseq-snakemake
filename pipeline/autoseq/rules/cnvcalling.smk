@@ -56,7 +56,7 @@ cancer_sample = [_ for _ in all_clinseq_barcodes if '-T-' in _ or '-CFDNA-' in _
 rule jumblerun_cnv:
     input:
         bam = outdir + "/bams/{sample}_nodups.bam",
-        reference = reference['targets'][capture_name]['jumble-ref']
+        reference = lambda wildcards: get_jumbleref(wildcards, reference)
     output:
         cns = outdir + "/cnv/{sample}.cns",
         cnr = outdir + "/cnv/{sample}.cnr",

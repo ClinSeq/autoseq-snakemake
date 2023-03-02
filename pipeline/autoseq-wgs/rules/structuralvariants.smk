@@ -133,59 +133,6 @@ rule generateIGVnavInput_svcaller:
 
 
 
-# rule lumpy_svcalling:
-#     input:
-#         normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
-#         tumor_bam = capture_to_results[CANCER_CAPTURE].bamfile
-#     output:
-#         normal_discordants_bam = "{}/svs/lumpy/{}-discordants.bam".format(outdir, NORMAL_CAPTURE_STR),
-#         tumor_discordants_bam = "{}/svs/lumpy/{}-discordants.bam".format(outdir, CANCER_CAPTURE_STR),
-#         normal_splitters_bam = "{}/svs/lumpy/{}-splitters.bam".format(outdir, NORMAL_CAPTURE_STR),
-#         tumor_splitters_bam = "{}/svs/lumpy/{}-splitters.bam".format(outdir, CANCER_CAPTURE_STR),
-#         vcf = "{}/svs/lumpy/{}-{}-lumpy.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
-#     params:
-#         tmpdir = os.path.join(params['scratch'], 
-#                     "lumpy-{}".format(str(uuid.uuid4())))
-#     threads: params['lumpy']['threads']
-#     log:
-#         outdir + "/logs/svs/lumpy-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
-#     shell:
-#         "source activate gatk_3 && "
-#         "samtools view -@ {threads} -b -F 1294 {input.normal_bam}  "
-#         "  > {output.normal_discordants_bam}  && "
-#         "samtools view -@ {threads} -b -F 1294 {input.tumor_bam}  "
-#         "  > {output.tumor_discordants_bam} &&  "
-#         "samtools view -@ {threads} -h {input.normal_bam} "
-#         " | extractSplitReads_BwaMem -i stdin | "
-#         " samtools view -@ {threads} -Sb -  > {output.normal_splitters_bam} && "
-#         "samtools view -@ {threads} -h {input.tumor_bam} "
-#         " | extractSplitReads_BwaMem -i stdin | "
-#         " samtools view -@ {threads} -Sb -  > {output.tumor_splitters_bam}  && "
-#         "lumpyexpress -T {params.tmpdir} -B {input.tumor_bam},{input.normal_bam} "
-#         " -S {output.tumor_splitters_bam},{output.normal_splitters_bam}  " 
-#         " -D {output.tumor_discordants_bam},{output.normal_discordants_bam} "
-#         " -o {output.vcf} 2> {log} && "
-#         "samtools index {output.normal_discordants_bam} && "
-#         "samtools index {output.normal_splitters_bam} && "
-#         "samtools index {output.tumor_discordants_bam} && "
-#         "samtools index {output.tumor_splitters_bam} "
-
-
-# rule generateIGVnavInput_lumpy:
-#     input:
-#         vcf = "{}/svs/lumpy/{}-{}-lumpy.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
-#     output:
-#         "{}/svs/igv/{}-{}_lumpy_len500_SU24.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
-#         "{}/svs/igv/{}-{}_lumpy_len1k_SU50.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
-#     params:
-#         prefix = outdir + "/svs/igv/{}-{}".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
-#         sdid = "-".join(NORMAL_CAPTURE_STR.split("-")[1:3])
-#     shell:
-#         "generateIGVnavInput_SV.py --input {input.vcf} "
-#                 " --sdid {params.sdid}  --tool lumpy " 
-#                 " --vcftype somatic --output {params.prefix} "
-
-
 rule gridss_svcalling_normal:
     input:
         normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
@@ -303,13 +250,14 @@ rule annotate_generateIGVnavInput:
         genes = reference["genes_bed"],
         targets = reference['sv_filter'],
         gridss_somatic = "{}/svs/igv/{}_somatic_pass_gridss.mut".format(outdir, CANCER_CAPTURE_STR),
-        gridss_normal = "{}/svs/igv/{}_normal_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR)
+        gridss_normal = "{}/svs/igv/{}_normal_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR),
+        cgcann = reference['cgcann']
     output:
         "{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
         svs_dir = "{}/svs/igv/".format(outdir),
         capture_kit_id = CANCER_CAPTURE.capture_kit_id
     shell:        
-        "generateIGVnavInput_SV.py --input {params.svs_dir} "
+        "generateIGVnavInput_SV.py --input {params.svs_dir}  --cgc {input.cgcann} "
                 " --annotBed {input.genes} --target {params.capture_kit_id} {input.targets} "
                 " --output {output} "

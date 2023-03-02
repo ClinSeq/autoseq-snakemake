@@ -309,7 +309,8 @@ rule annotate_generateIGVnavInput:
         lumpy_len500 = "{}/svs/igv/{}-{}_lumpy_len500_SU24.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         lumpy_1k = "{}/svs/igv/{}-{}_lumpy_len1k_SU50.mut".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         genes = reference["genes_bed"],
-        targets = reference['sv_filter']
+        targets = reference['sv_filter'],
+        cgcann = reference['cgcann']
         # gridss_somatic = "{}/svs/igv/{}_somatic_pass_gridss.mut".format(outdir, CANCER_CAPTURE_STR),
     output:
         "{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
@@ -317,6 +318,6 @@ rule annotate_generateIGVnavInput:
         svs_dir = "{}/svs/igv/".format(outdir),
         capture_kit_id = CANCER_CAPTURE.capture_kit_id
     shell:        
-        "generateIGVnavInput_SV.py --input {params.svs_dir} "
-                " --annotBed {input.genes} --target {params.capture_kit_id} {input.targets} "
-                " --output {output} "
+        "generateIGVnavInput_SV.py --input {params.svs_dir} --cgc {input.cgcann} "
+            " --annotBed {input.genes} --target {params.capture_kit_id} {input.targets} "
+            " --output {output} "

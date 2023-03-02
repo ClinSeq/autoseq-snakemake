@@ -37,7 +37,7 @@ capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
 rule jumblerun_cnv:
     input:
         bam = outdir + "/bams/{sample}_nodups.bam",
-        reference = reference['targets'][capture_name]['jumble-ref']
+        reference = lambda wildcards: get_jumbleref(wildcards, reference)
     output:
         cns = outdir + "/cnv/{sample}.cns",
         cnr = outdir + "/cnv/{sample}.cnr",
