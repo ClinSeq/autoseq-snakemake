@@ -112,9 +112,6 @@ output_file = open(args.output, 'w')
 variants = list()
 cancer_genes = dict()
 
-if args.cgc:
-    cancer_genes = json.load(open(args.cgc, 'r'))
-
 if args.vardict:
     vardict_vcf = vcf.Reader(open(args.vardict, 'r'))
 
