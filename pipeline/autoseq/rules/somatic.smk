@@ -294,10 +294,12 @@ rule somatic_generateIGVnav:
     input:
         somatic = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
         vardict_vcf = "{}/variants/vardict/{}-{}.vardict-somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-        oncokb = reference['oncokb']
+        oncokb = reference['oncokb'],
+        cgcann = reference['cgcann']
     output:
         "{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     params:
         vcftype = "somatic"
     shell:
-        "generateIGVnavInput.py {input.somatic} {input.oncokb} {params.vcftype} --output {output} "
+        "generateIGVnavInput.py {input.somatic} {input.oncokb} "
+        " {params.vcftype} --cgc {input.cgcann} --output {output} "

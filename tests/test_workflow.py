@@ -11,6 +11,7 @@ class TestWorkflow(unittest.TestCase):
     def setUp(self):
         self.snakefile = "pipeline/autoseq/Snakefile"
         self.to_snakefile = "pipeline/tumor_only/Snakefile"
+        self.wgs_snakefile = "pipeline/autoseq-wgs/Snakefile"
         self.config = "tests/test_config.yml"
         self.config_noumi = "tests/test_config_non_umi.yml"
         self.reference = "tests/dummy_genome/dummy_genome.json"
@@ -64,5 +65,13 @@ class TestWorkflow(unittest.TestCase):
 
         with patch("pipeline.utils.utils.open", mocked_open, create=True):
             self.assertTrue(snakemake.snakemake(self.to_snakefile,
+                                                configfiles=[self.config],
+                                                dryrun=True))
+
+    @patch("pipeline.utils.utils.os.path.isfile")
+    def test_autoseq_wgs_valid(self, mock_isfile):
+        mock_isfile.return_value = True
+        with patch("pipeline.utils.utils.open", create=True):
+            self.assertTrue(snakemake.snakemake(self.wgs_snakefile,
                                                 configfiles=[self.config],
                                                 dryrun=True))

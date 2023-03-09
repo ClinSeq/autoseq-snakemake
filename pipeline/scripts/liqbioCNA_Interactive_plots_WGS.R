@@ -694,7 +694,7 @@ save.image('fr_T.Rdata')
     }, silent=T)
     
     ## File name here:
-    destnation_folder <- dirname(opts$plot_png)
+    destination_folder <- dirname(opts$plot_png)
     png(filename = opts$plot_png,width=11.7,height=8.3,units="in",res=600)
     
     ## set screens
@@ -1145,7 +1145,7 @@ save.image('fr_N.Rdata')
     }, silent=T)
     
     ## File name here:
-    destnation_folder <- dirname(opts$plot_png)
+    destination_folder <- dirname(opts$plot_png)
     png(filename = opts$plot_png_normal,width=11.7,height=8.3,units="in",res=600)
     ## set screens
     split.screen(figs=c(2,1))
@@ -1726,7 +1726,7 @@ save.image('ws.Rdata')
 #
 #p<-ggplotly(p, tooltip = "text")
 #x<-plotly_json(p, FALSE)
-#filename<-paste(destnation_folder,'/',purity$Sampleid,"_normal.json", sep="")
+#filename<-paste(destination_folder,'/',purity$Sampleid,"_normal.json", sep="")
 #write(x, filename)
 
 #############end################################
@@ -1747,6 +1747,8 @@ if (exists('alf')) if (!is.null(alf)) if (nrow(alf)>300e3) {
 ######################## alt allele ratio #################
 xlim=c(1,3000)
 ylim=(0:1)
+
+destination_folder <- dirname(opts$plot_png)
 
 p<-ggplot()+
     ggtitle("Variants")   +
@@ -1816,7 +1818,7 @@ p<-ggplot(t)+
 
 p<-ggplotly(p, tooltip = "text")
 x<-plotly_json(p, FALSE)
-filename<-paste(destnation_folder, '/' , purity$Sampleid,"_plot_AR.json", sep="")
+filename<-paste(destination_folder, '/' , purity$Sampleid,"_plot_AR.json", sep="")
 write(x, filename)
 
 ###########################################SNP Allelic ratio####################################################
@@ -2216,7 +2218,7 @@ p2 <- p2 + geom_segment(data=data2_exon, mapping=aes(x = data2_exon$cumstart, y 
 
 x <- subplot(p, p1, p2, shareX = TRUE, nrows=3, which_layout = 1)
 x<-plotly_json(x, FALSE)
-filename<-paste(destnation_folder,'/',purity$Sampleid,"_snpratio.json", sep="")
+filename<-paste(destination_folder,'/',purity$Sampleid,"_snpratio.json", sep="")
 write(x, filename)
 
 # ###########scatter plot with 24 boxes allelic frequency####################
@@ -2261,7 +2263,7 @@ write(x, filename)
 # 
 # p4<-ggplotly(p4, width = 1024, height = 800)
 # x<-plotly_json(p4, FALSE)
-# filename<-paste(destnation_folder,'/', purity$Sampleid,"_scatter_plot.json", sep="")
+# filename<-paste(destination_folder,'/', purity$Sampleid,"_scatter_plot.json", sep="")
 # write(x, filename)
 # 
 # ########draw density plot ###################
@@ -2290,7 +2292,7 @@ write(x, filename)
 # 
 # p5 <-ggplotly(p5)
 # x<-plotly_json(p5, FALSE)
-# filename<-paste(destnation_folder, '/', purity$Sampleid,"_scatter_density_plot.json", sep="")
+# filename<-paste(destination_folder, '/', purity$Sampleid,"_scatter_density_plot.json", sep="")
 # write(x, filename)
 # #####redraw the density plot ######
 # ix <- alf$chromosome %in% c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,'X', 'Y', 'MT')
@@ -2322,6 +2324,6 @@ write(x, filename)
 # 
 #   p3 <-ggplotly(p3, width = 200, height = 1024)
 #   x1<-plotly_json(p3, FALSE)
-#   filename<-paste(destnation_folder, '/', purity$Sampleid,"_snpratio_density.json", sep="")
+#   filename<-paste(destination_folder, '/', purity$Sampleid,"_snpratio_density.json", sep="")
 #   write(x1, filename)
 # ####################################

@@ -359,7 +359,8 @@ rule somatic_generateIGVnav:
     input:
         somatic = "{}/variants/{}-{}-all.somatic.gnomADg.noSNPs.brcaEx.vep.vcf.gz".format(outdir, 
                                                             CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-        oncokb = reference['oncokb']
+        oncokb = reference['oncokb'],
+        cgcann = reference['cgcann']
     output:
         "{}/{}-somatic-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR)
     params:
@@ -370,14 +371,16 @@ rule somatic_generateIGVnav:
         "{}/logs/variants/{}.somatic_generateIGVnav.log".format(outdir, CANCER_CAPTURE_STR)
     shell:
         "zcat {input.somatic} > {params.tmp_vcf} && "
-        "generateIGVnavInput.py {params.tmp_vcf} {input.oncokb} {params.vcftype} --output {output} 2> {log} "
+        "generateIGVnavInput.py {params.tmp_vcf} {input.oncokb} {params.vcftype} "
+        " --cgc {input.cgcann} --output {output} 2> {log} "
 
 
 rule germline_generateIGVnav:
     input:
         vcf = "{}/variants/{}-merged.germline.split_norm.brcaEx.vep.vcf.gz".format(outdir, 
                                                                         CANCER_CAPTURE_STR),
-        oncokb = reference['oncokb']
+        oncokb = reference['oncokb'],
+        cgcann = reference['cgcann']
     output:
         "{}/{}-germline-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR)
     params:
@@ -389,7 +392,8 @@ rule germline_generateIGVnav:
     shell:
         "zcat {input.vcf} | awk -F '\\t' -v OFS='\\t' '{{if ($1 ~ /^#/) print $0; else if ($5 != \"*\") {{print $0}}}}' " 
         " | bcftools view --exclude 'FORMAT/AD=\".\"' -Ov > {params.tmp_vcf} && "
-        "generateIGVnavInput.py {params.tmp_vcf} {input.oncokb} {params.vcftype} --output {output} 2> {log} && "
+        "generateIGVnavInput.py {params.tmp_vcf} {input.oncokb} {params.vcftype} "
+        " --cgc {input.cgcann} --output {output} 2> {log} && "
         "rm -v {params.tmp_vcf} "
         
 
