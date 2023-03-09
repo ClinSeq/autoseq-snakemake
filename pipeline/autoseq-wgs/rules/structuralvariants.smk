@@ -182,7 +182,8 @@ rule gridss_svcalling_somatic:
         " --assembly {output.assembly_bam} "
         " --threads {threads} --steps  ALL "
         " --workingdir {params.workdir} "
-        " --output {output.vcf} {input.normal_bam} {input.tumor_bam} 2> {log}"
+        " --output {output.vcf} {input.normal_bam} {input.tumor_bam} 2> {log} && "
+        " mv {params.workdir}*nodups.bam.gridss.working/*sv.bam* {params.workdir} "
 
 
 rule gridss_somatic_filter:
@@ -220,7 +221,6 @@ rule gridss_svannotation:
         "source activate gridss-env && "
         "gridss_svannotate.R -v {input.somatic_vcf} -o {output.somatic_vcf} 2> {log} && "
         "gridss_svannotate.R -v {input.normal_vcf} -o {output.normal_vcf} 2>> {log} "
-
 
 
 rule generateIGVnavInput_gridss:

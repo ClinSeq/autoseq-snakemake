@@ -272,31 +272,6 @@ rule somaticseq_merge:
         " tabix -p vcf {output.all_somatic} 2> {log} "
 
 
-# rule vcf_add_sample:
-#     input:
-#         germline_vcf = "{}/variants/{}-all.germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
-#         tumor_bam = cancerBam
-#     output:
-#         vcf = "{}/variants/{}-and-{}.germline-variants-with-somatic-afs.vcf.gz".format(
-#             outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
-#     params:
-#         tumorid = CANCER_SAMPLE_STR,
-#         tmpdir = os.path.join(params['scratch'], 
-#                     "vcfaddsample-{}".format(str(uuid.uuid4())))
-#     threads: params['vcfaddsample']['threads']
-#     log:
-#        "{}/logs/{}-{}.vcf_add_sample.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR) 
-#     shell:
-#         "vcf_filter.py --no-filtered  {input.germline_vcf} "
-#         " sq --site-quality 5 | bgzip > {params.tmpdir}.vcf.gz && "
-#         " vcf_add_sample.py --filter_hom --samplename {params.tumorid}  " 
-#         " {params.tmpdir}.vcf.gz  {input.tumor_bam} "
-#         " | bgzip > {output.vcf} 2> {log} && "
-#         " tabix -p vcf {output.vcf} && " 
-#         " rm {params.tmpdir}.vcf.gz "
-
-
-
 rule somatic_generateIGVnav:
     input:
         somatic = "{}/variants/{}-{}-all.somatic.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
