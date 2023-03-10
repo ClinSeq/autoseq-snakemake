@@ -1,6 +1,6 @@
 {
     "__default__": {
-        "time": "24:00:00",
+        "time": "100:00:00",
         "output": "logs/cluster/{rule}.out",
         "error": "logs/cluster/{rule}.err",
         "partition": "core"
@@ -12,7 +12,10 @@
         "time": "100:00:00"
     },
     "gatk4_mutect2": {
-        "time": "60:00:00"
+        "time": "72:00:00"
+    },
+    "somaticseq_merge": {
+    	"time": "100:00:00"
     },
     "gatk3_indelrealigner": {
         "time": "100:00:00"
