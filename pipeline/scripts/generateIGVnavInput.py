@@ -218,7 +218,7 @@ for record in vcf_reader:
         # filter for WGS samples
         if wgs and num_tools >= 2 and tumor_alt >= 5 and (impact == 'HIGH' or impact == 'MODERATE'):
             output_file.write('\t'.join(map(str, [record.CHROM, record.POS-1, record.POS,
-                                                  record.REF, record.ALT, '', '', '', gene, 
+                                                  record.REF, record.ALT, '', '', '', gene, ensembl_id,
                                                   impact, canonical_trans['Consequence'], canonical_trans['Feature'],
                                                   canonical_trans['HGVSc'], canonical_trans['HGVSp'], tumor_dp, tumor_alt, 
                                                   tumor_vaf, normal_dp, normal_alt, normal_vaf, 
@@ -264,7 +264,7 @@ for record in vcf_reader:
                     normal_vaf = float(normal_alt)/float(normal_dp)
 
                     output_file.write('\t'.join(map(str, [record.CHROM, record.POS-1, record.POS,
-                                                          record.REF, record.ALT, '', '', '', gene, 
+                                                          record.REF, record.ALT, '', '', '', gene, ensembl_id,
                                                           impact, canonical_trans['Consequence'], 
                                                           canonical_trans['Feature'], canonical_trans['HGVSc'],
                                                           canonical_trans['HGVSp'], normal_dp , normal_alt,
