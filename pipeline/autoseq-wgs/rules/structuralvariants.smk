@@ -192,8 +192,7 @@ rule gridss_somatic_filter:
         vcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
         pondir = reference["pondir"],
-        script_dir = os.environ.get('GRIDSS_SCRIPT'),
-        plotdir = "{}/svs/gridss/".format(outdir)
+        script_dir = os.environ.get('GRIDSS_SCRIPT')
     threads: params["gridss_filter"]["threads"]
     log:
         outdir + "/logs/svs/gridss-somatic-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
@@ -202,7 +201,7 @@ rule gridss_somatic_filter:
         "Rscript {params.script_dir}gridss_somatic_filter -p {params.pondir} "
         " -i {input.vcf} "
         " -o {output.vcf} "
-        " --plotdir {params.plotdir} -s {params.script_dir} 2> {log} && "
+        " -s {params.script_dir} 2> {log} && "
         " bgzip -d {output.vcf}.bgz "
 
 
