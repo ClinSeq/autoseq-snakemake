@@ -60,6 +60,7 @@ class GenerateSymlink():
                 symlinks = (('variants','.vep.vcf.gz'),('bams','nodups.bam'), ('bams','nodups.bam.bai'),
                             ('bams','clipoverlap.bam'), ('bams','clipoverlap.bai'), ('cnv', '.bedGraph'),
                             ('variants', '.bedGraph'), ('svs/igv','.mut'), ('svs','.gtf'), 
+                            ('svs/gridss', 'nodups.sv.bam'), ('svs/gridss', 'assembly.bam'),
                             ('svs','.bam'), ('svs','.bai'), ('', 'igvnav-input.txt')) + args
             else:
                 symlinks = (('variants','.vep.vcf'),('bams','nodups.bam'), ('bams','nodups.bam.bai'),
@@ -108,9 +109,9 @@ class GenerateSymlink():
                      ]
             
         if self.is_wgs:
-            all_files.extend([('sv', 'bam_cfdna', '.*-CFDNA-.*(DEL|DUP|INV|TRA).bam$'),
-                              ('sv', 'bam_normal', '^(?:(?!CFDNA).)*(DEL|DUP|INV|TRA).bam$'),
-                              ('snps', 'vep', '.*.all.(somatic|germline).vep.vcf.gz$')
+            all_files.extend([('snps', 'vep', '.*.all.(somatic|germline).vep.vcf.gz$'),
+                              ('sv', 'bam_gridss_normal', '^(?:(?!CFDNA|T).)*.bam$'),
+                              ('sv', 'bam_gridss_tumor', '.*-(T|CFDNA).*.bam$')
                             ])
         else:
             all_files.extend([('sv', 'bam_cfdna', '.*-CFDNA-.*(DEL|DUP|INV|TRA|contigs.sort).bam$'),
