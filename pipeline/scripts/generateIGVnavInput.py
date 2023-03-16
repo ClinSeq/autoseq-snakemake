@@ -251,7 +251,8 @@ for record in vcf_reader:
                                                           brcaEx, oncogenicity, cgcann])) + "\n")
         
         # WGS filter
-        if (wgs and len(record.ALT) == 1 and impact == 'HIGH' and not gene.startswith("HLA")) or 'pathogenic' in clinsig:
+        if (wgs and len(record.ALT) == 1 and impact == 'HIGH' and not gene.startswith("HLA")) \
+            or (wgs and 'pathogenic' in clinsig):
             
             if cgcann == '':
                 continue
