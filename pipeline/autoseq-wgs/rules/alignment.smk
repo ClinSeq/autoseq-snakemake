@@ -202,13 +202,13 @@ rule picard_markdups:
     log: outdir + "/logs/picard_markdups_{sample}.log"
     shell:
         "picard {params.java_options} -Djava.io.tmpdir={params.tmpdir} "
-                " MarkDuplicatesSpark  "
-                " INPUT={input.bam} " 
-                " METRICS_FILE={output.metrics} "
-                " {params.extra} "
-                " OUTPUT=/dev/stdout REMOVE_DUPLICATES={params.rmdups} "
-                " | samtools sort -m 2G -@ {threads} -T {params.tmpdir} -o {output.bam} 2> {log}"
-                " && samtools index {output.bam} "
+            " MarkDuplicates "
+            " INPUT={input.bam} " 
+            " METRICS_FILE={output.metrics} "
+            " {params.extra} "
+            " OUTPUT=/dev/stdout REMOVE_DUPLICATES={params.rmdups} "
+            " | samtools sort -m 2G -@ {threads} -T {params.tmpdir} -o {output.bam} 2> {log}"
+            " && samtools index {output.bam} "
 
 
 rule rm_interbamfiles:
