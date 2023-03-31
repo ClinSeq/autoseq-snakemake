@@ -107,18 +107,18 @@ for sample in all_clinseq_barcodes:
     # svs results to sample capture
     for event in ["DEL", "DUP", "INV", "TRA"]:
         if '-N-' in sample:
-            capture_to_results[NORMAL_CAPTURE].svs[event] = "{}/svs/{}-{}.gtf".format(outdir, sample, event)
+            capture_to_results[NORMAL_CAPTURE].svs[event] = "{}/svs/svcaller/{}-{}.gtf".format(outdir, sample, event)
         
         if '-CFDNA-' in sample or '-T-' in sample:
-            capture_to_results[CANCER_CAPTURE].svs[event] = "{}/svs/{}-{}.gtf".format(outdir, sample, event)
+            capture_to_results[CANCER_CAPTURE].svs[event] = "{}/svs/svcaller/{}-{}.gtf".format(outdir, sample, event)
 
 
 if 'ALL' in steps or 'variants' in steps:
     VARIANTS = list()
     VARIANTS.append("{}/variants/{}-all.germline.vep.vcf.gz".format(outdir, NORMAL_CAPTURE_STR))
     VARIANTS.append("{}/variants/{}-{}-all.somatic.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
-    VARIANTS.append(expand(outdir + "/svs/{sample}-{events}.gtf", sample=all_clinseq_barcodes, events=["DEL", "DUP", "INV", "TRA"]))
-    VARIANTS.append(expand(outdir + "/svs/{sample}_effects.json", sample=all_clinseq_barcodes))
+    VARIANTS.append(expand(outdir + "/svs/svcaller/{sample}-{events}.gtf", sample=all_clinseq_barcodes, events=["DEL", "DUP", "INV", "TRA"]))
+    # VARIANTS.append(expand(outdir + "/svs/{sample}_effects.json", sample=all_clinseq_barcodes))
     VARIANTS.append("{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 
     IGV = list()
