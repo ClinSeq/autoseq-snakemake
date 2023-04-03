@@ -896,29 +896,37 @@ if (!t_only) { # normal
 
 
 # match t_strvs to cancergenes
-sv_ranges <- makeGRangesFromDataFrame(t_strvs)
-suppressWarnings(overlap <- findOverlaps(sv_ranges,cancergeneranges))
-t_strvs[queryHits(overlap),cancergene:=cancergenes[subjectHits(overlap)]$gene]
+if (!is.null(t_strvs)) {
+    try({
+        sv_ranges <- makeGRangesFromDataFrame(t_strvs)
+        suppressWarnings(overlap <- findOverlaps(sv_ranges,cancergeneranges))
+        t_strvs[queryHits(overlap),cancergene:=cancergenes[subjectHits(overlap)]$gene]
 
-# match t_strvs to bins
-binranges <- makeGRangesFromDataFrame(bins[,.(chromosome,start=start,end=end)])
-overlap <- findOverlaps(sv_ranges,binranges)
-t_strvs[queryHits(overlap),bin:=bins[subjectHits(overlap)]$bin]
+        # match t_strvs to bins
+        binranges <- makeGRangesFromDataFrame(bins[,.(chromosome,start=start,end=end)])
+        overlap <- findOverlaps(sv_ranges,binranges)
+        t_strvs[queryHits(overlap),bin:=bins[subjectHits(overlap)]$bin]
 
+        # match n_strvs to cancergenes
+        if (!t_only && !is.null(n_strvs)) {
+            
+            sv_ranges <- makeGRangesFromDataFrame(n_strvs)
+            suppressWarnings(overlap <- findOverlaps(sv_ranges,cancergeneranges))
+            n_strvs[queryHits(overlap),cancergene:=cancergenes[subjectHits(overlap)]$gene]
+            
+            # match n_strvs to bins_n
+            binranges <- makeGRangesFromDataFrame(bins_n[,.(chromosome,start=start,end=end)])
+            overlap <- findOverlaps(sv_ranges,binranges)
+            n_strvs[queryHits(overlap),bin:=bins_n[subjectHits(overlap)]$bin]
+            
+        }
+    }, silent = T)
 
-# match n_strvs to cancergenes
-if (!t_only) {
-    
-    sv_ranges <- makeGRangesFromDataFrame(n_strvs)
-    suppressWarnings(overlap <- findOverlaps(sv_ranges,cancergeneranges))
-    n_strvs[queryHits(overlap),cancergene:=cancergenes[subjectHits(overlap)]$gene]
-    
-    # match n_strvs to bins_n
-    binranges <- makeGRangesFromDataFrame(bins_n[,.(chromosome,start=start,end=end)])
-    overlap <- findOverlaps(sv_ranges,binranges)
-    n_strvs[queryHits(overlap),bin:=bins_n[subjectHits(overlap)]$bin]
-    
 }
+
+
+
+
 # # match n_strvs to bins
 # binranges <- makeGRangesFromDataFrame(bins[,.(chromosome,start=start,end=end)])
 # overlap <- findOverlaps(sv_ranges,binranges)
