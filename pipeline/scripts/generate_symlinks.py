@@ -60,8 +60,9 @@ class GenerateSymlink():
                 symlinks = (('variants','.vep.vcf.gz'),('bams','nodups.bam'), ('bams','nodups.bam.bai'),
                             ('bams','clipoverlap.bam'), ('bams','clipoverlap.bai'), ('cnv', '.bedGraph'),
                             ('variants', '.bedGraph'), ('svs/igv','.mut'), ('svs','.gtf'), 
-                            ('svs/gridss', 'nodups.sv.bam'), ('svs/gridss', 'assembly.bam'),
-                            ('svs','.bam'), ('svs','.bai'), ('', 'igvnav-input.txt')) + args
+                            ('svs/gridss', 'bam.sv.bam'), ('svs/gridss', 'bam.sv.bam.csi'), 
+                            ('svs/gridss', 'assembly.bam'), ('svs','.bam'), ('svs','.bai'),
+                            ('', 'igvnav-input.txt')) + args
             else:
                 symlinks = (('variants','.vep.vcf'),('bams','nodups.bam'), ('bams','nodups.bam.bai'),
                             ('bams','clipoverlap.bam'), ('bams','clipoverlap.bai'), ('variants','.vep.vcf'), 
@@ -110,8 +111,8 @@ class GenerateSymlink():
             
         if self.is_wgs:
             all_files.extend([('snps', 'vep', '.*.all.(somatic|germline).vep.vcf.gz$'),
-                              ('sv', 'bam_gridss_normal', '^(?:(?!CFDNA|T).)*.bam$'),
-                              ('sv', 'bam_gridss_tumor', '.*-(T|CFDNA).*.bam$')
+                              ('sv', 'bam_gridss_normal', '^(?:(?!CFDNA|T).)*nodups.bam.sv.bam$'),
+                              ('sv', 'bam_gridss_tumor', '.*-(T|CFDNA).*nodups.bam.sv.bam$')
                             ])
         else:
             all_files.extend([('sv', 'bam_cfdna', '.*-CFDNA-.*(DEL|DUP|INV|TRA|contigs.sort).bam$'),
@@ -273,7 +274,8 @@ class GenerateSymlink():
                     ('sv', 'mut_svaba_somatic'),  ('sv', 'mut_svcaller_cfdna'), ('sv', 'mut_gridss_cfdna'),
                     ('sv', 'mut_lumpy'), ('sv', 'gtf_cfdna'),
                     ('sv', 'mut_svaba_germline'), ('sv', 'mut_svcaller_normal'), ('sv', 'mut_gridss_normal'),
-                    ('sv', 'gtf_normal')]
+                    ('sv', 'gtf_normal'), ('sv', 'bam_gridss_normal'), 
+                    ('sv', 'bam_gridss_tumor')]
 
         sv_resource= ""
         sv_bam_panel= ""
@@ -294,7 +296,7 @@ class GenerateSymlink():
                     continue
 
                 #sv_resource += resource_path.format(path_name=full_path)
-
+                
                 if each_track.startswith('bam'):
                     sv_resource += resource_path.format(path_name=full_path)
                     regex = ".*-(N|CFDNA|T)-.*(DEL|DUP|INV|TRA).bam$"
