@@ -56,7 +56,7 @@ cancer_sample = [_ for _ in all_clinseq_barcodes if '-T-' in _ or '-CFDNA-' in _
 rule jumblerun_cnv:
     input:
         bam = outdir + "/bams/{sample}_nodups.bam",
-        reference = reference['targets'][capture_name]['jumble-ref']
+        reference = lambda wildcards: get_jumbleref(wildcards, reference)
     output:
         cns = outdir + "/cnv/{sample}.cns",
         cnr = outdir + "/cnv/{sample}.cnr",
@@ -147,3 +147,59 @@ rule liqbiocna_plot:
                     "  --purity_json {output.purity_json} "
                     "  --gene_track {input.gene_track} && "
         " source deactivate ")
+
+
+rule franken_plot:
+    input:
+        capture_to_results[NORMAL_CAPTURE].svs.values(),
+        capture_to_results[CANCER_CAPTURE].svs.values(),
+        germline_vcf = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR),
+        somatic_vcf = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        tumor_cns = capture_to_results[CANCER_CAPTURE].cns,
+        tumor_cnr = capture_to_results[CANCER_CAPTURE].cnr,
+        normal_cns = capture_to_results[NORMAL_CAPTURE].cns,
+        normal_cnr = capture_to_results[NORMAL_CAPTURE].cnr,
+        vcf_add_sample = "{}/variants/{}-and-{}.germline-variants-with-somatic-afs.vcf.gz".format(
+            outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        purecn_csv = "{}/purecn/{}.csv".format(outdir, CANCER_CAPTURE_STR),
+        purecn_genes_csv = "{}/purecn/{}_genes.csv".format(outdir, CANCER_CAPTURE_STR),
+        purecn_variants_csv = "{}/purecn/{}_variants.csv".format(outdir, CANCER_CAPTURE_STR),
+        purecn_loh_csv = "{}/purecn/{}_loh.csv".format(outdir, CANCER_CAPTURE_STR),
+        gene_track = reference['gene_track']
+    output:
+        frankenplot = "{}/qc/{}-{}-frankenplot.html".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    params:
+        normal_del = capture_to_results[NORMAL_CAPTURE].svs['DEL'],
+        normal_dup = capture_to_results[NORMAL_CAPTURE].svs['DUP'],
+        normal_inv = capture_to_results[NORMAL_CAPTURE].svs['INV'],
+        normal_tra = capture_to_results[NORMAL_CAPTURE].svs['TRA'],
+        tumor_del = capture_to_results[CANCER_CAPTURE].svs['DEL'],
+        tumor_dup = capture_to_results[CANCER_CAPTURE].svs['DUP'],
+        tumor_inv = capture_to_results[CANCER_CAPTURE].svs['INV'],
+        tumor_tra = capture_to_results[CANCER_CAPTURE].svs['TRA'],
+        frankenplot_rmd = os.environ.get('FRANKEN_RMD')
+    threads: params['liqbiocna']['threads']
+    run:
+        shell("source activate jumble-env && " 
+        "frankenscript.R  --tumor_cnr {input.tumor_cnr} "
+                    "  --tumor_cns {input.tumor_cns} "
+                    "  --normal_cnr {input.normal_cnr} "
+                    "  --normal_cns {input.normal_cns} "
+                    "  --frankenplot_Rmd {params.frankenplot_rmd} "
+                    "  --het_snps_vcf {input.vcf_add_sample} "
+                    "  --purecn_csv {input.purecn_csv} "
+                    "  --purecn_genes_csv {input.purecn_genes_csv} "
+                    "  --purecn_loh_csv {input.purecn_loh_csv} "
+                    "  --purecn_variants_csv {input.purecn_variants_csv} "
+                    "  --svcaller_T_DEL {params.tumor_del} "
+                    "  --svcaller_T_DUP {params.tumor_dup} "
+                    "  --svcaller_T_INV {params.tumor_inv} "
+                    "  --svcaller_T_TRA {params.tumor_tra} "
+                    "  --svcaller_N_DEL {params.normal_del} "
+                    "  --svcaller_N_DUP {params.normal_dup} "
+                    "  --svcaller_N_INV {params.normal_inv} "
+                    "  --svcaller_N_TRA {params.normal_tra} "
+                    "  --germline_mut_vcf {input.germline_vcf} "
+                    "  --somatic_mut_vcf {input.somatic_vcf} "
+                    "  --output {output.frankenplot} || true ")
+        shell("touch  {output.frankenplot} ")

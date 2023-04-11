@@ -189,10 +189,11 @@ def launch(context, ref, samples, outdir, libdir,
         bind_paths.add(os.path.dirname(os.path.dirname(config_dict['reference'])))
 
 
-    if pipeline == "tumor_only":
-        snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tumor_only/Snakefile')
+    if pipeline in ["autoseq", "tumor_only", "autoseq-wgs"]:
+        snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), '{}/Snakefile'.format(pipeline))
     else:
-        snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'autoseq/Snakefile')
+        Log.error(f"{pipeline} does not exist")
+        raise click.Abort()
 
     autoseq = Pipeline(snakefile = snakefile, 
                       config = out_configpath, 

@@ -30,10 +30,10 @@ rule splitbam_umimapped_1:
         bam = input.mapped
         prefix = os.path.basename(bam).split('.bam')[0]
         no_chr = output_dir + "/{}.nochr.bam".format(prefix)
-        cmd = "samtools view  -L {} -o {} {} ".format(input.nochr, no_chr, bam)
+        cmd = "samtools view -@ {} -L {} -o {} {} ".format(threads, input.nochr, no_chr, bam)
         shell(cmd)
         for chr in all_chromosomes:
-            run_cmd = "samtools view -b {} {} ".format(bam, chr) + \
+            run_cmd = "samtools view -@ {} -b {} {} ".format(threads, bam, chr) + \
                         " > {}/{}.{}.bam && ".format(output_dir, prefix, chr) + \
                         " samtools index {}/{}.{}.bam ".format(output_dir, prefix, chr)
             shell(run_cmd)
@@ -52,10 +52,10 @@ rule splitbam_umimapped_2:
         bam = input.mapped
         prefix = os.path.basename(bam).split('.bam')[0]
         no_chr = output_dir + "/{}.nochr.bam".format(prefix)
-        cmd = "samtools view  -L {} -o {} {} ".format(input.nochr, no_chr, bam)
+        cmd = "samtools view -@ {} -L {} -o {} {} ".format(threads, input.nochr, no_chr, bam)
         shell(cmd)
         for chr in all_chromosomes:
-            run_cmd = "samtools view -b {} {} ".format(bam, chr) + \
+            run_cmd = "samtools view -@ {} -b {} {} ".format(threads, bam, chr) + \
                         " > {}/{}.{}.bam && ".format(output_dir, prefix, chr) + \
                         " samtools index {}/{}.{}.bam ".format(output_dir, prefix, chr)
             shell(run_cmd)
@@ -67,11 +67,12 @@ rule samtools_merge_realign_1:
         expand(outdir + "/bams/split_targets/bam/{{sample}}_realigned-1.{chr}.bam", chr = all_chromosomes),
         outdir + "/bams/split_targets/bam/{sample}_umimapped.nochr.bam"
     output:
-        outdir + "/bams/{sample}_realigned-1.bam"
+        bam = outdir + "/bams/{sample}_realigned-1.bam",
+        bai = outdir + "/bams/{sample}_realigned-1.bam.bai",
     run:
         bamfiles = " ".join(input)
-        shell("samtools merge -c -p {output} {bamfiles}")
-        shell("samtools index {output} ")
+        shell("samtools merge -c -p {output.bam} {bamfiles}")
+        shell("samtools index {output.bam} ")
         shell("rm {bamfiles}")        
 
 
@@ -80,9 +81,10 @@ rule samtools_merge_realign_2:
         expand(outdir + "/bams/split_targets/bam/{{sample}}_realigned-2.{chr}.bam", chr = all_chromosomes),
         outdir + "/bams/split_targets/bam/{sample}_umimapped-2.nochr.bam"
     output:
-        outdir + "/bams/{sample}_realigned-2.bam"
+        bam = outdir + "/bams/{sample}_realigned-2.bam",
+        bai = outdir + "/bams/{sample}_realigned-2.bam.bai",
     run:
         bamfiles = " ".join(input)
-        shell("samtools merge -c -p {output} {bamfiles}")
-        shell("samtools index {output} ")
+        shell("samtools merge -c -p {output.bam} {bamfiles}")
+        shell("samtools index {output.bam} ")
         shell("rm {bamfiles}")

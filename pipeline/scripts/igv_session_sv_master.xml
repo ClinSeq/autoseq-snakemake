@@ -22,7 +22,7 @@
     	{add_capture_bed}
         <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;0.0;255,255,255;0,0,178" fontSize="10" id="/nfs/PROBIO/for_igv/AR_exon_genomic_locations.bed" name="AR_exon_genomic_locations.bed" visible="true"/>
         <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;5.0;255,255,255;0,0,178" fontSize="10" id="/nfs/PROBIO/for_igv/consensusBlacklist.bed" name="consensusBlacklist.bed" visible="true"/>
-	    <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;1798.0;255,255,255;0,0,178" fontSize="10" id="/nfs/PROBIO/for_igv/simple_repeats.bed" name="tb_simpleRepeat" visible="true"/>
+	    <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;1798.0;255,255,255;0,0,178" fontSize="10" id="/nfs/PROBIO/for_igv/simple_repeats.bed" name="tb_simpleRepeat" expand="false" visible="true"/>
 	{add_sv_gtf_track}
     </Panel>
     <PanelLayout dividerFractions="0.14373464373464373,0.36977886977886976,0.6326781326781327"/>
