@@ -29,10 +29,10 @@ args <- rbind(
     c("purecn_genes_csv", NA, 1, "character", "PureCN result _genes.csv"),
     c("purecn_loh_csv", NA, 1, "character", "PureCN result _loh.csv"),
     c("purecn_variants_csv", NA, 1, "character", "PureCN result _variants.csv"),
-    c("svcaller_T_DEL", NA, 1, "character", "Tumor SV caller DEL-events.gtf"),
-    c("svcaller_T_DUP", NA, 1, "character", "Tumor SV caller DUP-events.gtf"),
-    c("svcaller_T_INV", NA, 1, "character", "Tumor SV caller INV-events.gtf"),
-    c("svcaller_T_TRA", NA, 1, "character", "Tumor SV caller TRA-events.gtf"),
+    c("svcaller_T_DEL", NA, 2, "character", "Tumor SV caller DEL-events.gtf"),
+    c("svcaller_T_DUP", NA, 2, "character", "Tumor SV caller DUP-events.gtf"),
+    c("svcaller_T_INV", NA, 2, "character", "Tumor SV caller INV-events.gtf"),
+    c("svcaller_T_TRA", NA, 2, "character", "Tumor SV caller TRA-events.gtf"),
     c("svcaller_N_DEL", NA, 2, "character", "Normal SV caller DEL-events.gtf"),
     c("svcaller_N_DUP", NA, 2, "character", "Normal SV caller DUP-events.gtf"),
     c("svcaller_N_INV", NA, 2, "character", "Normal SV caller INV-events.gtf"),
@@ -1180,10 +1180,10 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes[,start:=start-1e3][,end
             # stored for use with VEP-annotated
             all_alf <- alf
             
-            # filter unwanted for SNP allele ratio
-            alf <- alf[width(vcf)==1 & str_detect(names(vcf),'rs')]
-            alf <- alf[chromosome %in% c(1:22,'X','Y')]
-            alf <- alf[nd > 15 & td > 30 & nd*n>5 & nd*(1-n)>5][td > 30 & td*t>5 & td*(1-t)>5]
+            # filter unwanted for SNP allele ratio <- this removes things needed for germline variant plotting...
+            #alf <- alf[width(vcf)==1 & str_detect(names(vcf),'rs')]
+            #alf <- alf[chromosome %in% c(1:22,'X','Y')]
+            #alf <- alf[nd > 15 & td > 30 & nd*n>5 & nd*(1-n)>5][td > 30 & td*t>5 & td*(1-t)>5]
             # 
             
             # tumor table
@@ -1207,11 +1207,11 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes[,start:=start-1e3][,end
             # stored for use with VEP-annotated
             all_alf <- alf
             
-            # filter unwanted for SNP allele ratio
-            alf <- alf[width(vcf)==1 & str_detect(names(vcf),'rs')]
-            alf <- alf[chromosome %in% c(1:22,'X','Y')]
-            alf <- alf[td > 30 & td*t>5 & td*(1-t)>5]
-            # 
+            # # filter unwanted for SNP allele ratio
+            # alf <- alf[width(vcf)==1 & str_detect(names(vcf),'rs')]
+            # alf <- alf[chromosome %in% c(1:22,'X','Y')]
+            # alf <- alf[td > 30 & td*t>5 & td*(1-t)>5]
+            # # 
             
             # tumor table
             alf[,allele_ratio:=t]
@@ -1347,10 +1347,10 @@ if (!t_only) {
         #   galf$cumpos[ix] <- galf$pos[ix] + chrsizes$cumstart[chrsizes$chr==chr]
         # }
         
-        # galf$AF <- g$AD[,1,2]/g$DP[,1]
-        # #galf$AF_n <- g$AD[,2,2]/g$DP[,2]    # <----- this should be the normal sample allele ratio.
-        # galf$AO <- g$AD[,1,2]
-        # galf$DP <- g$DP[,1]
+        #galf$AF <- g$AD[,1,2]/g$DP[,1]
+        #galf$AF_n <- g$AD[,2,2]/g$DP[,2]    # <----- this should be the normal sample allele ratio.
+        galf$AO <- g$AD[,1,2]
+        galf$DP <- g$DP[,1]
         # 
         galf$type='other'
         galf$type[isSNV(vcf)]='snv'
@@ -1384,28 +1384,28 @@ if (!t_only) {
         
         table <- table[,-'AF']  # remove AF col from vep data to not confuse with AF from galf
         
-        # # Add alleles as vep names them, to use for merge
-        # galf$Allele = ifelse(galf$type=="snv", yes = galf$ALT, no = substr(galf$ALT, start=2, stop=nchar(galf$ALT)))
-        # galf$Allele[which(galf$Allele== "")] = "-"
-        
+
         table[,N:=as.integer(N)]
         galf=merge(galf,table,by='N',all=T)
         
-        
-        # # Merge with vep table
-        # galf=merge(galf,table,by=c('N','Allele'),all.x=T)
+
     } #end germline mutations
     galf$gnomAD_AF=as.numeric(galf$gnomAD_AF)  # Make gnom_AD numerical so it can be used
     galf[,N:=NULL]
     galf[,'point mutation':=type]
     
-    # Merge with SNP table for tumor/normal AF etc.
-    new <- merge(all_alf,galf,by=c('chromosome','start','end'))
-    new <- new[gnomAD_AF < .01 & SYMBOL %in% cancergenes$gene]
-    galf_t <- new
-    galf_t[,allele_ratio:=t]
-    galf_n <- copy(new)
-    galf_n[,allele_ratio:=n]
+    ## Merge with SNP table for tumor/normal AF etc.
+    #new <- merge(all_alf,galf,by=c('chromosome','start','end'))
+    
+    # normal sample variants with allele ratio
+    galf_n <- galf[gnomAD_AF < .01 & SYMBOL %in% cancergenes$gene]
+    galf_n[,allele_ratio:=AO/DP]
+    
+    # tumor sample variants with tumor allele ratio if one exists, else 0
+    galf_t <- galf[gnomAD_AF < .01 & SYMBOL %in% cancergenes$gene]
+    galf_t[,allele_ratio:=0]
+    ix <- match(galf_t[,paste(chromosome,start,end)],all_alf[,paste(chromosome,start,end)])
+    if (!is.na(ix)) if (length(ix)>0) galf_t[ix,allele_ratio:=all_alf[ix]$t]
 }
 
 
@@ -1627,36 +1627,31 @@ if (!t_only) { # normal
     n_strvs <- as.data.table(n_strvs)
 }
 
-
-# match t_strvs to cancergenes
-sv_ranges <- makeGRangesFromDataFrame(t_strvs)
-suppressWarnings(overlap <- findOverlaps(sv_ranges,cancergeneranges))
-t_strvs[queryHits(overlap),cancergene:=cancergenes[subjectHits(overlap)]$gene]
-
-# match t_strvs to bins
-binranges <- makeGRangesFromDataFrame(bins[,.(chromosome,start=start,end=end)])
-overlap <- findOverlaps(sv_ranges,binranges)
-t_strvs[queryHits(overlap),bin:=bins[subjectHits(overlap)]$bin]
-
-
-# match n_strvs to cancergenes
-if (!t_only) {
-    
-    sv_ranges <- makeGRangesFromDataFrame(n_strvs)
-    suppressWarnings(overlap <- findOverlaps(sv_ranges,cancergeneranges))
-    n_strvs[queryHits(overlap),cancergene:=cancergenes[subjectHits(overlap)]$gene]
-    
-    # match n_strvs to bins_n
-    binranges <- makeGRangesFromDataFrame(bins_n[,.(chromosome,start=start,end=end)])
-    overlap <- findOverlaps(sv_ranges,binranges)
-    n_strvs[queryHits(overlap),bin:=bins_n[subjectHits(overlap)]$bin]
-    
-}
-# # match n_strvs to bins
+# 
+# # match t_strvs to cancergenes
+# sv_ranges <- makeGRangesFromDataFrame(t_strvs)
+# suppressWarnings(overlap <- findOverlaps(sv_ranges,cancergeneranges))
+# t_strvs[queryHits(overlap),cancergene:=cancergenes[subjectHits(overlap)]$gene]
+# 
+# # match t_strvs to bins
 # binranges <- makeGRangesFromDataFrame(bins[,.(chromosome,start=start,end=end)])
 # overlap <- findOverlaps(sv_ranges,binranges)
-# n_strvs[queryHits(overlap),tumorbin:=bins[subjectHits(overlap)]$bin]
-
+# t_strvs[queryHits(overlap),bin:=bins[subjectHits(overlap)]$bin]
+# 
+# 
+# # match n_strvs to cancergenes
+# if (!t_only) {
+#     
+#     sv_ranges <- makeGRangesFromDataFrame(n_strvs)
+#     suppressWarnings(overlap <- findOverlaps(sv_ranges,cancergeneranges))
+#     n_strvs[queryHits(overlap),cancergene:=cancergenes[subjectHits(overlap)]$gene]
+#     
+#     # match n_strvs to bins_n
+#     binranges <- makeGRangesFromDataFrame(bins_n[,.(chromosome,start=start,end=end)])
+#     overlap <- findOverlaps(sv_ranges,binranges)
+#     n_strvs[queryHits(overlap),bin:=bins_n[subjectHits(overlap)]$bin]
+#     
+# }
 
 
 # left, right positions
@@ -1971,7 +1966,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     # somatic mutations
     if (!is.null(somatic)) if (nrow(somatic)>0) {
         p$pos_alleleratio <- p$pos_alleleratio + 
-            geom_point(data=somatic,mapping = aes(x=gpos,y=AF.T,shape=`point mutation`,col=`point mutation`),fill='red',size=.8,show.legend = F) +
+            geom_point(data=somatic,mapping = aes(x=gpos,y=AF.T,shape=`point mutation`,col=`point mutation`),fill='red',size=1.2,show.legend = F) +
             scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22)) +
             scale_color_manual(values = c('snv'='darkred','ins'='red','del'='red','other'='darkred'))
         
@@ -2004,7 +1999,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     # germline mutations
     if (!is.null(germline)) if (nrow(germline)>0) {
         p$pos_alleleratio <- p$pos_alleleratio + 
-            geom_point(data=germline,mapping = aes(x=gpos,y=allele_ratio,shape=`point mutation`),col='grey',fill='blue',size=.8,show.legend = F) +
+            geom_point(data=germline,mapping = aes(x=gpos,y=allele_ratio,shape=`point mutation`),col='grey',fill='blue',size=1.2,show.legend = F) +
             scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22))
         
         labels <- germline[SYMBOL %in% cancergenes$gene & CANONICAL=='YES' & IMPACT %in% c('MODERATE','HIGH')]
@@ -2108,7 +2103,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     # add mutations here
     if (!is.null(somatic)) if (nrow(somatic)>0) {
         p$order_alleleratio <- p$order_alleleratio + 
-            geom_point(data=somatic,mapping = aes(x=bin,y=AF.T,shape=`point mutation`,col=`point mutation`),fill='red',size=.8,show.legend = F) +
+            geom_point(data=somatic,mapping = aes(x=bin,y=AF.T,shape=`point mutation`,col=`point mutation`),fill='red',size=1.2,show.legend = F) +
             scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22)) +
             scale_color_manual(values = c('snv'='darkred','ins'='red','del'='red','other'='darkred'))
         
@@ -2141,7 +2136,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     # germline mutations
     if (!is.null(germline)) if (nrow(germline)>0) {
         p$order_alleleratio <- p$order_alleleratio + 
-            geom_point(data=germline,mapping = aes(x=bin,y=allele_ratio,shape=`point mutation`),col='grey',fill='blue',size=.8,show.legend = F) +
+            geom_point(data=germline,mapping = aes(x=bin,y=allele_ratio,shape=`point mutation`),col='grey',fill='blue',size=1.2,show.legend = F) +
             scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22))
         
         labels <- germline[SYMBOL %in% cancergenes$gene & CANONICAL=='YES' & IMPACT %in% c('MODERATE','HIGH')]
@@ -2202,7 +2197,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     
     if (!is.null(somatic)) if (nrow(somatic)>0) p$depth_alleleratio <- p$depth_alleleratio + 
         geom_point(data=somatic,mapping = aes(x=2^somatic$log2,y=AF.T,shape=`point mutation`,col=`point mutation`),
-                   fill='red',size=.5,show.legend = F) +
+                   fill='red',size=.8,show.legend = F) +
         scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22)) +
         scale_color_manual(values = c('snv'='darkred','ins'='red','del'='red','other'='darkred'))
     
