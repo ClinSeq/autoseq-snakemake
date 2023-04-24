@@ -125,6 +125,7 @@ if (!t_only) { # print normal sample frankenplot (without mutations)
 
 ## 1 {#chr1} 
 
+
 ```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
 
 chr <- 1
@@ -955,62 +956,14 @@ if (!t_only) { # print normal sample chromosome
 ```
 
 
-<!-- ## Y {#chrY} -->
+## info {#info}
 
-<!-- ```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16} -->
+```{r, echo=FALSE}
 
-<!-- chr <- 'Y' -->
-
-<!-- # Print tumor sample chromosome -->
-<!-- name <- paste(str_remove(opts$tumor_cnr,'.cnr')) -->
-<!-- targets <- bins -->
-<!-- segments <- segments_t -->
-<!-- snps <- alf -->
-<!-- somatic <- salf -->
-<!-- germline <- galf -->
-
-<!-- chromplot(chr, name, targets, segments, snps, somatic, germline) -->
-
-<!-- ``` -->
-
-<!-- --- -->
-
-<!-- ```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16} -->
-
-<!-- if (!t_only) { # print normal sample chromosome -->
-<!-- name <- paste(str_remove(opts$normal_cnr,'.cnr')) -->
-<!-- targets <- bins_n -->
-<!-- segments <- segments_n -->
-<!-- snps <- alf_n -->
-<!-- somatic <- NA -->
-<!-- germline <- galf_n  -->
-
-<!-- chromplot(chr, name, targets, segments, snps, somatic=NULL, germline=NULL) -->
+print(opts)
 
 
-<!-- ``` -->
+print(sessionInfo())
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```
