@@ -177,6 +177,38 @@ somatic_vcf['varscan_snvs'] = "{}/variants/varscan/{}-{}-varscan.snp.Somatic.nor
 somatic_vcf['varscan_indels'] = "{}/variants/varscan/{}-{}-varscan.indel.Somatic.normalized.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
 
 
+rule sage_somatic:
+    input:
+        normal_bam = normalBam,
+        tumor_bam = cancerBam,
+        reference = reference['reference_genome'],
+        panel_bed = reference['wgs']['hartwig']['actionable-somatic-panel-bed'],
+        known_hotspots = reference['wgs']['hartwig']['known-hotspots-somatic-vcf'],
+        high_confi_bed = reference['wgs']['hartwig']['NA12878-highconf-bed'],
+        ensembl_dir = reference['wgs']['hartwig']['ensembl-dir']
+    output:
+        "{}/variants/{}-{}-hartwig-sage-somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    params:
+        normalid = compose_sample_str(NORMAL_CAPTURE),
+        tumorid = compose_sample_str(CANCER_CAPTURE),
+        jarfile = os.environ.get('SAGE_JAR')
+    threads: params['sage']['threads']
+    log:
+        "{}/logs/variants/{}-{}-sage-somatic.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    shell:
+        " source activate gridss-env && "
+        " java -Xms4G -Xmx32G -cp {params.jarfile} "
+        " com.hartwig.hmftools.sage.SageApplication -threads 16 "
+        " -reference {params.normalid} -reference_bam {input.normal_bam}"
+        " -tumor {params.tumorid} -tumor_bam {input.tumor_bam} "
+        " -ref_genome_version 37  -ref_genome {input.reference} "
+        " -hotspots {input.known_hotspots} "
+        " -panel_bed {input.panel_bed} "
+        " -high_confidence_bed {input.high_confi_bed} "
+        " -ensembl_data_dir {input.ensembl_dir} "
+        " -out {output} 2> {log} "
+
+
 rule somaticseq_merge:
     input:
         **somatic_vcf,
