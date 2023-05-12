@@ -203,7 +203,7 @@ def get_capture_svs(wildcards, outdir):
     events = ["DEL", "DUP", "INV", "TRA"]
     gtfs = dict()
     for event in events:
-        gtfs[event] = outdir + "/svs/{}-{}.gtf".format(wildcards.sample, event)
+        gtfs[event] = outdir + "/svs/svcaller/{}-{}.gtf".format(wildcards.sample, event)
 
     return gtfs
 

@@ -118,7 +118,7 @@ for sample in all_clinseq_barcodes:
     # svs results to sample capture
     for event in ["DEL", "DUP", "INV", "TRA"]:        
         if '-CFDNA-' in sample or '-T-' in sample:
-            capture_to_results[CANCER_CAPTURE].svs[event] = "{}/svs/{}-{}.gtf".format(outdir, sample, event)
+            capture_to_results[CANCER_CAPTURE].svs[event] = "{}/svs/svcaller/{}-{}.gtf".format(outdir, sample, event)
 
 
 # MSI 
@@ -133,8 +133,8 @@ VARIANTS = list()
 VARIANTS.append("{}/variants/{}-merged.germline.split_norm.gnomADg.vep.SNPs.dbsnpids.vcf.gz".format(outdir, CANCER_CAPTURE_STR))
 VARIANTS.append("{}/variants/{}-merged.germline.split_norm.brcaEx.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR))
 VARIANTS.append("{}/variants/{}-{}-all.somatic.gnomADg.noSNPs.brcaEx.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
-VARIANTS.append(expand(outdir + "/svs/{sample}-{events}.gtf", sample=cancer_sample, events=["DEL", "DUP", "INV", "TRA"]))
-VARIANTS.append(expand(outdir + "/svs/{sample}_effects.json", sample=cancer_sample))
+VARIANTS.append(expand(outdir + "/svs/svcaller/{sample}-{events}.gtf", sample=cancer_sample, events=["DEL", "DUP", "INV", "TRA"]))
+VARIANTS.append(expand(outdir + "/svs/svcaller/{sample}_effects.json", sample=cancer_sample))
 VARIANTS.append("{}/svs/igv/{}-sv-annotated.txt".format(outdir, CANCER_CAPTURE_STR))
 
 OUTPUT.append(VARIANTS)
