@@ -98,8 +98,8 @@ class GenerateSymlink():
                      ('sv', 'mut_svaba_germline','.*_(germline)_svaba.mut$'),
                      ('sv', 'mut_gridss_normal', '^(?:(?!CFDNA).)*_gridss.mut$'),
                      ('sv', 'mut_svcaller_normal', '^(?:(?!CFDNA).)*_svcaller.mut$'),
-                     ('sv', 'gtf_cfdna', '.*-CFDNA-.*(DEL|DUP|INV|TRA).gtf$'),
-                     ('sv', 'gtf_normal', '^(?:(?!CFDNA).)*(DEL|DUP|INV|TRA).gtf$'),
+                     ('sv', 'gtf_cfdna', '.*-CFDNA-.*svs.gtf$'),
+                     ('sv', 'gtf_normal', '^(?:(?!CFDNA).)*svs.gtf$'),
                      ('snps', 'bam_cfdna', '.*-CFDNA-.*_clipoverlap.bam$'),
                      ('snps', 'bam_normal', '^(?:(?!CFDNA).)*clipoverlap.bam$'),
                      ('cnv', 'flank_profile_cfdna', '.*-CFDNA-.*_profile.bedGraph'),
@@ -115,8 +115,8 @@ class GenerateSymlink():
                               ('sv', 'bam_gridss_tumor', '.*-(T|CFDNA).*nodups.bam.sv.bam$')
                             ])
         else:
-            all_files.extend([('sv', 'bam_cfdna', '.*-CFDNA-.*(DEL|DUP|INV|TRA|contigs.sort).bam$'),
-                              ('sv', 'bam_normal', '^(?:(?!CFDNA).)*(DEL|DUP|INV|TRA|contigs.sort).bam$'),
+            all_files.extend([('sv', 'bam_cfdna', '.*-CFDNA-.*(svs|contigs.sort).bam$'),
+                              ('sv', 'bam_normal', '^(?:(?!CFDNA).)*(svs|contigs.sort).bam$'),
                               ('snps', 'vep', '.*.all.(somatic|germline).vep.vcf$')
                             ])
 
