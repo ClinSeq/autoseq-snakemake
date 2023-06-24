@@ -1,6 +1,6 @@
 import os, re
 from pipeline.utils.clinseq_barcodes import parse_prep_id, compose_sample_str, \
-    extract_unique_capture
+    extract_unique_capture, find_fastqs
 
 
 def get_scheduler(scheduler, filetype):
@@ -32,11 +32,12 @@ class Pipeline:
     Class pipeline to build snakmake command based on given args.
 
     """
-    def __init__(self, snakefile, config, sdid, project_id, workdir, dryrun, 
+    def __init__(self, snakefile, config, cluster_config, sdid, project_id, workdir, dryrun, 
                 profile, jobdb, smk_option, use_singularity, bind_paths, cores='4'):
         self.snakefile = snakefile
         self.cores = cores
         self.configfile = config
+        self.cluster_config = cluster_config
         self.sdid = sdid
         self.project_id = project_id
         self.workdir = workdir
@@ -61,8 +62,12 @@ class Pipeline:
             smk_opt = self.smk_option
 
         if self.profile == 'slurm':
+            if self.cluster_config:
+                cluster_config = self.cluster_config
+            else:
+                cluster_config = get_scheduler(self.profile, 'config')
+
             slurm_submit = get_scheduler(self.profile, 'pyscript')
-            cluster_config = get_scheduler(self.profile, 'config')
             slurm_cmd = " --notemp --immediate-submit -j 500 "
             slurm_cmd += " --jobname smk.{{rulename}}.{}-{}.{{jobid}}.sh ".format(self.project_id, self.sdid)
             slurm_cmd += " --cluster-config {} ".format(cluster_config)
@@ -119,6 +124,34 @@ class SinglePanelResults():
         self.msings_output = None
 
 
+def get_fqwildcards(sample_barcode, libdir):
+    """
+    function to extract fastq prefix and suffix
+
+    param: sample barcode
+    param: library directory
+    return: fastq prefix, suffix for R1 and R2
+    """
+    fq1_files, fq2_files = find_fastqs(sample_barcode, libdir)
+    fq1_abs = [os.path.basename(x) for x in fq1_files]
+    fq2_abs = [os.path.basename(x) for x in fq2_files]
+    fq_prefix = list()
+
+    regex_fq1 = r'(.+)(_1.fastq.gz|_1.fq.gz|R1_\d{3}.fastq.gz)'
+    regex_fq2 = r'(.+)(_2.fastq.gz|_2.fq.gz|R2_\d{3}.fastq.gz)'
+    s1 = ''
+    
+    for fq in fq1_abs:
+        _fq_ = [i for i in re.split(regex_fq1, fq) if i != '']
+        fq_prefix.append(_fq_[0])
+        s1 = _fq_[1]
+
+    _fq_ = [i for i in re.split(regex_fq2, fq2_abs[0]) if i != '']
+    s2 = _fq_[1]
+
+    return fq_prefix, s1, s2
+
+
 def get_capture_bam(unique_capture, bamfiles):
     """
     return bamfiles for given unique capture
@@ -154,6 +187,20 @@ def get_cnvkitref(wildcards, reference):
     return cnvkit_ref
 
 
+def get_jumbleref(wildcards, reference):
+    """
+    return jumble reference file
+    """
+    unique_capture = extract_unique_capture(wildcards.sample)
+    capture_name = get_capture_name(unique_capture.capture_kit_id)
+
+    jumble_ref = None
+    if 'jumble-ref' in reference['targets'][capture_name]:
+        jumble_ref = reference['targets'][capture_name]['jumble-ref']
+
+    return jumble_ref
+
+
 def get_capture_svs(wildcards, outdir):
     """
     return gtfs dictionary for given sample
@@ -179,11 +226,16 @@ def get_readgroup(wildcards):
     """
     return readgroup for alignments
     """
-    library_id = parse_prep_id(wildcards.sample)
-    sample_string = compose_sample_str(extract_unique_capture(wildcards.sample))
+    try:
+        sample = wildcards.sample
+    except AttributeError:
+        sample = wildcards
+
+    library_id = parse_prep_id(sample)
+    sample_string = compose_sample_str(extract_unique_capture(sample))
 
     readgroup = "\"@RG\\tID:{rg_id}\\tSM:{rg_sm}\\tLB:{rg_lb}\\tPL:ILLUMINA\"".format(\
-        rg_id=wildcards.sample, rg_sm=sample_string, rg_lb=library_id)
+        rg_id=sample, rg_sm=sample_string, rg_lb=library_id)
     
     return readgroup
 
@@ -219,6 +271,20 @@ def get_chromosomes(targets):
     
     return chromos
             
+
+def get_target_region(wildcards, chrsizes):
+    """
+    utility function to pass target region param to indelrealigner
+    
+    return: target_region eg: 1:1-122121212
+    """
+    
+    chromo = wildcards.chr
+
+    if chromo in chrsizes:
+        return ":".join([chromo, chrsizes[chromo]])
+
+    raise KeyError(chromo)
 
 
 def get_capture_name(capture_kit_code):

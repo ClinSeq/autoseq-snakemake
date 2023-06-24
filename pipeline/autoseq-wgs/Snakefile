@@ -1,0 +1,173 @@
+import os
+import re
+import sys
+import uuid 
+import json
+import collections
+from os.path import dirname
+from functools import reduce
+
+
+include: "../utils/utils.py"
+include: "../utils/clinseq_barcodes.py"
+
+
+samples = json.load(open(config['samples']))
+params = config['params']
+refjson = json.load(open(config['reference']))
+
+# loading reference files
+basepath = os.path.dirname(config['reference'])
+reference = make_paths_absolute(refjson, basepath)
+umi = config['umi']
+libdir = config['libdir']
+steps = config['steps']
+
+# Need to check clinseq_barcodes and data available for those valid barcodes
+sampledata, all_clinseq_barcodes = check_sampledata(libdir, samples)
+outdir = config['outdir']
+
+shell.prefix("set -eo pipefail;")
+
+# NORMAL, CANCER SAMPLES
+NORMAL_CAPTURE = [extract_unique_capture(sample) for sample in all_clinseq_barcodes if '-N-' in sample][0]
+CANCER_CAPTURE = [extract_unique_capture(sample) for sample in all_clinseq_barcodes if '-CFDNA-' in sample or '-T-' in sample][0]
+NORMAL_CAPTURE_STR = compose_lib_capture_str(NORMAL_CAPTURE)
+CANCER_CAPTURE_STR = compose_lib_capture_str(CANCER_CAPTURE)
+NORMAL_SAMPLE_STR = compose_sample_str(NORMAL_CAPTURE)
+CANCER_SAMPLE_STR = compose_sample_str(CANCER_CAPTURE)
+
+# Chromosomes list
+capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
+all_chromosomes = ['1' ,'2' ,'3' ,'4' ,'5' ,'6' ,'7' ,'8' ,'9' ,'10' ,'11' ,'12' ,'13' ,'14' ,'15' ,'16' ,'17' ,'18' ,'19' ,'20' ,'21' ,'22' ,'X' ,'Y']
+
+capture_to_results = collections.defaultdict(SinglePanelResults)
+OUTPUT = list()
+
+if 'ALL' in steps or 'preprocess' in steps:
+    BAM_FILES = expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes)
+    OUTPUT.append(BAM_FILES)
+
+    capture_to_results[NORMAL_CAPTURE].bamfile = get_capture_bam(NORMAL_CAPTURE, BAM_FILES)
+    capture_to_results[CANCER_CAPTURE].bamfile = get_capture_bam(CANCER_CAPTURE, BAM_FILES)
+
+
+# QC outputs
+samples_of_interest = [compose_lib_capture_str(unique_capture) 
+                            for unique_capture in [NORMAL_CAPTURE, CANCER_CAPTURE]]
+
+if 'ALL' in steps or 'qc' in steps:
+    FASTQC = expand(outdir + "/qc/fastqc/{sample}/", sample=all_clinseq_barcodes)
+    OUTPUT.append(FASTQC)
+
+    PICARD_QC = list()
+    PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-insertsize.txt", 
+                            sample=all_clinseq_barcodes))
+    PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-oxog.txt",
+                            sample=all_clinseq_barcodes))
+    PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-wgsmetrics.txt",
+                            sample=all_clinseq_barcodes))
+
+    OUTPUT.append(PICARD_QC)
+
+    CONTEST = list()
+    CONTEST.append("{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR))
+    CONTEST.append("{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR))
+
+    OUTPUT.append(CONTEST)
+    QC_overview = "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest))
+    OUTPUT.append(QC_overview)
+
+if 'ALL' in steps or 'variants' in steps:
+    CNV_OUTPUT = list()
+    CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cns", sample=all_clinseq_barcodes))
+    CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cnr", sample=all_clinseq_barcodes))
+    CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_dnacopy.seg", sample=all_clinseq_barcodes))
+    CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_profile.bedGraph", sample=all_clinseq_barcodes))
+    CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_segments.bedGraph", sample=all_clinseq_barcodes))
+    CNV_OUTPUT.append("{}/variants/{}-{}-liqbio-cna.json".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    CNV_OUTPUT.append("{}/qc/{}-{}-liqbio-purity.json".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    CNV_OUTPUT.append("{}/qc/{}-{}-liqbio-cna.png".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    CNV_OUTPUT.append("{}/qc/{}-{}-frankenplot.html".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
+    OUTPUT.append(CNV_OUTPUT)
+
+# set results to capture
+for sample in all_clinseq_barcodes:
+    # cnv results to sample capture 
+    if '-N-' in sample:
+        capture_to_results[NORMAL_CAPTURE].cns = outdir + "/cnv/{}.cns".format(sample)
+        capture_to_results[NORMAL_CAPTURE].cnr = outdir + "/cnv/{}.cnr".format(sample)
+        capture_to_results[NORMAL_CAPTURE].seg = outdir + "/cnv/{}_dnacopy.seg".format(sample)
+    
+    if '-CFDNA-' in sample or '-T-' in sample:
+        capture_to_results[CANCER_CAPTURE].cns = outdir + "/cnv/{}.cns".format(sample)
+        capture_to_results[CANCER_CAPTURE].cnr = outdir + "/cnv/{}.cnr".format(sample)
+        capture_to_results[CANCER_CAPTURE].seg = outdir + "/cnv/{}_dnacopy.seg".format(sample)
+
+    # svs results to sample capture
+    for event in ["DEL", "DUP", "INV", "TRA"]:
+        if '-N-' in sample:
+            capture_to_results[NORMAL_CAPTURE].svs[event] = "{}/svs/svcaller/{}-{}.gtf".format(outdir, sample, event)
+        
+        if '-CFDNA-' in sample or '-T-' in sample:
+            capture_to_results[CANCER_CAPTURE].svs[event] = "{}/svs/svcaller/{}-{}.gtf".format(outdir, sample, event)
+
+
+if 'ALL' in steps or 'variants' in steps:
+    VARIANTS = list()
+    VARIANTS.append("{}/variants/{}-all.germline.vep.vcf.gz".format(outdir, NORMAL_CAPTURE_STR))
+    VARIANTS.append("{}/variants/{}-{}-all.somatic.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
+    VARIANTS.append(expand(outdir + "/svs/svcaller/{sample}-{events}.gtf", sample=all_clinseq_barcodes, events=["DEL", "DUP", "INV", "TRA"]))
+    # VARIANTS.append(expand(outdir + "/svs/{sample}_effects.json", sample=all_clinseq_barcodes))
+    VARIANTS.append("{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+
+    IGV = list()
+    IGV.append("{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
+    IGV.append("{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR))
+    IGV.append("{}/variants/{}-and-{}.germline-variants-somatic-afs.bedGraph".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+    OUTPUT.append(VARIANTS)
+    OUTPUT.append(IGV)
+
+
+wildcard_constraints:
+    sdid = samples['sdid'],
+    sample = "|".join(all_clinseq_barcodes),
+    events = "|".join(["DEL", "DUP", "INV", "TRA"]),
+    chr = "|".join(all_chromosomes)
+
+container: config['container']['base']
+
+rule all:
+    input: 
+        outdir + "/bams/intermediate_bamfiles.removed",
+        directory("{}/multiqc".format(outdir)),
+        "{}/IGVnav/igv_session_sv.xml".format(outdir),
+        "{}/IGVnav/igv_session_snps.xml".format(outdir)
+    output:
+        outdir + "/analysis_finished"
+    shell:
+        "date +'%Y-%m-%d T%T %:z' > {output}"
+                                    
+
+rule generate_symlinks:
+    input:
+        OUTPUT
+    output:
+        "{}/IGVnav/igv_session_sv.xml".format(outdir),
+        "{}/IGVnav/igv_session_snps.xml".format(outdir)
+    params:
+        outdir = outdir
+    log:
+        "{}/logs/generate_symlinks.log".format(outdir)
+    shell:
+        "generate_symlinks.py --outdir {params.outdir}  2> {log} " 
+
+
+include: "rules/pre_processing.smk"
+include: "rules/alignment.smk"
+include: "rules/qc.smk"
+include: "rules/cnvcalling.smk"
+include: "rules/somatic.smk"
+include: "rules/germline.smk"
+include: "rules/structuralvariants.smk"
+include: "rules/vep.smk"

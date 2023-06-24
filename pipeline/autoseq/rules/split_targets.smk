@@ -30,10 +30,10 @@ rule splitbam_umimapped_1:
         bam = input.mapped
         prefix = os.path.basename(bam).split('.bam')[0]
         no_chr = output_dir + "/{}.nochr.bam".format(prefix)
-        cmd = "samtools view  -L {} -o {} {} ".format(input.nochr, no_chr, bam)
+        cmd = "samtools view -@ {} -L {} -o {} {} ".format(threads, input.nochr, no_chr, bam)
         shell(cmd)
         for chr in all_chromosomes:
-            run_cmd = "samtools view -b {} {} ".format(bam, chr) + \
+            run_cmd = "samtools view -@ {} -b {} {} ".format(threads, bam, chr) + \
                         " > {}/{}.{}.bam && ".format(output_dir, prefix, chr) + \
                         " samtools index {}/{}.{}.bam ".format(output_dir, prefix, chr)
             shell(run_cmd)
@@ -52,10 +52,10 @@ rule splitbam_umimapped_2:
         bam = input.mapped
         prefix = os.path.basename(bam).split('.bam')[0]
         no_chr = output_dir + "/{}.nochr.bam".format(prefix)
-        cmd = "samtools view  -L {} -o {} {} ".format(input.nochr, no_chr, bam)
+        cmd = "samtools view -@ {} -L {} -o {} {} ".format(threads, input.nochr, no_chr, bam)
         shell(cmd)
         for chr in all_chromosomes:
-            run_cmd = "samtools view -b {} {} ".format(bam, chr) + \
+            run_cmd = "samtools view -@ {} -b {} {} ".format(threads, bam, chr) + \
                         " > {}/{}.{}.bam && ".format(output_dir, prefix, chr) + \
                         " samtools index {}/{}.{}.bam ".format(output_dir, prefix, chr)
             shell(run_cmd)

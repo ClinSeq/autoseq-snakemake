@@ -94,6 +94,7 @@ def list(context):
 @click.option("--outdir", default=os.getcwd() ,help="output directory")
 @click.option("--libdir", help="directory to search libraries")
 @click.option("--configfile", help="configuration file for params")
+@click.option("--cluster-config", help="configuration file for different HPC")
 @click.option("--scratch", default="/tmp", help="path to /tmp/scratch")
 @click.option("--dryrun/--run", default=False, help=" --dryrun for testing snakemake workflow")
 @click.option("--umi", is_flag=True, help="To process the data with UMI- Unique Molecular Identifier")
@@ -106,8 +107,8 @@ def list(context):
 @click.option("--cores", help="max number of cores")
 @click.pass_context
 def launch(context, ref, samples, outdir, libdir, 
-            configfile, scratch, dryrun, umi, profile, 
-            pipeline, normal_bam, use_singularity, 
+            configfile, cluster_config, scratch, dryrun, umi, 
+            profile, pipeline, normal_bam, use_singularity, 
             singularity, cores, smk_opt):
     """
     launch the respective pipeline with samples json 
@@ -189,13 +190,15 @@ def launch(context, ref, samples, outdir, libdir,
         bind_paths.add(os.path.dirname(os.path.dirname(config_dict['reference'])))
 
 
-    if pipeline == "tumor_only":
-        snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tumor_only/Snakefile')
+    if pipeline in ["autoseq", "tumor_only", "autoseq-wgs"]:
+        snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), '{}/Snakefile'.format(pipeline))
     else:
-        snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'autoseq/Snakefile')
+        Log.error(f"{pipeline} does not exist")
+        raise click.Abort()
 
     autoseq = Pipeline(snakefile = snakefile, 
                       config = out_configpath, 
+                      cluster_config = cluster_config,
                       sdid = sdid,
                       project_id = project_id,
                       workdir = outdir, 

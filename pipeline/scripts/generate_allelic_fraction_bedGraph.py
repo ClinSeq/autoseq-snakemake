@@ -30,9 +30,10 @@ def extract_somatic_afs(vcf_filename, output, loglevel):
     with open(output, 'w') as output_file:
         for record in vcf_reader:
             tumor_genotype = record.genotype(non_normal_sample)
-            if tumor_genotype.data.DP > 0:
-                allelic_fraction = float(tumor_genotype.data.AD[1])/float(tumor_genotype.data.DP)
-                print("{}\t{}\t{}\t{}".format(record.CHROM, record.POS, record.POS, round(allelic_fraction, 2)), file=output_file)
+            if tumor_genotype.data.DP is not None:
+                if tumor_genotype.data.DP > 0:
+                    allelic_fraction = float(tumor_genotype.data.AD[1])/float(tumor_genotype.data.DP)
+                    print("{}\t{}\t{}\t{}".format(record.CHROM, record.POS, record.POS, round(allelic_fraction, 2)), file=output_file)
 
 
 if __name__ == "__main__":
