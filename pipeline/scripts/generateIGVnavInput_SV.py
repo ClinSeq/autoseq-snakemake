@@ -357,6 +357,7 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
             alt = data[7]
             sup_reads = data[8] if len(data) == 9 else '.'
             svlength = 'NA'
+            chrom_b = 'NA'
 
             if ':' in alt:
                 chrom_b = ''.join(list(filter(str.isdigit, alt.split(':')[0])))
