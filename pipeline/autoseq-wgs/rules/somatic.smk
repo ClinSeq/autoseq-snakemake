@@ -60,7 +60,7 @@ rule vardict_filter:
     input:
         vcf = vardict_vcf_prefix + ".vcf.gz",
         reference_dict = reference["reference_dict"],
-        reference = reference['reference_genome'],
+        reference = reference['reference_genome']
     output:
         vardict_vcf_prefix + "-filtered.vcf.gz"
     params:
