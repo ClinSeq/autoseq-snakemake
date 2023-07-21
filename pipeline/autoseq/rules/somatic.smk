@@ -51,7 +51,7 @@ rule vardict_somatic:
             " | bgzip > {output} 2> {log} && tabix -p vcf {output} "
         
 
-somatic_vcf['vardict'] = "{}/variants/vardict/{}-{}.vardict-somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+#somatic_vcf['vardict'] = "{}/variants/vardict/{}-{}.vardict-somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
 
 
 rule strelka_somatic:
@@ -173,8 +173,8 @@ rule varscan_somatic:
         " vt decompose -s {output.somatic_indel} | vt normalize  -r {input.reference} -  > {output.normalized_indel}  "
 
 
-somatic_vcf['varscan_snvs'] = "{}/variants/varscan/{}-{}-varscan.snp.Somatic.normalized.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
-somatic_vcf['varscan_indels'] = "{}/variants/varscan/{}-{}-varscan.indel.Somatic.normalized.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+#somatic_vcf['varscan_snvs'] = "{}/variants/varscan/{}-{}-varscan.snp.Somatic.normalized.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+#somatic_vcf['varscan_indels'] = "{}/variants/varscan/{}-{}-varscan.indel.Somatic.normalized.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
 
 
 rule sage_somatic:
@@ -182,7 +182,7 @@ rule sage_somatic:
         normal_bam = normalBam,
         tumor_bam = cancerBam,
         reference = reference['reference_genome'],
-        panel_bed = reference['wgs']['hartwig']['actionable-somatic-panel-bed'],
+        panel_bed = reference['targets'][capture_name]['targets-interval_list-slopped20'],
         known_hotspots = reference['wgs']['hartwig']['known-hotspots-somatic-vcf'],
         high_confi_bed = reference['wgs']['hartwig']['NA12878-highconf-bed'],
         ensembl_dir = reference['wgs']['hartwig']['ensembl-dir']
@@ -191,7 +191,12 @@ rule sage_somatic:
     params:
         normalid = compose_sample_str(NORMAL_CAPTURE),
         tumorid = compose_sample_str(CANCER_CAPTURE),
-        jarfile = os.environ.get('SAGE_JAR')
+        jarfile = os.environ.get('SAGE_JAR'),
+        minaf = 0.0002,
+        hpmintq = 150,
+        min_mapq = 20,
+        min_baseq = 30,
+        min_paneltq = 250
     threads: params['sage']['threads']
     log:
         "{}/logs/variants/{}-{}-sage-somatic.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
@@ -204,9 +209,30 @@ rule sage_somatic:
         " -ref_genome_version 37  -ref_genome {input.reference} "
         " -hotspots {input.known_hotspots} "
         " -panel_bed {input.panel_bed} "
-        " -high_confidence_bed {input.high_confi_bed} "
         " -ensembl_data_dir {input.ensembl_dir} "
+        " -hard_min_tumor_vaf {params.minaf} -hotspot_min_tumor_qual {params.hpmintq} "
+        " -hotspot_min_tumor_vaf {params.minaf} -min_map_quality {params.min_mapq} "
+        " -min_avg_base_qual {params.min_baseq} -panel_min_tumor_qual {params.min_paneltq} "
+        " -panel_min_tumor_vaf {params.minaf} -panel_only -write_bqr_data "
         " -out {output} 2> {log} "
+
+
+rule sage_splitvcf:
+    input:
+        "{}/variants/{}-{}-hartwig-sage-somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    output:
+        snv = "{}/variants/{}-{}-hartwig-sage-somatic.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        indel =  "{}/variants/{}-{}-hartwig-sage-somatic.indels.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    threads: 1
+    log:
+        "{}/logs/variants/{}-{}-sage-somatic-splitvcf.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    shell:
+        "source activate somaticseqenv && "
+        "splitVcf.py -infile {input} -snv {output.snv} -indel {output.indel}"
+
+
+somatic_vcf['sage_snv'] = "{}/variants/{}-{}-hartwig-sage-somatic.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+somatic_vcf['sage_indel'] = "{}/variants/{}-{}-hartwig-sage-somatic.indels.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
 
 
 rule somaticseq_merge:
@@ -232,11 +258,10 @@ rule somaticseq_merge:
         " --tumor-bam-file {input.tumor_bam} " 
         " --normal-bam-file {input.normal_bam} " 
         " --mutect2-vcf {input.mutect2} " 
-        " --varscan-snv {input.varscan_snvs} "
-        " --varscan-indel {input.varscan_indels} "
-        " --vardict-vcf {input.vardict} " 
         " --strelka-snv {input.strelka_snvs} "
-        " --strelka-indel {input.strelka_indels} && "
+        " --strelka-indel {input.strelka_indels} "
+        " --arbitrary-snvs {input.sage_snv} "
+        " --arbitrary-indels {input.sage_indel} && "
         " source activate gatk_3 && "
         " gatk3 -T CombineVariants "
         " -R {input.reference} --variant {output.consensus_snv} " 
