@@ -297,7 +297,7 @@ rule gridss_somatic_filter:
     threads: params["gridss_filter"]["threads"]
     shell:
         "source activate gridss-env && "
-        "gridss_somatic_filter -p {params.pondir} "
+        "Rscript {params.script_dir}gridss_somatic_filter -p {params.pondir} "
         " -i {input.vcf} "
         " -o {params.outvcf} "
         " -s {params.script_dir} && "

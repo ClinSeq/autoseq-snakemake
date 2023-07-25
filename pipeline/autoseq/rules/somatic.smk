@@ -182,7 +182,7 @@ rule sage_somatic:
         normal_bam = normalBam,
         tumor_bam = cancerBam,
         reference = reference['reference_genome'],
-        panel_bed = reference['targets'][capture_name]['targets-interval_list-slopped20'],
+        panel_bed = reference['targets'][capture_name]['targets-bed-slopped20'],
         known_hotspots = reference['wgs']['hartwig']['known-hotspots-somatic-vcf'],
         high_confi_bed = reference['wgs']['hartwig']['NA12878-highconf-bed'],
         ensembl_dir = reference['wgs']['hartwig']['ensembl-dir']
@@ -192,6 +192,7 @@ rule sage_somatic:
         normalid = compose_sample_str(NORMAL_CAPTURE),
         tumorid = compose_sample_str(CANCER_CAPTURE),
         jarfile = os.environ.get('SAGE_JAR'),
+        workdir = outdir + "/variants",
         minaf = 0.0002,
         hpmintq = 150,
         min_mapq = 20,
@@ -202,19 +203,20 @@ rule sage_somatic:
         "{}/logs/variants/{}-{}-sage-somatic.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:
         " source activate gridss-env && "
+        " bedtools merge -s -i {input.panel_bed} > {params.workdir}/targets_nonoverlap.bed 2> {log} && "
         " java -Xms4G -Xmx32G -cp {params.jarfile} "
         " com.hartwig.hmftools.sage.SageApplication -threads 16 "
         " -reference {params.normalid} -reference_bam {input.normal_bam}"
         " -tumor {params.tumorid} -tumor_bam {input.tumor_bam} "
         " -ref_genome_version 37  -ref_genome {input.reference} "
         " -hotspots {input.known_hotspots} "
-        " -panel_bed {input.panel_bed} "
+        " -panel_bed {params.workdir}/targets_nonoverlap.bed "
         " -ensembl_data_dir {input.ensembl_dir} "
         " -hard_min_tumor_vaf {params.minaf} -hotspot_min_tumor_qual {params.hpmintq} "
         " -hotspot_min_tumor_vaf {params.minaf} -min_map_quality {params.min_mapq} "
         " -min_avg_base_qual {params.min_baseq} -panel_min_tumor_qual {params.min_paneltq} "
         " -panel_min_tumor_vaf {params.minaf} -panel_only -write_bqr_data "
-        " -out {output} 2> {log} "
+        " -out {output} 2>> {log} && rm {params.workdir}/targets_nonoverlap.bed"
 
 
 rule sage_splitvcf:
@@ -224,11 +226,15 @@ rule sage_splitvcf:
         snv = "{}/variants/{}-{}-hartwig-sage-somatic.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
         indel =  "{}/variants/{}-{}-hartwig-sage-somatic.indels.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: 1
+    params:
+        snv = "{}/variants/{}-{}-hartwig-sage-somatic.snvs.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        indel =  "{}/variants/{}-{}-hartwig-sage-somatic.indels.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     log:
         "{}/logs/variants/{}-{}-sage-somatic-splitvcf.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:
         "source activate somaticseqenv && "
-        "splitVcf.py -infile {input} -snv {output.snv} -indel {output.indel}"
+        "splitVcf.py -infile {input} -snv {params.snv} -indel {params.indel} && "
+        " bgzip {params.snv} && bgzip {params.indel} "
 
 
 somatic_vcf['sage_snv'] = "{}/variants/{}-{}-hartwig-sage-somatic.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)

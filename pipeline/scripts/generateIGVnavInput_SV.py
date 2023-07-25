@@ -137,7 +137,7 @@ def parse_gridss(input_vcf, SDID, output, vcftype):
 
     outfile.write("\t".join(['CHROM','START','END','SDID','TYPE','SVTYPE','ALT','SUPPORT_READS']) + '\n')
 
-    vcf_reader = vcf.Reader(open(input_vcf, 'r'))
+    vcf_reader = vcf.Reader(filename=input_vcf)
     events = set()
     sdid = SDID + '_gridss_' + vcftype
     for record in vcf_reader:
