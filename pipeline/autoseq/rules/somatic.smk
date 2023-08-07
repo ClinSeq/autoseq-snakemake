@@ -90,8 +90,8 @@ rule strelka_somatic:
         " rm -rf {params.rundir}  "
 
 
-somatic_vcf['strelka_snvs'] = "{}/variants/{}-{}-strelka-somatic.passed.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-somatic_vcf['strelka_indels'] = "{}/variants/{}-{}-strelka-somatic.passed.indels.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+#somatic_vcf['strelka_snvs'] = "{}/variants/{}-{}-strelka-somatic.passed.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+#somatic_vcf['strelka_indels'] = "{}/variants/{}-{}-strelka-somatic.passed.indels.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
 
 
 rule gatk4_mutect2:
@@ -263,9 +263,7 @@ rule somaticseq_merge:
         " --genome-reference {input.reference} paired "
         " --tumor-bam-file {input.tumor_bam} " 
         " --normal-bam-file {input.normal_bam} " 
-        " --mutect2-vcf {input.mutect2} " 
-        " --strelka-snv {input.strelka_snvs} "
-        " --strelka-indel {input.strelka_indels} "
+        " --mutect2-vcf {input.mutect2} "
         " --arbitrary-snvs {input.sage_snv} "
         " --arbitrary-indels {input.sage_indel} && "
         " source activate gatk_3 && "

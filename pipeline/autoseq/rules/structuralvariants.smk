@@ -238,11 +238,11 @@ rule gridss_svcalling_normal:
         reference = reference["bwaIndex"]
     output:
         assembly_bam = "{}/svs/gridss/{}-assembly.bam".format(outdir, NORMAL_CAPTURE_STR),
-        vcf = "{}/svs/gridss/{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
+        vcf = "{}/svs/gridss/{}-gridss.vcf".format(outdir, NORMAL_CAPTURE_STR)
     params:
         gridss_jar = os.environ.get('GRIDSS_JAR'),
         jvmheap = '10g',
-        workdir = directory("{}/svs/gridss/".format(outdir))
+        workdir = directory("{}/svs/gridss/{}/".format(outdir, NORMAL_CAPTURE_STR))
     threads: params['gridss']['threads']
     log:
         outdir + "/logs/svs/gridss-{}.log".format(NORMAL_CAPTURE_STR)
@@ -254,7 +254,8 @@ rule gridss_svcalling_normal:
         " --assembly {output.assembly_bam} "
         " --threads {threads} --steps  ALL "
         " --workingdir {params.workdir} "
-        " --output {output.vcf} {input.normal_bam} "
+        " --output {output.vcf}.gz {input.normal_bam} 2> {log} && "
+        " gzip -d {output.vcf}.gz  "
 
 
 rule gridss_svcalling_somatic:
@@ -268,7 +269,7 @@ rule gridss_svcalling_somatic:
     params:
         gridss_jar = os.environ.get('GRIDSS_JAR'),
         jvmheap = '10g',
-        workdir = directory("{}/svs/gridss/".format(outdir))
+        workdir = directory("{}/svs/gridss/{}/".format(outdir, CANCER_CAPTURE_STR))
     threads: params['gridss']['threads']
     log:
         outdir + "/logs/svs/gridss-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
@@ -282,7 +283,6 @@ rule gridss_svcalling_somatic:
         " --workingdir {params.workdir} "
         " --output {output.vcf} {input.normal_bam} {input.tumor_bam} "
         
-
 
 rule gridss_somatic_filter:
     input:
@@ -300,14 +300,30 @@ rule gridss_somatic_filter:
         "Rscript {params.script_dir}gridss_somatic_filter -p {params.pondir} "
         " -i {input.vcf} "
         " -o {params.outvcf} "
-        " -s {params.script_dir} && "
+        " -s {params.script_dir} --paneldata && "
         "bgzip -d {output.vcf}.bgz"
+
+
+rule gridss_svannotation:
+    input:
+        somatic_vcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        normal_vcf = "{}/svs/gridss/{}-gridss.vcf".format(outdir, NORMAL_CAPTURE_STR)
+    output:
+        somatic_vcf = "{}/svs/gridss/{}-{}-gridss.filtered.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        normal_vcf = "{}/svs/gridss/{}-gridss.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR)
+    threads: params["gridss_filter"]["threads"]
+    log:
+        outdir + "/logs/svs/gridss-svannotation-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    shell:
+        "source activate gridss-env && "
+        "gridss_svannotate.R -v {input.somatic_vcf} -o {output.somatic_vcf} 2> {log} && "
+        "gridss_svannotate.R -v {input.normal_vcf} -o {output.normal_vcf} 2>> {log} "
 
 
 rule generateIGVnavInput_gridss:
     input:
-        normal_vcf = "{}/svs/gridss/{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
-        somatic_vcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+        normal_vcf = "{}/svs/gridss/{}-gridss.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR),
+        somatic_vcf = "{}/svs/gridss/{}-{}-gridss.filtered.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     output:
         normal_mut = "{}/svs/igv/{}_normal_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR),
         somatic_mut = "{}/svs/igv/{}_somatic_pass_gridss.mut".format(outdir, CANCER_CAPTURE_STR)
