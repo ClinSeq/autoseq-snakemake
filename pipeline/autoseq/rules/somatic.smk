@@ -227,13 +227,15 @@ rule sage_splitvcf:
         indel =  "{}/variants/{}-{}-hartwig-sage-somatic.indels.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: 1
     params:
+        tmp_vcf = "{}/variants/{}-{}-hartwig-sage-somatic.pass.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR), 
         snv = "{}/variants/{}-{}-hartwig-sage-somatic.snvs.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
         indel =  "{}/variants/{}-{}-hartwig-sage-somatic.indels.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     log:
         "{}/logs/variants/{}-{}-sage-somatic-splitvcf.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:
         "source activate somaticseqenv && "
-        "splitVcf.py -infile {input} -snv {params.snv} -indel {params.indel} && "
+        "bcftools filter -e 'FILTER!=\"PASS\"' {input} > {params.tmp_vcf} && "
+        "splitVcf.py -infile {params.tmp_vcf} -snv {params.snv} -indel {params.indel} && "
         " bgzip {params.snv} && bgzip {params.indel} "
 
 
