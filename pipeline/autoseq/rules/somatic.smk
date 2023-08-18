@@ -322,7 +322,7 @@ rule vardict_purecn:
 
 rule vcf_add_sample:
     input:
-        germline_vcf = "{}/variants/{}-all.germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
+        germline_vcf = "{}/variants/haplotypecaller/{}.haplotypecaller-germline-normalized.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
         tumor_bam = cancerBam
     output:
         vcf = "{}/variants/{}-and-{}.germline-variants-with-somatic-afs.vcf.gz".format(
@@ -356,7 +356,6 @@ rule make_allelic_fraction_track:
 rule somatic_generateIGVnav:
     input:
         somatic = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-        vardict_vcf = "{}/variants/vardict/{}-{}.vardict-somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
         oncokb = reference['oncokb'],
         cgcann = reference['cgcann']
     output:

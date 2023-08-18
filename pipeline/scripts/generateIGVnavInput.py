@@ -26,9 +26,13 @@ def csq_parsing(csq, vcftype):
     
     csq_keys_wfreq = ['Allele','Consequence','IMPACT','SYMBOL','Gene','Feature_type','Feature','BIOTYPE','EXON','INTRON','HGVSc','HGVSp','cDNA_position','CDS_position','Protein_position','Amino_acids','Codons','Existing_variation','ALLELE_NUM','DISTANCE','STRAND','FLAGS','VARIANT_CLASS','SYMBOL_SOURCE','HGNC_ID','CANONICAL','TSL','APPRIS','CCDS','ENSP','SWISSPROT','TREMBL','UNIPARC','SOURCE','GENE_PHENO','SIFT','PolyPhen','DOMAINS','miRNA','HGVS_OFFSET','AF','AFR_AF','AMR_AF','EAS_AF','EUR_AF','SAS_AF','AA_AF','EA_AF','gnomAD_AF','gnomAD_AFR_AF','gnomAD_AMR_AF','gnomAD_ASJ_AF','gnomAD_EAS_AF','gnomAD_FIN_AF','gnomAD_NFE_AF','gnomAD_OTH_AF','gnomAD_SAS_AF','MAX_AF','MAX_AF_POPS', 'FREQS','CLIN_SIG','SOMATIC','PHENO','PUBMED','MOTIF_NAME','MOTIF_POS','HIGH_INF_POS','MOTIF_SCORE_CHANGE','BrcaEx','BrcaEx_ClinicalSignificance']
     
+    csq_keys_latest = ['Allele', 'Consequence', 'IMPACT', 'SYMBOL', 'Gene', 'Feature_type', 'Feature', 'BIOTYPE', 'EXON', 'INTRON', 'HGVSc', 'HGVSp', 'cDNA_position', 'CDS_position', 'Protein_position', 'Amino_acids', 'Codons', 'Existing_variation', 'ALLELE_NUM', 'DISTANCE', 'STRAND', 'FLAGS', 'VARIANT_CLASS', 'SYMBOL_SOURCE', 'HGNC_ID', 'CANONICAL', 'MANE_SELECT', 'MANE_PLUS_CLINICAL', 'TSL', 'APPRIS', 'CCDS', 'ENSP', 'SWISSPROT', 'TREMBL', 'UNIPARC', 'UNIPROT_ISOFORM', 'GIVEN_REF', 'USED_REF', 'BAM_EDIT', 'SOURCE', 'GENE_PHENO', 'SIFT', 'PolyPhen', 'DOMAINS', 'miRNA', 'HGVS_OFFSET', 'AF', 'AFR_AF', 'AMR_AF', 'EAS_AF', 'EUR_AF', 'SAS_AF', 'gnomADe_AF', 'gnomADe_AFR_AF', 'gnomADe_AMR_AF', 'gnomADe_ASJ_AF', 'gnomADe_EAS_AF', 'gnomADe_FIN_AF', 'gnomADe_NFE_AF', 'gnomADe_OTH_AF', 'gnomADe_SAS_AF', 'gnomADg_AF', 'gnomADg_AFR_AF', 'gnomADg_AMI_AF', 'gnomADg_AMR_AF', 'gnomADg_ASJ_AF', 'gnomADg_EAS_AF', 'gnomADg_FIN_AF', 'gnomADg_MID_AF', 'gnomADg_NFE_AF', 'gnomADg_OTH_AF', 'gnomADg_SAS_AF', 'MAX_AF', 'MAX_AF_POPS', 'CLIN_SIG', 'SOMATIC', 'PHENO', 'PUBMED', 'MOTIF_NAME', 'MOTIF_POS', 'HIGH_INF_POS', 'MOTIF_SCORE_CHANGE', 'TRANSCRIPTION_FACTORS', 'BrcaEx', 'BrcaEx_ClinicalSignificance']
+
     for transcript in csq:
         if len(transcript.split('|')) == 70:
             csq_keys = csq_keys_wfreq
+        elif (len(transcript.split('|')) == 85):
+            csq_keys = csq_keys_latest
         else:
             csq_keys = csq_keys_wofreq
 
@@ -150,19 +154,22 @@ elif vcftype == "germline":
     output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'ENSEMBLID', 'IMPACT', 'CONSEQUENCE', 'TRANSCRIPT', 'HGVSc','HGVSp', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID', 'gnomAD', 'BRCAEx', 'OncoKB', 'CGC_ANN']) + "\n")
 
 for record in vcf_reader:
-    try:
-        canonical_trans = csq_parsing(record.INFO['CSQ'], vcftype)
-        gene = canonical_trans['SYMBOL']
-        ensembl_id = canonical_trans['Gene']
-        aa = canonical_trans['Amino_acids'].split('/')
-        protein_position = canonical_trans['Protein_position'].split('/')
-        clinsig =  canonical_trans['CLIN_SIG']
-        gnomAD = canonical_trans['gnomAD_AF']
-        impact = canonical_trans['IMPACT']
-        brcaEx = canonical_trans['BrcaEx_ClinicalSignificance']
-    except KeyError:
-        pass
+    canonical_trans = csq_parsing(record.INFO['CSQ'], vcftype)
+    gene = canonical_trans['SYMBOL']
+    ensembl_id = canonical_trans['Gene']
+    aa = canonical_trans['Amino_acids'].split('/')
+    protein_position = canonical_trans['Protein_position'].split('/')
+    clinsig =  canonical_trans['CLIN_SIG']
+    impact = canonical_trans['IMPACT']
+    brcaEx = canonical_trans['BrcaEx_ClinicalSignificance']
     
+    if 'gnomAD_AF' in canonical_trans:
+        gnomAD = canonical_trans['gnomAD_AF']
+    elif not wgs:
+        gnomAD = canonical_trans['gnomADe_AF']
+    else:
+        gnomAD = canonical_trans['gnomADg_AF']
+
     oncogenicity = ''
     filter_col = ''
     is_CGC = False
