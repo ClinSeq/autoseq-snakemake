@@ -322,7 +322,7 @@ rule vardict_purecn:
 
 rule vcf_add_sample:
     input:
-        germline_vcf = "{}/variants/haplotypecaller/{}.haplotypecaller-germline-normalized.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
+        germline_vcf = "{}/variants/haplotypecaller/{}.haplotypecaller-germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
         tumor_bam = cancerBam
     output:
         vcf = "{}/variants/{}-and-{}.germline-variants-with-somatic-afs.vcf.gz".format(

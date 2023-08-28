@@ -8,8 +8,7 @@ rule gatk4_haplotypecaller:
         dbsnp = reference["dbSNP"],
         interval_list = reference['targets'][get_capture_name(NORMAL_CAPTURE.capture_kit_id)]['targets-interval_list-slopped20'],
     output:
-        vcf = "{}/variants/haplotypecaller/{}.haplotypecaller-germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
-        normalized_vcf = "{}/variants/haplotypecaller/{}.haplotypecaller-germline-normalized.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
+        vcf = "{}/variants/haplotypecaller/{}.haplotypecaller-germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
     params:
         java_options = params["gatk4"]["haplotypecaller"]["java_options"]
     threads: params["gatk4"]["threads"]
@@ -22,11 +21,7 @@ rule gatk4_haplotypecaller:
             " -I {input.bam}  "
             " -L {input.interval_list} "
             " --dbsnp {input.dbsnp} "
-            " -O {output.vcf} && "
-        " vt decompose -s {output.vcf} "
-        " | vt normalize  -r {input.reference} - "
-        " | bgzip > {output.normalized_vcf}  && "
-        " tabix -p vcf {output.normalized_vcf} 2> {log} "
+            " -O {output.vcf}  2> {log} "
 
 
 # rule strelka_germline:

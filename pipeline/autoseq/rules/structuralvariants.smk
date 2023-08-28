@@ -111,7 +111,7 @@ rule gridss_extract_overlapping_fragments:
         bam = outdir + "/bams/{sample}_nodups.bam",
         target_bed = reference['targets'][capture_name]['targets-bed-slopped20']
     output:
-        bam = outdir + "/svs/gridss/{sample}-targeted.bam"
+        bam = outdir + "/svs/gridss/{sample}-gridss-targeted.bam"
     params:
         gridss_jar = os.environ.get('GRIDSS_JAR'),
         workdir = directory("{}/svs/gridss/".format(outdir))
@@ -122,12 +122,13 @@ rule gridss_extract_overlapping_fragments:
         "source activate gridss-env && "
         "gridss_extract_overlapping_fragments -w {params.workdir} "
         " --targetbed  {input.target_bed} -j {params.gridss_jar} "
-        " -o {output.bam} {input.bam} "
+        " -o {output.bam} {input.bam} && "
+        "samtools index {output.bam} "
 
 
 rule gridss_svcalling_normal:
     input:
-        normal_bam = outdir + "/svs/gridss/{}-targeted.bam".format(normal_barcode),
+        normal_bam = outdir + "/svs/gridss/{}-gridss-targeted.bam".format(normal_barcode),
         reference = reference["bwaIndex"]
     output:
         assembly_bam = "{}/svs/gridss/{}-assembly.bam".format(outdir, NORMAL_CAPTURE_STR),
@@ -153,8 +154,8 @@ rule gridss_svcalling_normal:
 
 rule gridss_svcalling_somatic:
     input:
-        normal_bam = outdir + "/svs/gridss/{}-targeted.bam".format(normal_barcode),
-        tumor_bam = outdir + "/svs/gridss/{}-targeted.bam".format(tumor_barcode),
+        normal_bam = outdir + "/svs/gridss/{}-gridss-targeted.bam".format(normal_barcode),
+        tumor_bam = outdir + "/svs/gridss/{}-gridss-targeted.bam".format(tumor_barcode),
         reference = reference["bwaIndex"]
     output:
         assembly_bam = "{}/svs/gridss/{}-{}-assembly.bam".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),

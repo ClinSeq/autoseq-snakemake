@@ -115,8 +115,8 @@ class GenerateSymlink():
                               ('sv', 'bam_gridss_tumor', '.*-(T|CFDNA).*nodups.bam.sv.bam$')
                             ])
         else:
-            all_files.extend([('sv', 'bam_cfdna', '.*-CFDNA-.*(svs|contigs.sort).bam$'),
-                              ('sv', 'bam_normal', '^(?:(?!CFDNA).)*(svs|contigs.sort).bam$'),
+            all_files.extend([('sv', 'bam_cfdna', '.*-CFDNA-.*(svs|targeted.bam.sv).bam$'),
+                              ('sv', 'bam_normal', '^(?:(?!CFDNA).)*(svs|targeted.bam.sv).bam$'),
                               ('snps', 'vep', '.*.all.(somatic|germline).vep.vcf$')
                             ])
 
@@ -306,7 +306,7 @@ class GenerateSymlink():
                     else:
                         bam_color = '175,175,175'
                     sv_bam_track = tracks_bam_str.format(bam_file_full=full_path, bam_file=each_file, color=bam_color)
-                    sv_bam_panel += panel_str.format(panel_height=150, panel_width=2543, panel_name=each_file, tracks=sv_bam_track)
+                    sv_bam_panel += panel_str.format(panel_height=50, panel_width=2543, panel_name=each_file, tracks=sv_bam_track)
 
                 if each_track.startswith('mut'):
                     # get content of SDID column to append to id and name fields in the track

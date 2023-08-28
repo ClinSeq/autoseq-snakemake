@@ -154,14 +154,17 @@ elif vcftype == "germline":
     output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'ENSEMBLID', 'IMPACT', 'CONSEQUENCE', 'TRANSCRIPT', 'HGVSc','HGVSp', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID', 'gnomAD', 'BRCAEx', 'OncoKB', 'CGC_ANN']) + "\n")
 
 for record in vcf_reader:
-    canonical_trans = csq_parsing(record.INFO['CSQ'], vcftype)
-    gene = canonical_trans['SYMBOL']
-    ensembl_id = canonical_trans['Gene']
-    aa = canonical_trans['Amino_acids'].split('/')
-    protein_position = canonical_trans['Protein_position'].split('/')
-    clinsig =  canonical_trans['CLIN_SIG']
-    impact = canonical_trans['IMPACT']
-    brcaEx = canonical_trans['BrcaEx_ClinicalSignificance']
+    try:
+        canonical_trans = csq_parsing(record.INFO['CSQ'], vcftype)
+        gene = canonical_trans['SYMBOL']
+        ensembl_id = canonical_trans['Gene']
+        aa = canonical_trans['Amino_acids'].split('/')
+        protein_position = canonical_trans['Protein_position'].split('/')
+        clinsig =  canonical_trans['CLIN_SIG']
+        impact = canonical_trans['IMPACT']
+        brcaEx = canonical_trans['BrcaEx_ClinicalSignificance']
+    except:
+        continue
     
     if 'gnomAD_AF' in canonical_trans:
         gnomAD = canonical_trans['gnomAD_AF']
@@ -237,25 +240,24 @@ for record in vcf_reader:
         if len(record.ALT) == 1 and filter_col == 'PASS' and \
             (impact == 'HIGH' or impact == 'MODERATE' or is_splice_variant) and not wgs:
             
-            if record.INFO['set'] == 'Intersection' or record.INFO['set'] == 'haplotypecaller':
-                if "missense_variant" in canonical_trans['Consequence'] and 'pathogenic' not in clinsig:
-                    continue
-                
-                if is_splice_variant and 'pathogenic' not in clinsig:
-                    continue
-                
-                if normal['DP'] and normal['AD']:
-                    normal_dp = normal['DP']
-                    normal_alt = normal['AD'][1]
-                    normal_vaf = float(normal_alt)/float(normal_dp)
+            if "missense_variant" in canonical_trans['Consequence'] and 'pathogenic' not in clinsig:
+                continue
+            
+            if is_splice_variant and 'pathogenic' not in clinsig:
+                continue
+            
+            if normal['DP'] and normal['AD']:
+                normal_dp = normal['DP']
+                normal_alt = normal['AD'][1]
+                normal_vaf = float(normal_alt)/float(normal_dp)
 
-                    output_file.write('\t'.join(map(str, [record.CHROM, record.POS-1, record.POS,
-                                                          record.REF, record.ALT, '', '', '', gene, ensembl_id, 
-                                                          impact, canonical_trans['Consequence'], 
-                                                          canonical_trans['Feature'], canonical_trans['HGVSc'],
-                                                          canonical_trans['HGVSp'], normal_dp , normal_alt,
-                                                          round(normal_vaf, 2), clinsig, record.ID, gnomAD,
-                                                          brcaEx, oncogenicity, cgcann])) + "\n")
+                output_file.write('\t'.join(map(str, [record.CHROM, record.POS-1, record.POS,
+                                                        record.REF, record.ALT, '', '', '', gene, ensembl_id, 
+                                                        impact, canonical_trans['Consequence'], 
+                                                        canonical_trans['Feature'], canonical_trans['HGVSc'],
+                                                        canonical_trans['HGVSp'], normal_dp , normal_alt,
+                                                        round(normal_vaf, 2), clinsig, record.ID, gnomAD,
+                                                        brcaEx, oncogenicity, cgcann])) + "\n")
         
         # WGS filter
         if (wgs and len(record.ALT) == 1 and impact == 'HIGH' and not gene.startswith("HLA")) \
