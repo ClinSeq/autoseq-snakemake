@@ -67,6 +67,7 @@ class GenerateSymlink():
                 symlinks = (('variants','.vep.vcf'),('bams','nodups.bam'), ('bams','nodups.bam.bai'),
                             ('bams','clipoverlap.bam'), ('bams','clipoverlap.bai'), ('variants','.vep.vcf'), 
                             ('cnv', '.bedGraph'), ('variants', '.bedGraph'), ('svs/igv','.mut'), ('svs','.gtf'), 
+                            ('svs/gridss', 'bam.sv.bam'), ('svs/gridss', 'bam.sv.bam.csi'), 
                             ('svs','.bam'), ('svs','.bai'), ('', 'igvnav-input.txt')) + args
             
             for each_input in symlinks:
