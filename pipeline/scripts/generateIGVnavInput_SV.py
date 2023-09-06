@@ -7,7 +7,9 @@ import glob
 import re
 import json
 import pandas as pd
+import pyranges as pr
 import vcf
+
 
 
 valid_chromo = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "X", "Y"]
@@ -39,6 +41,16 @@ def loadCGC(filepath):
             cgc_ann[gene_symbol] = (ann, ensemblID)
     
     return cgc_ann
+
+
+def load_exons(gtfpath):
+    """
+    function to load gtf file
+    """
+    colnames = ["Chromosome", "source", "type", "Start", "End", "score", "Strand", "name", "feature"]
+    exons_df = pd.read_csv(gtfpath, header = None, sep = "\t", names = colnames)
+
+    return pr.PyRanges(exons_df)
 
 
 def get_igvcolortype(mutfile, tool):
@@ -332,7 +344,7 @@ def check_targets(chrom, start, end, targets):
 
 
 
-def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output):
+def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output, exons):
     """
     Parsing combined sv list and apply gene annotation for each SV
     """
@@ -409,7 +421,6 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
 
             if capture == "WG":
                 curator = "NO"
-
                 if list(filter(None, cgcann)) != []:
                     curator = "YES"
             else:
@@ -419,6 +430,8 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
                 else:
                     curator = "NO"
             
+                
+
             if tool == 'gridss' and chrom_b == 'NA':
                 svlength = abs(int(end_a)-int(start_a))
                 # calculation for gridss INS svlength
@@ -433,8 +446,31 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
             summary_sv.append([chrom_a, start_a, end_a, chrom_b, start_b, end_b, igv_coord, svtype,
                                 svlength, sup_reads, tool, sdid, sample, gene_a, 
                                 gene_b, gene_a_b_sorted, ",".join(list(filter(None, cgcann))), curator])
-        summary_sv_df = pd.DataFrame(summary_sv, columns = summary_columns)
-        summary_sv_df_sorted = summary_sv_df.sort_values(["GENE_A-GENE_B-sorted", "CHROM_A", "START_A", "CHROM_B", "START_B", "TOOL"], 
+        
+
+        svs_df = pd.DataFrame(summary_sv, columns = summary_columns)
+
+        # checking exons overlaps
+        svs_df['idx'] = svs_df.index
+        hits_idx = svs_df[svs_df['SVTYPE'] == "TRA"].index
+        svs_bp1_df = svs_df[["CHROM_A", "START_A", "END_A", "SVTYPE", "idx", "CURATOR"]].rename(columns = {"CHROM_A": "Chromosome", "START_A": "Start", "END_A": "End"})
+        svs_bp1_pr = pr.PyRanges(svs_bp1_df.loc[(svs_bp1_df['SVTYPE'] != "TRA") & (svs_bp1_df['CURATOR'] == "YES")])
+        svs_bp2_df = svs_df[["CHROM_B", "START_B", "END_B", "SVTYPE", "idx", "CURATOR"]].rename(columns = {"CHROM_B": "Chromosome", "START_B": "Start", "END_B": "End"})
+        svs_bp2_df.drop(svs_bp2_df[svs_bp2_df['Chromosome'] == 'NA'].index, inplace = True)
+        svs_bp2_pr = pr.PyRanges(svs_bp2_df.loc[(svs_bp2_df['SVTYPE'] != "TRA") & (svs_bp2_df['CURATOR'] == "YES")])
+
+        t_idx = set(svs_bp1_pr.idx)
+
+        hits_idx = set(svs_bp1_pr.intersect(exons).idx)
+        hits_bp2 = svs_bp2_pr.intersect(exons)
+        _idx = set(hits_bp2.idx) if hits_bp2 else set()
+
+        hits_idx.update(_idx) 
+        filter_idx = t_idx - hits_idx
+        svs_df.loc[list(filter_idx), "CURATOR"] = "NO"
+        del svs_df['idx']
+
+        summary_sv_df_sorted = svs_df.sort_values(["GENE_A-GENE_B-sorted", "CHROM_A", "START_A", "CHROM_B", "START_B", "TOOL"], 
                                                         ascending=[True, True, True, True, True, True])
         summary_sv_df_sorted.to_csv(output, sep = "\t", encoding = 'utf-8', index = False)
 
@@ -460,6 +496,7 @@ if __name__ == "__main__":
     parser.add_argument('--vcftype', help="somatic (or) germline vcf (only for svaba)")
     parser.add_argument('--tool', help="Tool name - Variant callers")
     parser.add_argument('--cgc', help="Cancer Gene Census Annotation ")
+    parser.add_argument('--exons', help="human exons coordinates as gtf file")
     parser.add_argument('--output', required=True,
                         help="output tab delimited file for IGVNav, format=output.mut")
     args = parser.parse_args()
@@ -476,6 +513,9 @@ if __name__ == "__main__":
 
     if args.cgc:
         cgc_ann = loadCGC(args.cgc)
+    
+    if args.exons:
+        exons = load_exons(args.exons)
     
     output_dir = os.path.dirname(output)
 
@@ -495,5 +535,6 @@ if __name__ == "__main__":
         targets = json.load(fh)
         if capture_kit in targets:
             targets = targets[capture_kit]
-        annotate_combined_sv(combined_input, genes, targets, capture_kit, cgc_ann, output)
+        annotate_combined_sv(combined_input, genes, targets, 
+                             capture_kit, cgc_ann, output, exons)
 

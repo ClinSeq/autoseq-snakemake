@@ -125,6 +125,7 @@ rule gatk4_mutect2:
         " -bamout {output.bam} -O {output.vcf} 2> {log} && "
         " gatk --java-options '-Xmx10g -Djava.io.tmpdir={params.tmpdir}' "
         " FilterMutectCalls  -R {input.reference} "
+        " --max-alt-allele-count 2 "
         " -V {output.vcf}  "
         " -O {output.filtered_vcf} 2>> {log} && "
         " vt decompose -s {output.filtered_vcf} "
@@ -199,6 +200,7 @@ rule sage_somatic:
         min_baseq = 30,
         min_paneltq = 250
     threads: params['sage']['threads']
+    container: containers['gridss']
     log:
         "{}/logs/variants/{}-{}-sage-somatic.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:
@@ -257,6 +259,7 @@ rule somaticseq_merge:
     params:
         tmpdir = params['scratch']
     threads: params['somaticseq']['threads']
+    container: containers['somaticseq']
     log:
         "{}/logs/variants/{}-{}-somaticseq.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:

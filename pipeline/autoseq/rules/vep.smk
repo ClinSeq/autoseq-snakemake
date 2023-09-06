@@ -11,6 +11,7 @@ rule vep_annotation:
         germline = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR),
         somatic = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: params['vep']['threads']
+    container: containers['ensemblvep']
     shell:
         "source activate ensembl-vep && "
         "vep --vcf --output_file STDOUT " 
@@ -40,6 +41,7 @@ rule vep_vardict:
     output:
         "{}/variants/vardict/{}-{}.vardict-somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: params['vep']['threads']
+    container: containers['ensemblvep']
     shell:
         "source activate ensembl-vep && "
         "vep --vcf --output_file STDOUT " 
