@@ -232,6 +232,7 @@ rule sage_splitvcf:
         tmp_vcf = "{}/variants/{}-{}-hartwig-sage-somatic.pass.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR), 
         snv = "{}/variants/{}-{}-hartwig-sage-somatic.snvs.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
         indel =  "{}/variants/{}-{}-hartwig-sage-somatic.indels.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    container: containers['somaticseq']
     log:
         "{}/logs/variants/{}-{}-sage-somatic-splitvcf.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:
@@ -254,8 +255,7 @@ rule somaticseq_merge:
     output:
         rundir = directory("{}/variants/{}-{}-somaticseq".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)),
         consensus_snv = "{}/variants/{}-{}-somaticseq/Consensus.sSNV.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-        consensus_indel = "{}/variants/{}-{}-somaticseq/Consensus.sINDEL.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-        all_somatic = "{}/variants/{}-{}-all.somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        consensus_indel = "{}/variants/{}-{}-somaticseq/Consensus.sINDEL.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     params:
         tmpdir = params['scratch']
     threads: params['somaticseq']['threads']
@@ -270,14 +270,27 @@ rule somaticseq_merge:
         " --normal-bam-file {input.normal_bam} " 
         " --mutect2-vcf {input.mutect2} "
         " --arbitrary-snvs {input.sage_snv} "
-        " --arbitrary-indels {input.sage_indel} && "
+        " --arbitrary-indels {input.sage_indel} 2> {log} "
+
+
+rule gatk3_combinevariants:
+    input:
+        reference = reference['reference_genome'],
+        consensus_snv = "{}/variants/{}-{}-somaticseq/Consensus.sSNV.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        consensus_indel = "{}/variants/{}-{}-somaticseq/Consensus.sINDEL.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    output:
+        "{}/variants/{}-{}-all.somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    threads: params['somaticseq']['threads']
+    container: containers['gatk3']
+    log:
+        "{}/logs/variants/{}-{}-combine_somaticvcf.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    shell:    
         " source activate gatk_3 && "
         " gatk3 -T CombineVariants "
-        " -R {input.reference} --variant {output.consensus_snv} " 
-        " --variant {output.consensus_indel} " 
-        " --assumeIdenticalSamples  | bgzip > {output.all_somatic} && "
-        " source deactivate && "
-        " tabix -p vcf {output.all_somatic} 2> {log} "
+        " -R {input.reference} --variant {input.consensus_snv} " 
+        " --variant {input.consensus_indel} " 
+        " --assumeIdenticalSamples  | bgzip > {output} && "
+        " tabix -p vcf {output} 2> {log} "
 
 
 rule vardict_purecn:
