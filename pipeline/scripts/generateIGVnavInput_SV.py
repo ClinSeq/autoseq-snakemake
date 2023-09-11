@@ -452,20 +452,22 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
 
         # checking exons overlaps
         svs_df['idx'] = svs_df.index
-        #hits_idx = svs_df[svs_df['SVTYPE'] == "TRA"].index
+        # fetching indices except TRA and off target svs
+        t_idx = set(svs_df[(svs_df['SVTYPE'] != "TRA") & (svs_df['CURATOR'] == "YES")].index)
+        
+        # generating pyranges for gridss and svcaller
         svs_gridss_df = svs_df[["CHROM_A", "START_A", "END_A", "SVTYPE", "idx", "CURATOR", "TOOL"]].rename(columns = {"CHROM_A": "Chromosome", "START_A": "Start", "END_A": "End"})
         svs_gridss_pr = pr.PyRanges(svs_gridss_df.loc[(svs_gridss_df['SVTYPE'] != "TRA") & (svs_gridss_df['CURATOR'] == "YES") & (svs_gridss_df['TOOL'] == "gridss") ])
         svs_svcaller_df = svs_df[["CHROM_A", "START_A", "END_A", "CHROM_B", "START_B", "END_B", "SVTYPE", "idx", "CURATOR", "TOOL"]].rename(columns = {"CHROM_A": "Chromosome", "START_A": "Start", "END_B": "End"})
-        #svs_bp2_df.drop(svs_bp2_df[svs_bp2_df['CHROM_B'] == 'NA'].index, inplace = True)
         svs_svcaller_pr = pr.PyRanges(svs_svcaller_df.loc[(svs_svcaller_df['SVTYPE'] != "TRA") & (svs_svcaller_df['CURATOR'] == "YES") & (svs_svcaller_df['TOOL'] == "svcaller")])
 
-        t_idx = set(svs_gridss_pr.idx)
-
+        # find exons overlapping svs
         hits_idx = set(svs_gridss_pr.intersect(exons).idx)
         hits_svc = svs_svcaller_pr.intersect(exons)
         _idx = set(hits_svc.idx) if hits_svc else set()
-
-        hits_idx.update(_idx) 
+        hits_idx.update(_idx)
+        
+        # filter non overlapping svs by index
         filter_idx = t_idx - hits_idx
         svs_df.loc[list(filter_idx), "CURATOR"] = "NO"
         del svs_df['idx']
