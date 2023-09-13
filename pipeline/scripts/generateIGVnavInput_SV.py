@@ -456,7 +456,9 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
 
         svs_df = pd.DataFrame(summary_sv, columns = summary_columns)
         # hard filter for gridss germline svs
-        gf_idx = svs_df[(svs_df['SAMPLE'] == "germline") &  (svs_df['SUPPORT_READS'].astype('int') < 40)].index
+        gf_idx = svs_df[(svs_df['TOOL'] == "gridss") & \
+                        (svs_df['SAMPLE'] == "germline") & \
+                        (svs_df['SUPPORT_READS'].astype('int') < 40)].index
         svs_df.loc[list(gf_idx), "CURATOR"] = "NO"
 
         # checking exons overlaps
@@ -465,10 +467,27 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
         t_idx = set(svs_df[(svs_df['SVTYPE'] != "TRA") & (svs_df['CURATOR'] == "YES")].index)
         
         # generating pyranges for gridss and svcaller
-        svs_gridss_df = svs_df[["CHROM_A", "START_A", "END_A", "CHROM_B", "START_B", "END_B", "SVTYPE", "idx", "CURATOR", "TOOL"]].rename(columns = {"CHROM_A": "Chromosome", "START_A": "Start", "END_B": "End"})
-        svs_gridss_pr = pr.PyRanges(svs_gridss_df.loc[(svs_gridss_df['SVTYPE'] != "TRA") & (svs_gridss_df['CURATOR'] == "YES") & (svs_gridss_df['TOOL'] == "gridss") ])
-        svs_svcaller_df = svs_df[["CHROM_A", "START_A", "END_A", "CHROM_B", "START_B", "END_B", "SVTYPE", "idx", "CURATOR", "TOOL"]].rename(columns = {"CHROM_A": "Chromosome", "START_A": "Start", "END_B": "End"})
-        svs_svcaller_pr = pr.PyRanges(svs_svcaller_df.loc[(svs_svcaller_df['SVTYPE'] != "TRA") & (svs_svcaller_df['CURATOR'] == "YES") & (svs_svcaller_df['TOOL'] == "svcaller")])
+        svs_gridss_df = svs_df[["CHROM_A", "START_A", "END_A", 
+                                "CHROM_B", "START_B", "END_B", 
+                                "SVTYPE", "idx", "CURATOR", 
+                                "TOOL"]].rename(columns = {
+                                    "CHROM_A": "Chromosome", 
+                                    "START_A": "Start", 
+                                    "END_B": "End"
+                                })
+        svs_gridss_pr = pr.PyRanges(svs_gridss_df.loc[(svs_gridss_df['SVTYPE'] != "TRA") & \
+                                                      (svs_gridss_df['CURATOR'] == "YES") & \
+                                                      (svs_gridss_df['TOOL'] == "gridss") ])
+        svs_svcaller_df = svs_df[["CHROM_A", "START_A", "END_A", 
+                                  "CHROM_B", "START_B", "END_B", 
+                                  "SVTYPE", "idx", "CURATOR", 
+                                  "TOOL"]].rename(columns = {
+                                      "CHROM_A": "Chromosome", 
+                                      "START_A": "Start", 
+                                      "END_B": "End"})
+        svs_svcaller_pr = pr.PyRanges(svs_svcaller_df.loc[(svs_svcaller_df['SVTYPE'] != "TRA") & \
+                                                          (svs_svcaller_df['CURATOR'] == "YES") & \
+                                                          (svs_svcaller_df['TOOL'] == "svcaller")])
 
         # find exons overlapping svs
         hits_idx = set(svs_gridss_pr.intersect(exons).idx)
