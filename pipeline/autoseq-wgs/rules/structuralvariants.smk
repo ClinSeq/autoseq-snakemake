@@ -159,6 +159,7 @@ rule gridss_svcalling_normal:
         jvmheap = '10g',
         workdir = directory("{}/svs/gridss/".format(outdir))
     threads: params['gridss']['threads']
+    container: containers['gridss']
     log:
         outdir + "/logs/svs/gridss-{}.log".format(NORMAL_CAPTURE_STR)
     shell:
@@ -186,6 +187,7 @@ rule gridss_svcalling_somatic:
         jvmheap = '10g',
         workdir = directory("{}/svs/gridss/".format(outdir))
     threads: params['gridss']['threads']
+    container: containers['gridss']
     log:
         outdir + "/logs/svs/gridss-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     shell:
@@ -209,6 +211,7 @@ rule gridss_somatic_filter:
         pondir = reference["pondir"],
         script_dir = os.environ.get('GRIDSS_SCRIPT')
     threads: params["gridss_filter"]["threads"]
+    container: containers['gridss']
     log:
         outdir + "/logs/svs/gridss-somatic-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     shell:
@@ -228,6 +231,7 @@ rule gridss_svannotation:
         somatic_vcf = "{}/svs/gridss/{}-{}-gridss.filtered.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         normal_vcf = "{}/svs/gridss/{}-gridss.svannoated.vcf".format(outdir, NORMAL_CAPTURE_STR)
     threads: params["gridss_filter"]["threads"]
+    container: containers['gridss']
     log:
         outdir + "/logs/svs/gridss-svannotation-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     shell:

@@ -309,7 +309,7 @@ rule vt_decomp_norm_hc:
         reference = reference['reference_genome'],
         vcf = "{}/variants/haplotypecaller/{}.haplotypecaller-germline.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
     output:
-        "{}/variants/haplotypecaller/{}.haplotypecaller.split_norm.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
+        "{}/variants/{}-merged.germline.split_norm.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
     threads: 1
     log:
         "{}/logs/variants/haplotypecaller/{}.vt_decomp_norm_haplotypecaller.log".format(outdir, CANCER_CAPTURE_STR)
@@ -319,82 +319,82 @@ rule vt_decomp_norm_hc:
         " tabix -p vcf {output} "
 
 
-rule strelka_germline:
-    input:
-        bam = capture_to_results[CANCER_CAPTURE].umibam,
-        reference = reference['reference_genome'],
-        call_region = reference['targets'][capture_name]['targets-bed-slopped20-gz'],
-    output:
-        vcf = "{}/variants/{}-strelka-germline.passed.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
-    params: 
-        rundir = "{}/variants/{}-strelka-germline".format(outdir, CANCER_CAPTURE_STR)
-    threads: params["strelka"]["threads"]
-    log:
-        "{}/logs/variants/{}.strelka-germline.log".format(outdir, CANCER_CAPTURE_STR)
-    shell:
-        "source activate gatk_3 && "
-        "configureStrelkaGermlineWorkflow.py  --bam {input.bam} "
-        " --ref {input.reference} --targeted "
-        " --callRegions {input.call_region} "
-        " --runDir {params.rundir} && "
-        " {params.rundir}/runWorkflow.py -m local -j {threads} 2> {log} && "
-        "zcat {params.rundir}/results/variants/variants.vcf.gz "
-        " | awk 'BEGIN {{ OFS = \"\t\"}} /^#/ {{ print $0 }} {{if($7==\"PASS\") print $0 }}' "
-        " | bgzip > {output.vcf} && "
-        " tabix -p vcf {output.vcf} && "
-        "rm -rf {params.rundir} "
+# rule strelka_germline:
+#     input:
+#         bam = capture_to_results[CANCER_CAPTURE].umibam,
+#         reference = reference['reference_genome'],
+#         call_region = reference['targets'][capture_name]['targets-bed-slopped20-gz'],
+#     output:
+#         vcf = "{}/variants/{}-strelka-germline.passed.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
+#     params: 
+#         rundir = "{}/variants/{}-strelka-germline".format(outdir, CANCER_CAPTURE_STR)
+#     threads: params["strelka"]["threads"]
+#     log:
+#         "{}/logs/variants/{}.strelka-germline.log".format(outdir, CANCER_CAPTURE_STR)
+#     shell:
+#         "source activate gatk_3 && "
+#         "configureStrelkaGermlineWorkflow.py  --bam {input.bam} "
+#         " --ref {input.reference} --targeted "
+#         " --callRegions {input.call_region} "
+#         " --runDir {params.rundir} && "
+#         " {params.rundir}/runWorkflow.py -m local -j {threads} 2> {log} && "
+#         "zcat {params.rundir}/results/variants/variants.vcf.gz "
+#         " | awk 'BEGIN {{ OFS = \"\t\"}} /^#/ {{ print $0 }} {{if($7==\"PASS\") print $0 }}' "
+#         " | bgzip > {output.vcf} && "
+#         " tabix -p vcf {output.vcf} && "
+#         "rm -rf {params.rundir} "
 
 
-rule vt_decomp_norm_stl:
-    input:
-        reference = reference['reference_genome'],
-        vcf = "{}/variants/{}-strelka-germline.passed.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
-    output:
-        "{}/variants/{}-strelka-germline.passed.split_norm.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
-    threads: 1
-    log:
-        "{}/logs/variants/{}.vt_decomp_norm_strelka_germline.log".format(outdir, CANCER_CAPTURE_STR)
-    shell:
-        "vt decompose -s {input.vcf} | vt normalize -r {input.reference} - "
-        " | bgzip > {output} 2> {log} && "
-        " tabix -p vcf {output} "
+# rule vt_decomp_norm_stl:
+#     input:
+#         reference = reference['reference_genome'],
+#         vcf = "{}/variants/{}-strelka-germline.passed.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
+#     output:
+#         "{}/variants/{}-strelka-germline.passed.split_norm.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
+#     threads: 1
+#     log:
+#         "{}/logs/variants/{}.vt_decomp_norm_strelka_germline.log".format(outdir, CANCER_CAPTURE_STR)
+#     shell:
+#         "vt decompose -s {input.vcf} | vt normalize -r {input.reference} - "
+#         " | bgzip > {output} 2> {log} && "
+#         " tabix -p vcf {output} "
 
 
-rule gatk3_mergevcf:
-    input:
-        reference = reference['reference_genome'],
-        haplotypecaller = "{}/variants/haplotypecaller/{}.haplotypecaller.split_norm.vcf.gz".format(outdir, CANCER_CAPTURE_STR),
-        strelka = "{}/variants/{}-strelka-germline.passed.split_norm.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
-    output:
-        "{}/variants/{}-merged.germline.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
-    threads: params['gatk3']['threads']
-    log:
-        "{}/logs/variants/{}.combine-germline.log".format(outdir, CANCER_CAPTURE_STR)
-    shell:
-        "source activate gatk_3 && "
-        "gatk3 -T CombineVariants "
-        " -R {input.reference} "
-        " --variant:haplotypecaller {input.haplotypecaller} "
-        " --variant:strelka {input.strelka} "
-        " -genotypeMergeOptions PRIORITIZE "
-        " -priority haplotypecaller,strelka "
-        " | bgzip > {output} 2> {log} && "
-        " tabix -p vcf {output}"
+# rule gatk3_mergevcf:
+#     input:
+#         reference = reference['reference_genome'],
+#         haplotypecaller = "{}/variants/haplotypecaller/{}.haplotypecaller.split_norm.vcf.gz".format(outdir, CANCER_CAPTURE_STR),
+#         strelka = "{}/variants/{}-strelka-germline.passed.split_norm.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
+#     output:
+#         "{}/variants/{}-merged.germline.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
+#     threads: params['gatk3']['threads']
+#     log:
+#         "{}/logs/variants/{}.combine-germline.log".format(outdir, CANCER_CAPTURE_STR)
+#     shell:
+#         "source activate gatk_3 && "
+#         "gatk3 -T CombineVariants "
+#         " -R {input.reference} "
+#         " --variant:haplotypecaller {input.haplotypecaller} "
+#         " --variant:strelka {input.strelka} "
+#         " -genotypeMergeOptions PRIORITIZE "
+#         " -priority haplotypecaller,strelka "
+#         " | bgzip > {output} 2> {log} && "
+#         " tabix -p vcf {output}"
 
 
-rule vt_decomp_norm_mergevcf:
-    input:
-        reference = reference['reference_genome'],
-        vcf = "{}/variants/{}-merged.germline.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
-    output:
-        "{}/variants/{}-merged.germline.split_norm.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
-    threads: 1
-    log:
-        "{}/logs/variants/{}.vt_decomp_norm_mergevcf.log".format(outdir, CANCER_CAPTURE_STR)
-    shell:
-        "vt decompose -s {input.vcf} | vt normalize -r {input.reference} - "
-        " | bgzip > {output} 2> {log} && "
-        " tabix -p vcf {output} "
+# rule vt_decomp_norm_mergevcf:
+#     input:
+#         reference = reference['reference_genome'],
+#         vcf = "{}/variants/{}-merged.germline.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
+#     output:
+#         "{}/variants/{}-merged.germline.split_norm.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
+#     threads: 1
+#     log:
+#         "{}/logs/variants/{}.vt_decomp_norm_mergevcf.log".format(outdir, CANCER_CAPTURE_STR)
+#     shell:
+#         "vt decompose -s {input.vcf} | vt normalize -r {input.reference} - "
+#         " | bgzip > {output} 2> {log} && "
+#         " tabix -p vcf {output} "
 
 
 ### SNP BAFs ###

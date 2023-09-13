@@ -202,6 +202,7 @@ rule sage_somatic:
         tumorid = compose_sample_str(CANCER_CAPTURE),
         jarfile = os.environ.get('SAGE_JAR')
     threads: params['sage']['threads']
+    container: containers['gridss']
     log:
         "{}/logs/variants/{}-{}-sage-somatic.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:
@@ -225,6 +226,7 @@ rule sage_splitvcf:
         snv = "{}/variants/{}-{}-hartwig-sage-somatic.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
         indel =  "{}/variants/{}-{}-hartwig-sage-somatic.indels.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: 1
+    container: containers['somaticseq']
     log:
         "{}/logs/variants/{}-{}-sage-somatic-splitvcf.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:
@@ -245,11 +247,11 @@ rule somaticseq_merge:
     output:
         rundir = directory("{}/variants/{}-{}-somaticseq".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)),
         consensus_snv = "{}/variants/{}-{}-somaticseq/Consensus.sSNV.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-        consensus_indel = "{}/variants/{}-{}-somaticseq/Consensus.sINDEL.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-        all_somatic = "{}/variants/{}-{}-all.somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        consensus_indel = "{}/variants/{}-{}-somaticseq/Consensus.sINDEL.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     params:
         tmpdir = params['scratch']
     threads: 16
+    container: containers['somaticseq']
     log:
         "{}/logs/variants/{}-{}-somaticseq.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:
@@ -262,14 +264,27 @@ rule somaticseq_merge:
         " --mutect2-vcf {input.mutect2} " 
         " --vardict-vcf {input.vardict} " 
         " --arbitrary-snvs {input.sage_snv} "
-        " --arbitrary-indels {input.sage_indel} && "
+        " --arbitrary-indels {input.sage_indel} "
+
+
+rule gatk3_combinevariants:
+    input:
+        reference = reference['reference_genome'],
+        consensus_snv = "{}/variants/{}-{}-somaticseq/Consensus.sSNV.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        consensus_indel = "{}/variants/{}-{}-somaticseq/Consensus.sINDEL.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    output:
+        "{}/variants/{}-{}-all.somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    threads: 8
+    container: containers['gatk3']
+    log:
+        "{}/logs/variants/{}-{}-somaticseq-vcfmerge.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    shell:
         " source activate gatk_3 && "
         " gatk3 -T CombineVariants "
         " -R {input.reference} --variant {output.consensus_snv} " 
         " --variant {output.consensus_indel} " 
-        " --assumeIdenticalSamples  | bgzip > {output.all_somatic} && "
-        " source deactivate && "
-        " tabix -p vcf {output.all_somatic} 2> {log} "
+        " --assumeIdenticalSamples  | bgzip > {output} 2> {log} && "
+        " tabix -p vcf {output} 2>> {log} "
 
 
 rule somatic_generateIGVnav:
