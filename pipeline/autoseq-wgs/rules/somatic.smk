@@ -281,8 +281,8 @@ rule gatk3_combinevariants:
     shell:
         " source activate gatk_3 && "
         " gatk3 -T CombineVariants "
-        " -R {input.reference} --variant {output.consensus_snv} " 
-        " --variant {output.consensus_indel} " 
+        " -R {input.reference} --variant {input.consensus_snv} " 
+        " --variant {input.consensus_indel} " 
         " --assumeIdenticalSamples  | bgzip > {output} 2> {log} && "
         " tabix -p vcf {output} 2>> {log} "
 
