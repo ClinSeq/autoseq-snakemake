@@ -1,0 +1,33 @@
+import json
+
+
+include: "../utils/utils.py"
+include: "../utils/clinseq_barcodes.py"
+
+
+samples = json.load(open(config['samples']))
+params = config['params']
+refjson = json.load(open(config['reference']))
+
+# loading reference files
+basepath = os.path.dirname(config['reference'])
+reference = make_paths_absolute(refjson, basepath)
+umi = config['umi']
+libdir = config['libdir']
+outdir = config['outdir']
+
+shell.prefix("set -eo pipefail;")
+
+# create symlink for normal bam files
+bams = config['bams']
+for bam in bams:
+    bname = os.path.basename(bam)
+    dstdir = os.path.join(outdir, "bams")
+
+    if not os.path.exists(dstdir):
+        os.makedirs(dstdir, exist_ok=True)
+    
+    if not os.path.exists(os.path.join(dstdir, bname)):
+        os.symlink(os.path.join(bam), os.path.join(dstdir, bname))
+
+
