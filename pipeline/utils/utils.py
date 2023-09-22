@@ -3,6 +3,28 @@ from pipeline.utils.clinseq_barcodes import parse_prep_id, compose_sample_str, \
     extract_unique_capture, find_fastqs
 
 
+def get_containers(_path):
+    """
+    """
+    containers = {
+        "base": os.path.join(_path, "autoseq-base.sif"),
+        "franken": os.path.join(_path, "autoseq-franken.sif"),
+        "gatk3": os.path.join(_path, "autoseq-gatk3.sif"),
+        "gridss": os.path.join(_path, "autoseq-gridss.sif"),
+        "jumble": os.path.join(_path, "autoseq-jumble.sif"),
+        "purecn": os.path.join(_path, "autoseq-purecn.sif"),
+        "ensemblvep": os.path.join(_path, "autoseq-ensemblvep.sif"),
+        "somaticseq": os.path.join(_path, "autoseq-somaticseq.sif"),
+        "svcaller": os.path.join(_path, "autoseq-svcaller.sif")
+    }
+
+    for k, v in containers.items():
+        if not os.path.exists(v):
+            raise ValueError("Invalid container PATH to " + v)
+    
+    return containers
+
+
 def get_scheduler(scheduler, filetype):
     """
     In cluster environment, to get sheduler script and config file

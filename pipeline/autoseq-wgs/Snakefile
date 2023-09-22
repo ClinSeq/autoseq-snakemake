@@ -137,6 +137,8 @@ wildcard_constraints:
 
 container: config['container']['base']
 
+containers = config['container']
+
 rule all:
     input: 
         outdir + "/bams/intermediate_bamfiles.removed",
