@@ -155,6 +155,7 @@ OUTPUT.append(outdir + "/bams/intermediate_bamfiles.removed")
 
 container: config['container']['base']
 
+containers = config['container']
 
 rule all:
     input:

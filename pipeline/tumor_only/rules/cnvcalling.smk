@@ -45,6 +45,7 @@ rule jumblerun_cnv:
     params:
         outdir = outdir + "/cnv/"
     threads: params['jumble']['threads']
+    container: containers['jumble']
     log:
         outdir + "/logs/variants/{sample}-jumblerun-cnv.log"
     shell:
@@ -94,9 +95,10 @@ rule liqbiocna_plot:
         tumor_tra = capture_to_results[CANCER_CAPTURE].svs['TRA'],
         tmp_germvcf = "{}/variants/tmp-{}-merged.germline.split_norm.brcaEx.vep.vcf".format(outdir, CANCER_CAPTURE_STR),
         mock_txt = os.path.join(outdir, "mock.txt")
+    container: containers['franken']
     threads: params['liqbiocna']['threads']
-    run:
-        shell("source activate franken && " 
+    shell:
+        "source activate franken && " 
         "touch {params.mock_txt} && "
         "zcat {input.germline_vcf} | awk -F '\\t' -v OFS='\\t' "
         " '{{if ($1 ~ /^#/) print $0; else if ($5 != \"*\") {{$3=\".\"; print $0}}}}' > {params.tmp_germvcf} && "
@@ -125,7 +127,7 @@ rule liqbiocna_plot:
                     "  --purity_json {output.purity_json} "
                     "  --gene_track {input.gene_track} && "
         "rm {params.tmp_germvcf} && "
-        " source deactivate ")
+        " source deactivate "
 
 
 rule franken_plot:
@@ -147,9 +149,10 @@ rule franken_plot:
         tumor_inv = capture_to_results[CANCER_CAPTURE].svs['INV'],
         tumor_tra = capture_to_results[CANCER_CAPTURE].svs['TRA'],
         frankenplot_rmd = os.environ.get('FRANKEN_RMD')
+    container: containers['jumble']
     threads: params['liqbiocna']['threads']
-    run:
-        shell("source activate jumble-env && " 
+    shell:
+        "source activate jumble-env && " 
         "frankenscript.R  --tumor_cnr {input.cnr} "
                     "  --tumor_cns {input.cns} "
                     "  --frankenplot_Rmd {params.frankenplot_rmd} "
@@ -163,5 +166,5 @@ rule franken_plot:
                     "  --svcaller_T_INV {params.tumor_inv} "
                     "  --svcaller_T_TRA {params.tumor_tra} "
                     "  --somatic_mut_vcf {input.somatic_vcf} "
-                    "  --output {output.frankenplot} || true ")
-        shell("touch {output.frankenplot} ")
+                    "  --output {output.frankenplot} || true && "
+        "touch {output.frankenplot} "
