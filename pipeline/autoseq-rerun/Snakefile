@@ -1,3 +1,5 @@
+import os
+import uuid 
 import json
 
 
@@ -18,8 +20,26 @@ outdir = config['outdir']
 
 shell.prefix("set -eo pipefail;")
 
+### Generate Capture Strings
+NORMAL_CAPTURE = [extract_unique_capture(sample) 
+                    for sample in all_clinseq_barcodes 
+                        if '-N-' in sample][0]
+CANCER_CAPTURE = [extract_unique_capture(sample) 
+                    for sample in all_clinseq_barcodes 
+                        if '-CFDNA-' in sample or '-T-' in sample][0]
+
+NORMAL_CAPTURE_STR = compose_lib_capture_str(NORMAL_CAPTURE)
+CANCER_CAPTURE_STR = compose_lib_capture_str(CANCER_CAPTURE)
+NORMAL_SAMPLE_STR = compose_sample_str(NORMAL_CAPTURE)
+CANCER_SAMPLE_STR = compose_sample_str(CANCER_CAPTURE)
+
 # create symlink for normal bam files
 bams = config['bams']
+
+pattern = bamdir + NORMAL_CAPTURE_STR + "*[nodups|clipoverlap].bam"
+
+
+
 for bam in bams:
     bname = os.path.basename(bam)
     dstdir = os.path.join(outdir, "bams")
@@ -31,3 +51,21 @@ for bam in bams:
         os.symlink(os.path.join(bam), os.path.join(dstdir, bname))
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+include: "rules/qc.smk"
+include: "rules/cnvcalling.smk"
+include: "rules/germline.smk"
+include: "rules/somatic.smk"
+include: "rules/structuralvariants.smk"
+include: "rules/vep.smk"

@@ -39,9 +39,6 @@ rule gatk4_mutect2:
         " | bgzip > {output.normalized_vcf} 2>> {log} "
 
 
-somatic_vcf['mutect2'] = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered-normalized.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
-
-
 rule sage_somatic:
     input:
         normal_bam = normalBam,
@@ -106,6 +103,7 @@ rule sage_splitvcf:
         " bgzip {params.snv} && bgzip {params.indel} "
 
 
+somatic_vcf['mutect2'] = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered-normalized.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
 somatic_vcf['sage_snv'] = "{}/variants/{}-{}-hartwig-sage-somatic.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
 somatic_vcf['sage_indel'] = "{}/variants/{}-{}-hartwig-sage-somatic.indels.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
 

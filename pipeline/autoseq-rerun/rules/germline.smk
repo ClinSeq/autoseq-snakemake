@@ -21,3 +21,17 @@ rule gatk4_haplotypecaller:
             " -L {input.interval_list} "
             " --dbsnp {input.dbsnp} "
             " -O {output.vcf}  2> {log} "
+
+
+rule germline_generateIGVnav:
+    input:
+        vcf = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR),
+        oncokb = reference['oncokb'],
+        cgcann = reference["cgcann"]
+    output:
+        "{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR)
+    params:
+        vcftype = "germline"
+    shell:
+        "generateIGVnavInput.py {input.vcf} {input.oncokb} {params.vcftype} "
+        " --cgc {input.cgcann} --output {output} "
