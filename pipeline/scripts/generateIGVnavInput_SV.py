@@ -7,15 +7,50 @@ import glob
 import re
 import json
 import pandas as pd
+import pyranges as pr
+import vcf
+
+
+
+valid_chromo = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "X", "Y"]
 
 
 # structural variant color map for IGV SV representation
 igv_color_map = {"DEL": "Non-coding_Transcript",
                  "DUP": "Truncating",
+                 "INS": "Truncating",
                  "INV": "Indel",
                  "TRA": "Nonsense",
+                 "CTX": "Nonsense",
                  "BND": "Nonsense"
                  }
+
+
+def loadCGC(filepath):
+    """
+    load Cancer Gene Census file
+    """ 
+    cgc_ann = dict() 
+    with open(filepath, 'r') as fh:
+        header = fh.readline()
+        for line in fh.readlines():
+            data = line.strip('\n').split('\t')
+            ensemblID = data[1]
+            gene_symbol = data[0]
+            ann = data[4]
+            cgc_ann[gene_symbol] = (ann, ensemblID)
+    
+    return cgc_ann
+
+
+def load_exons(gtfpath):
+    """
+    function to load gtf file
+    """
+    colnames = ["Chromosome", "source", "type", "Start", "End", "score", "Strand", "name", "feature"]
+    exons_df = pd.read_csv(gtfpath, header = None, sep = "\t", names = colnames)
+
+    return pr.PyRanges(exons_df)
 
 
 def get_igvcolortype(mutfile, tool):
@@ -33,12 +68,14 @@ def get_igvcolortype(mutfile, tool):
         for line in fh:
             if line.startswith("CHROM"):
                 continue
-            data = line.strip().split()
+            data = line.strip().split('\t')
             chrom = data[0]
             start = data[1]
             end = data[2]
             sdid = data[3]
             svtype = data[4]
+            if svtype == '':
+                svtype = 'BND'
             igvtype = igv_color_map[svtype]
             alt = data[5]
             if tool == "svaba":
@@ -98,16 +135,46 @@ def parse_gridss(input_vcf, SDID, output, vcftype):
     """
     GRIDSS - vcf parsing 
     """
-    header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-                      " > " + output + "_" + vcftype + "_pass_gridss.mut.tmp"
+    # header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
+    #                   " > " + output + "_" + vcftype + "_pass_gridss.mut.tmp"
 
-    gridss_cmd = "zless " + input_vcf  + " | vawk '{ if($7 == \"PASS\")  print $1, $2, $2+1, \""+ SDID + '_gridss_' + vcftype +"\", I$SVTYPE, $5, I$VF}' " \
-                 " >> " + output + "_" + vcftype +"_pass_gridss.mut.tmp"
+    # gridss_cmd = "less " + input_vcf  + " | vawk '{ if($7 == \"PASS\")  print $1, $2, $2+1, \""+ SDID + '_gridss_' + vcftype +"\", I$SIMPLE_TYPE, $5, I$VF}' " \
+    #              " >> " + output + "_" + vcftype +"_pass_gridss.mut.tmp"
     
-    tmp_mut = output + "_" + vcftype + "_pass_gridss.mut.tmp"
-    subprocess.call(" && ".join([header, gridss_cmd]), shell=True)
-    get_igvcolortype(tmp_mut, "gridss")    
+    # tmp_mut = output + "_" + vcftype + "_pass_gridss.mut.tmp"
+    # subprocess.call(" && ".join([header, gridss_cmd]), shell=True)
+    # get_igvcolortype(tmp_mut, "gridss")
+    output_fname = "_".join([output, vcftype, "pass_gridss.mut"])
+    outfile = open(output_fname, "w")
 
+    outfile.write("\t".join(['CHROM','START','END','SDID','TYPE','SVTYPE','ALT','SUPPORT_READS']) + '\n')
+
+    vcf_reader = vcf.Reader(filename=input_vcf)
+    events = set()
+    sdid = SDID + '_gridss_' + vcftype
+    for record in vcf_reader:
+        if record.FILTER != []:
+            continue
+        curr_event = record.INFO['EVENT']
+        
+        if curr_event not in events \
+            and 'SIMPLE_TYPE' in record.INFO:
+
+            svtype = record.INFO['SIMPLE_TYPE']
+            chrom = record.CHROM
+            start = record.POS
+            end = record.POS + 1
+            alt = str(record.ALT[0])
+            
+            if svtype != 'TRA':
+                events.add(curr_event)
+                end = ''.join(list(filter(str.isdigit, alt.split(':')[1])))
+
+            support_reads = record.INFO['VF']
+
+            outfile.write("\t".join(map(str, [chrom, start, end, sdid, 
+                                     igv_color_map[svtype], svtype, alt, support_reads])) + "\n")
+    
 
 def parse_gtf(gtf, sdid, vcftype):
     """
@@ -276,14 +343,15 @@ def check_targets(chrom, start, end, targets):
     return False
 
 
-def annotate_combined_sv(combined_file, genes, targets, output):
+
+def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output, exons):
     """
     Parsing combined sv list and apply gene annotation for each SV
     """
     # output_file = open(output, 'w')
     summary_columns = ['CHROM_A', 'START_A', 'END_A', 'CHROM_B', 'START_B', 'END_B',
                        'IGV_COORD', 'SVTYPE', 'SV_LENGTH', 'SUPPORT_READS', 'TOOL', 'SDID', 'SAMPLE',
-                       'GENE_A', 'GENE_B', "GENE_A-GENE_B-sorted", "CURATOR"]
+                       'GENE_A', 'GENE_B', "GENE_A-GENE_B-sorted", "CGC_ANN", "CURATOR"]
     summary_sv = list()
     with open(combined_file, 'r') as fh:
         header = fh.readline()
@@ -298,13 +366,20 @@ def annotate_combined_sv(combined_file, genes, targets, output):
             tool = data[4]
             sdid = data[5].split('_')[0]
             sample = data[6]
+            alt = data[7]
             sup_reads = data[8] if len(data) == 9 else '.'
             svlength = 'NA'
+            chrom_b = 'NA'
 
-            if ':' in data[7]:
-                chrom_b = ''.join(list(filter(str.isdigit, data[7].split(':')[0])))
-                start_b = ''.join(list(filter(str.isdigit, data[7].split(':')[1])))
-                end_b = int(start_b) + 1
+            if ':' in alt:
+                chrom_b = ''.join(list(filter(str.isdigit, alt.split(':')[0])))
+                end_b = ''.join(list(filter(str.isdigit, alt.split(':')[1])))
+                start_b = int(end_b) - 1
+
+                if 'X' in alt:
+                    chrom_b = 'X'
+                elif 'Y' in alt:
+                    chrom_b = 'Y'
                 
                 if tool == "svcaller":
                     bps = data[7].split(",")
@@ -321,10 +396,21 @@ def annotate_combined_sv(combined_file, genes, targets, output):
                         end_b = bps[0].split(':')[1].split('-')[1]
 
                 igv_coord_b = chrom_b + ':' + str(start_b)
-            else:
+            
+            # Filtered invalid chromosome and decoy events 
+            if chrom_a not in valid_chromo or chrom_b not in valid_chromo:
+                continue
+            
+            # this section for backward compatability
+            if svtype != 'TRA' and tool != 'svcaller' and tool != 'gridss':
                 chrom_b = 'NA'
                 start_b = 'NA'
                 end_b = 'NA'
+            
+            # GRIDSS coord split 
+            if svtype != 'TRA' and tool == 'gridss':
+                end_a = int(start_a)
+                start_a = int(start_a) - 1
 
             igv_coord = ' '.join([igv_coord_a, igv_coord_b])
             gene_a = gene_annotation(chrom_a, start_a, end_a, genes)
@@ -334,16 +420,30 @@ def annotate_combined_sv(combined_file, genes, targets, output):
                 gene_b = gene_annotation(chrom_b, start_b, end_b, genes)
             else:
                 gene_b = 'NA'
+            
+            cgcann = set()
+            cgcann.add(cgc_ann[gene_a][0] if gene_a in cgc_ann else None) 
+            cgcann.add(cgc_ann[gene_b][0] if gene_b in cgc_ann else None)
 
-            
-            if check_targets(chrom_a, start_a, end_a, targets) or \
-                    check_targets(chrom_b, start_b, end_b, targets):
-                curator = "YES"
-            else:
+            if capture == "WG":
                 curator = "NO"
+                if list(filter(None, cgcann)) != []:
+                    curator = "YES"
+            else:
+                if check_targets(chrom_a, start_a, end_a, targets) or \
+                        check_targets(chrom_b, start_b, end_b, targets):
+                    curator = "YES"
+                else:
+                    curator = "NO"
             
-            if tool == 'lumpy' and chrom_b == 'NA':
+                
+
+            if tool == 'gridss' and chrom_b == 'NA':
                 svlength = abs(int(end_a)-int(start_a))
+                # calculation for gridss INS svlength
+                if svtype == "INS":
+                    alt_seq = ''.join(list(filter(str.isalpha, alt)))
+                    svlength = len(alt_seq)
 
             gene_a_b = [gene_a, gene_b]
             gene_a_b.sort()
@@ -351,9 +451,57 @@ def annotate_combined_sv(combined_file, genes, targets, output):
 
             summary_sv.append([chrom_a, start_a, end_a, chrom_b, start_b, end_b, igv_coord, svtype,
                                 svlength, sup_reads, tool, sdid, sample, gene_a, 
-                                gene_b, gene_a_b_sorted, curator])
-        summary_sv_df = pd.DataFrame(summary_sv, columns = summary_columns)
-        summary_sv_df_sorted = summary_sv_df.sort_values(["GENE_A-GENE_B-sorted", "CHROM_A", "START_A", "CHROM_B", "START_B", "TOOL"], 
+                                gene_b, gene_a_b_sorted, ",".join(list(filter(None, cgcann))), curator])
+        
+
+        svs_df = pd.DataFrame(summary_sv, columns = summary_columns)
+        # hard filter for gridss germline svs
+        gf_idx = svs_df[(svs_df['TOOL'] == "gridss") & \
+                        (svs_df['SAMPLE'] == "germline") & \
+                        (svs_df['SUPPORT_READS'].astype('int') < 40)].index
+        svs_df.loc[list(gf_idx), "CURATOR"] = "NO"
+
+        # checking exons overlaps
+        svs_df['idx'] = svs_df.index
+        # fetching indices except TRA and off target svs
+        t_idx = set(svs_df[(svs_df['SVTYPE'] != "TRA") & (svs_df['CURATOR'] == "YES")].index)
+        
+        # generating pyranges for gridss and svcaller
+        svs_gridss_df = svs_df[["CHROM_A", "START_A", "END_A", 
+                                "CHROM_B", "START_B", "END_B", 
+                                "SVTYPE", "idx", "CURATOR", 
+                                "TOOL"]].rename(columns = {
+                                    "CHROM_A": "Chromosome", 
+                                    "START_A": "Start", 
+                                    "END_B": "End"
+                                })
+        svs_gridss_pr = pr.PyRanges(svs_gridss_df.loc[(svs_gridss_df['SVTYPE'] != "TRA") & \
+                                                      (svs_gridss_df['CURATOR'] == "YES") & \
+                                                      (svs_gridss_df['TOOL'] == "gridss") ])
+        svs_svcaller_df = svs_df[["CHROM_A", "START_A", "END_A", 
+                                  "CHROM_B", "START_B", "END_B", 
+                                  "SVTYPE", "idx", "CURATOR", 
+                                  "TOOL"]].rename(columns = {
+                                      "CHROM_A": "Chromosome", 
+                                      "START_A": "Start", 
+                                      "END_B": "End"})
+        svs_svcaller_pr = pr.PyRanges(svs_svcaller_df.loc[(svs_svcaller_df['SVTYPE'] != "TRA") & \
+                                                          (svs_svcaller_df['CURATOR'] == "YES") & \
+                                                          (svs_svcaller_df['TOOL'] == "svcaller")])
+
+        # find exons overlapping svs
+        hits_gridss = svs_gridss_pr.intersect(exons)
+        hits_idx = set(hits_gridss.idx) if hits_gridss else set()
+        hits_svc = svs_svcaller_pr.intersect(exons)
+        _idx = set(hits_svc.idx) if hits_svc else set()
+        hits_idx.update(_idx)
+        
+        # filter non overlapping svs by index
+        filter_idx = t_idx - hits_idx
+        svs_df.loc[list(filter_idx), "CURATOR"] = "NO"
+        del svs_df['idx']
+
+        summary_sv_df_sorted = svs_df.sort_values(["GENE_A-GENE_B-sorted", "CHROM_A", "START_A", "CHROM_B", "START_B", "TOOL"], 
                                                         ascending=[True, True, True, True, True, True])
         summary_sv_df_sorted.to_csv(output, sep = "\t", encoding = 'utf-8', index = False)
 
@@ -378,6 +526,8 @@ if __name__ == "__main__":
     parser.add_argument('--sdid', help="SDID from analysis")
     parser.add_argument('--vcftype', help="somatic (or) germline vcf (only for svaba)")
     parser.add_argument('--tool', help="Tool name - Variant callers")
+    parser.add_argument('--cgc', help="Cancer Gene Census Annotation ")
+    parser.add_argument('--exons', help="human exons coordinates as gtf file")
     parser.add_argument('--output', required=True,
                         help="output tab delimited file for IGVNav, format=output.mut")
     args = parser.parse_args()
@@ -388,9 +538,16 @@ if __name__ == "__main__":
     sv_caller = args.tool
     sdid = args.sdid
     output = args.output
+ 
     if args.target:
         capture_kit, target_json = args.target
 
+    if args.cgc:
+        cgc_ann = loadCGC(args.cgc)
+    
+    if args.exons:
+        exons = load_exons(args.exons)
+    
     output_dir = os.path.dirname(output)
 
     if sv_caller == 'lumpy':
@@ -407,5 +564,8 @@ if __name__ == "__main__":
         genes = load_bed(annotBed)
         fh = open(target_json, 'r')
         targets = json.load(fh)
-        annotate_combined_sv(combined_input, genes, targets[capture_kit], output)
+        if capture_kit in targets:
+            targets = targets[capture_kit]
+        annotate_combined_sv(combined_input, genes, targets, 
+                             capture_kit, cgc_ann, output, exons)
 

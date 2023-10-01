@@ -48,6 +48,8 @@ class GenerateSymlink():
         self.outputdirname = outputdirname
         self.script_dir = scriptdirname
         self.targets = targets
+        self.is_wgs = True if targets == '' else False
+    
 
     def generateIGVsymlink(self, *args):
         """
@@ -59,9 +61,20 @@ class GenerateSymlink():
         logging.info("Generating IGVNav Symlinks in : " + igvnav_dirname_dst ) 
         if not os.path.exists(igvnav_dirname_dst): os.mkdir(igvnav_dirname_dst)
         try:
-            symlinks = (('variants','.vep.vcf'),('bams','nodups.bam'), ('bams','nodups.bam.bai'),
-                        ('bams','clipoverlap.bam'), ('bams','clipoverlap.bai'), ('variants','.vep.vcf'), ('cnv', '.bedGraph'), ('variants', '.bedGraph'),
-                      ('svs/igv','.mut'), ('svs','.gtf'), ('svs','.bam'), ('svs','.bai'), ('', 'igvnav-input.txt')) + args
+            if self.is_wgs:
+                symlinks = (('variants','.vep.vcf.gz'),('bams','nodups.bam'), ('bams','nodups.bam.bai'),
+                            ('bams','clipoverlap.bam'), ('bams','clipoverlap.bai'), ('cnv', '.bedGraph'),
+                            ('variants', '.bedGraph'), ('svs/igv','.mut'), ('svs','.gtf'), 
+                            ('svs/gridss', 'bam.sv.bam'), ('svs/gridss', 'bam.sv.bam.csi'), 
+                            ('svs/gridss', 'assembly.bam'), ('svs','.bam'), ('svs','.bai'),
+                            ('', 'igvnav-input.txt')) + args
+            else:
+                symlinks = (('variants','.vep.vcf'),('bams','nodups.bam'), ('bams','nodups.bam.bai'),
+                            ('bams','clipoverlap.bam'), ('bams','clipoverlap.bai'), ('variants','.vep.vcf'), 
+                            ('cnv', '.bedGraph'), ('variants', '.bedGraph'), ('svs/igv','.mut'), ('svs','.gtf'), 
+                            ('svs/gridss', 'bam.sv.bam'), ('svs/gridss', 'bam.sv.bam.csi'), 
+                            ('svs','.bam'), ('svs','.bai'), ('', 'igvnav-input.txt')) + args
+            
             for each_input in symlinks:
                 dir_name = os.path.join(src_dir,each_input[0])
                 self.create_symlink(dir_name, src_dir, igvnav_dirname_dst, each_input[1])
@@ -84,8 +97,6 @@ class GenerateSymlink():
     def get_all_files(self, dir_path):
         igv_session_file_list = defaultdict(lambda : defaultdict(list))
         all_files = [('bam_common', 'bam_nodups', '.*nodups.bam$'),
-                     ('sv', 'bam_cfdna', '.*-CFDNA-.*(DEL|DUP|INV|TRA|contigs.sort).bam$'),
-                     ('sv', 'bam_normal', '^(?:(?!CFDNA).)*(DEL|DUP|INV|TRA|contigs.sort).bam$'),
                      ('sv', 'mut_svaba_somatic','.*_(somatic)_svaba.mut$'),
                      ('sv', 'mut_gridss_cfdna', '.*-CFDNA-.*_gridss.mut$'),
                      ('sv', 'mut_svcaller_cfdna', '.*-CFDNA-.*_svcaller.mut$'),
@@ -93,17 +104,28 @@ class GenerateSymlink():
                      ('sv', 'mut_svaba_germline','.*_(germline)_svaba.mut$'),
                      ('sv', 'mut_gridss_normal', '^(?:(?!CFDNA).)*_gridss.mut$'),
                      ('sv', 'mut_svcaller_normal', '^(?:(?!CFDNA).)*_svcaller.mut$'),
-                     ('sv', 'gtf_cfdna', '.*-CFDNA-.*(DEL|DUP|INV|TRA).gtf$'),
-                     ('sv', 'gtf_normal', '^(?:(?!CFDNA).)*(DEL|DUP|INV|TRA).gtf$'),
+                     ('sv', 'gtf_cfdna', '.*-CFDNA-.*svs.gtf$'),
+                     ('sv', 'gtf_normal', '^(?:(?!CFDNA).)*svs.gtf$'),
                      ('snps', 'bam_cfdna', '.*-CFDNA-.*_clipoverlap.bam$'),
                      ('snps', 'bam_normal', '^(?:(?!CFDNA).)*clipoverlap.bam$'),
-                     ('snps', 'vep', '.*.all.(somatic|germline).vep.vcf$'),
                      ('cnv', 'flank_profile_cfdna', '.*-CFDNA-.*_profile.bedGraph'),
                      ('cnv', 'flank_profile_normal', '^(?:(?!CFDNA).)*_profile.bedGraph'),
                      ('cnv', 'flank_cnv_cfdna', '.*-CFDNA-.*_segments.bedGraph'),
                      ('cnv', 'flank_cnv_normal', '^(?:(?!CFDNA).)*_segments.bedGraph'),
                      ('asf', 'flank_asf', '.*germline-variants-somatic-afs.bedGraph'),
                      ]
+            
+        if self.is_wgs:
+            all_files.extend([('snps', 'vep', '.*.all.(somatic|germline).vep.vcf.gz$'),
+                              ('sv', 'bam_gridss_normal', '^(?:(?!CFDNA|T).)*nodups.bam.sv.bam$'),
+                              ('sv', 'bam_gridss_tumor', '.*-(T|CFDNA).*nodups.bam.sv.bam$')
+                            ])
+        else:
+            all_files.extend([('sv', 'bam_cfdna', '.*-CFDNA-.*(svs|targeted.bam.sv).bam$'),
+                              ('sv', 'bam_normal', '^(?:(?!CFDNA).)*(svs|targeted.bam.sv).bam$'),
+                              ('snps', 'vep', '.*.all.(somatic|germline).vep.vcf$')
+                            ])
+
 
         for variant_type, file_type, regex in all_files:
             files_list = list(filter( lambda x: re.match(regex, x) and not x.startswith('.') and not x.endswith('.out'), os.listdir(dir_path)))
@@ -181,9 +203,9 @@ class GenerateSymlink():
         igv_session_files = self.get_all_files(igvnav_dir)
         
         basename = os.path.basename(self.outputdirname).split("_")
-
+        
         capture_id = basename[0].split('-')[6]
-        target_name = capture_kit_loopkup[capture_id[0:2]]
+        # target_name = capture_kit_loopkup[capture_id[0:2]]
         target_bed = self.targets
 
         #session file for snps
@@ -192,24 +214,29 @@ class GenerateSymlink():
         snp_vep = ""
         type_color_arr = {'DEL':'53,116,199', 'TRA': '239,133,62', 'DUP' :'204,55,48', 'INV' :'69,136,51', 'COM' : '2,2,0'}
 
-        snp_resource += resource_path.format(path_name=target_bed)
-        capture_bed = track_capture_bed.format(capture_bed_full=target_bed, capture_bed=os.path.basename(target_bed))
+        capture_bed = ''
+        if target_bed != '':
+            snp_resource += resource_path.format(path_name=target_bed)
+            capture_bed += track_capture_bed.format(capture_bed_full=target_bed, capture_bed=os.path.basename(target_bed))
 
-        for track_type, each_track in [('snps', 'bam_cfdna'), ('snps', 'bam_normal'),
-                    ('cnv', 'flank_cnv_normal'),
-                    ('cnv', 'flank_profile_normal'),
-                    ('cnv', 'flank_cnv_cfdna'),
-                    ('cnv', 'flank_profile_cfdna'),
-                    ('asf', 'flank_asf'),
-                    ('snps', 'vep')]:
-            
+        all_snp_files = [('snps', 'bam_cfdna'), ('snps', 'bam_normal'),
+                         ('cnv', 'flank_cnv_normal'),
+                         ('cnv', 'flank_profile_normal'),
+                         ('cnv', 'flank_cnv_cfdna'),
+                         ('cnv', 'flank_profile_cfdna'),
+                         ('asf', 'flank_asf'),
+                         ('snps', 'vep')]
+
+        if capture_id[0:2] == 'WG':
+            all_snp_files.append(('bam_common', 'bam_nodups'))
+
+        for track_type, each_track in all_snp_files:
             for each_file in igv_session_files[track_type][each_track]:
                 full_path = igvnav_dir + '/' + each_file
                 if not os.path.exists(full_path) or not os.path.getsize(full_path):
                     continue
                 snp_resource += resource_path.format(path_name=full_path)
                 if each_track.startswith('bam'):
-
                     regex = ".*-(N|CFDNA|T)-.*(DEL|DUP|INV|TRA).bam$"
                     matches = re.search(regex, each_file)
                     if matches:
@@ -253,14 +280,17 @@ class GenerateSymlink():
                     ('sv', 'mut_svaba_somatic'),  ('sv', 'mut_svcaller_cfdna'), ('sv', 'mut_gridss_cfdna'),
                     ('sv', 'mut_lumpy'), ('sv', 'gtf_cfdna'),
                     ('sv', 'mut_svaba_germline'), ('sv', 'mut_svcaller_normal'), ('sv', 'mut_gridss_normal'),
-                    ('sv', 'gtf_normal')]
+                    ('sv', 'gtf_normal'), ('sv', 'bam_gridss_normal'), 
+                    ('sv', 'bam_gridss_tumor')]
 
         sv_resource= ""
         sv_bam_panel= ""
         sv_mut_track= ""
         sv_gtf_track= ""
 
-        sv_resource += resource_path.format(path_name=target_bed)
+        if target_bed != '':
+            sv_resource += resource_path.format(path_name=target_bed)
+
         for track_type, each_track in all_sv_files:
             for each_file in igv_session_files[track_type][each_track]:
 
@@ -272,7 +302,7 @@ class GenerateSymlink():
                     continue
 
                 #sv_resource += resource_path.format(path_name=full_path)
-
+                
                 if each_track.startswith('bam'):
                     sv_resource += resource_path.format(path_name=full_path)
                     regex = ".*-(N|CFDNA|T)-.*(DEL|DUP|INV|TRA).bam$"
@@ -282,7 +312,7 @@ class GenerateSymlink():
                     else:
                         bam_color = '175,175,175'
                     sv_bam_track = tracks_bam_str.format(bam_file_full=full_path, bam_file=each_file, color=bam_color)
-                    sv_bam_panel += panel_str.format(panel_height=150, panel_width=2543, panel_name=each_file, tracks=sv_bam_track)
+                    sv_bam_panel += panel_str.format(panel_height=50, panel_width=2543, panel_name=each_file, tracks=sv_bam_track)
 
                 if each_track.startswith('mut'):
                     # get content of SDID column to append to id and name fields in the track
@@ -363,11 +393,13 @@ if __name__ == "__main__":
     """
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--targets', required=True, help="Target bed file - capture kit id")
+    parser.add_argument('--targets', help="Target bed file - capture kit id")
     parser.add_argument('--outdir', required=True, help="project output dir")
     parser.add_argument('--script-dir', help="script dir for IGV session xml files")
     args = parser.parse_args()
-    targets = args.targets
+    targets = ''
+    if args.targets:
+        targets = args.targets
     
     if not args.script_dir:
         script_dir = os.path.dirname(os.path.abspath(__file__))

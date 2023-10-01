@@ -16,14 +16,14 @@
         <Track altColor="0,0,178" clazz="org.broad.igv.track.SequenceTrack" color="0,0,178" fontSize="10" id="Reference sequence" name="Reference sequence" visible="true"/>
         <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;423.0;255,255,255;0,0,178" fontSize="10" height="35" id="hg19_genes" name="RefSeq Genes" visible="true"/>
         <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" featureVisibilityWindow="10692194" fontSize="10" id="https://s3.amazonaws.com/igv.org.genomes/hg19/ensGene.txt.gz" name="Ensembl Genes" visible="true"/>
+        {add_sv_gtf_track}
+        {add_capture_bed} 
         <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.DataSourceTrack" color="0,0,178" fontSize="10" id="/nfs/PROBIO/for_igv/wgEncodeCrgMapabilityAlign50mer.bigWig" name="wgEncodeCrgMapabilityAlign50mer.bigWig" renderer="BAR_CHART" visible="true" windowFunction="mean">
             <DataRange baseline="0.0" drawBaseline="true" flipAxis="false" maximum="0.9424266" minimum="0.0" type="LINEAR"/>
-    </Track>
-    	{add_capture_bed}
+        </Track>
         <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;0.0;255,255,255;0,0,178" fontSize="10" id="/nfs/PROBIO/for_igv/AR_exon_genomic_locations.bed" name="AR_exon_genomic_locations.bed" visible="true"/>
         <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;5.0;255,255,255;0,0,178" fontSize="10" id="/nfs/PROBIO/for_igv/consensusBlacklist.bed" name="consensusBlacklist.bed" visible="true"/>
-	    <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;1798.0;255,255,255;0,0,178" fontSize="10" id="/nfs/PROBIO/for_igv/simple_repeats.bed" name="tb_simpleRepeat" visible="true"/>
-	{add_sv_gtf_track}
+	    <Track altColor="0,0,178" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;1798.0;255,255,255;0,0,178" fontSize="10" id="/nfs/PROBIO/for_igv/simple_repeats.bed" name="tb_simpleRepeat" expand="false" visible="true"/>
     </Panel>
     <PanelLayout dividerFractions="0.14373464373464373,0.36977886977886976,0.6326781326781327"/>
     <HiddenAttributes>

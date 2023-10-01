@@ -68,6 +68,7 @@ rule gatk3_targetcreator_umi_1:
         tmpdir = os.path.join(params['scratch'], 
                                 "realignerTC-{}".format(str(uuid.uuid4())))
     threads: params['gatk3']['target_creator']['threads']
+    container: containers['gatk3']
     log:
         outdir + "/logs/gatk_realigner_targetcreator_umi_1_{sample}_{chr}.log"
     shell:
@@ -99,6 +100,7 @@ rule gatk3_indelrealigner_umi_1:
         tmpdir = os.path.join(params['scratch'], 
                                 "indelrealigner-{}".format(str(uuid.uuid4())))
     threads: params['gatk3']['indel_realigner']['threads']
+    container: containers['gatk3']
     log:
         outdir + "/logs/gatk_indel_realigner_umi_1_{sample}_{chr}.log"
     shell:
@@ -199,6 +201,7 @@ rule gatk3_targetcreator_umi_2:
         tmpdir = os.path.join(params['scratch'], 
                                 "realignerTC-{}".format(str(uuid.uuid4())))
     threads: params['gatk3']['target_creator']['threads']
+    container: containers['gatk3']
     log:
         outdir + "/logs/gatk_realigner_targetcreator_umi_2_{sample}.{chr}.log"
     shell:
@@ -230,6 +233,7 @@ rule gatk3_indelrealigner_umi_2:
         tmpdir = os.path.join(params['scratch'], 
                                 "indelrealigner-{}".format(str(uuid.uuid4())))
     threads: params['gatk3']['indel_realigner']['threads']
+    container: containers['gatk3']
     log:
         outdir + "/logs/gatk_indel_realigner_umi_2_{sample}.{chr}.log"
     shell:

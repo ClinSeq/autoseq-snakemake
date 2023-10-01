@@ -19,7 +19,9 @@ option_list <- list(
   make_option(c("-o", "--outfile"), action = "store", type = "character",
               default = "QC_overview.pdf", help = "Path to output pdf file"),
   make_option(c("-m", "--mainpath"), action = "store", type = "character",
-              default = "/nfs/PROBIO/autoseq-output", help = "Path to output pdf file")
+              default = "/nfs/PROBIO/autoseq-output", help = "Path to output pdf file"),
+  make_option(c("-w", "--wgs"), action = "store_true", 
+              default=FALSE, help = "Option to analyze WGS qc metrics")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -27,40 +29,49 @@ sample_string = opt$samples
 analysis_dir = opt$analysisdir
 outfile = opt$outfile
 main_path = opt$mainpath
-
+wgs = opt$wgs
 
 # find the qc files for all samples
 cat("Find all available qc files...\n")
-hsmetrics_files = dir(Sys.glob(paste0(main_path, "/*/*/qc/picard")), 
+if (wgs){
+  wgsmetrics_files = dir(Sys.glob(paste0(main_path, "/*/*/qc/picard")), 
+                pattern = "picard-wgsmetrics.txt$", recursive = TRUE, full.names = TRUE)
+} else {
+  hsmetrics_files = dir(Sys.glob(paste0(main_path, "/*/*/qc/picard")), 
                 pattern = "picard-hsmetrics.txt$", recursive = TRUE, full.names = TRUE)
+  msings_files = dir(path = Sys.glob(paste0(main_path, "/*/*/msings*")),
+                   pattern = paste0("MSI_Analysis.txt$"), full.names = TRUE, recursive = TRUE)
+}
+
 markduplicates_files = dir(Sys.glob(paste0(main_path, "/*/*/qc/picard")), 
                            pattern = "markdup.*metrics.txt$", recursive = TRUE, full.names = TRUE)
 insertsize_files = dir(Sys.glob(paste0(main_path, "/*/*/qc/picard")), 
                            pattern = "picard-insertsize.txt$", recursive = TRUE, full.names = TRUE)
 contest_files = dir(Sys.glob(paste0(main_path, "/*/*/contamination")), 
                     pattern = "contest.txt$", recursive = TRUE, full.names = TRUE)
-msings_files = dir(path = Sys.glob(paste0(main_path, "/*/*/msings*")),
-                   pattern = paste0("MSI_Analysis.txt$"), full.names = TRUE, recursive = TRUE)
 flagstat_files = dir(path = Sys.glob(paste0(main_path, "/*/*/qc/samtools")),
                    pattern = "flagstats.json$", full.names = TRUE, recursive = TRUE)
+if (!wgs) {
+  # remove files from old pipeline (modified before 2019-04-30)
+  hsmetrics_files = hsmetrics_files[file.mtime(hsmetrics_files) > as.POSIXct("2019-04-30")]
+  markduplicates_files = markduplicates_files[file.mtime(markduplicates_files) > as.POSIXct("2019-04-30")]
+  insertsize_files = insertsize_files[file.mtime(insertsize_files) > as.POSIXct("2019-04-30")]
+  contest_files = contest_files[file.mtime(contest_files) > as.POSIXct("2019-04-30")]
+  msings_files = msings_files[file.mtime(msings_files) > as.POSIXct("2019-04-30")]
 
-# remove files from old pipeline (modified before 2019-04-30)
-hsmetrics_files = hsmetrics_files[file.mtime(hsmetrics_files) > as.POSIXct("2019-04-30")]
-markduplicates_files = markduplicates_files[file.mtime(markduplicates_files) > as.POSIXct("2019-04-30")]
-insertsize_files = insertsize_files[file.mtime(insertsize_files) > as.POSIXct("2019-04-30")]
-contest_files = contest_files[file.mtime(contest_files) > as.POSIXct("2019-04-30")]
-msings_files = msings_files[file.mtime(msings_files) > as.POSIXct("2019-04-30")]
+  # remove files from WGS samples (will otherwise break the script due to different columns etc)
+  hsmetrics_files = hsmetrics_files[grep("WGS", hsmetrics_files, invert = TRUE)]
+  markduplicates_files = markduplicates_files[grep("WGS", markduplicates_files, invert = TRUE)]
+  insertsize_files = insertsize_files[grep("WGS", insertsize_files, invert = TRUE)]
+  contest_files = contest_files[grep("WGS", contest_files, invert = TRUE)]
+  msings_files = msings_files[grep("WGS", msings_files, invert = TRUE)]
+}
 
-# remove files from WGS samples (will otherwise break the script due to different columns etc)
-hsmetrics_files = hsmetrics_files[grep("WGS", hsmetrics_files, invert = TRUE)]
-markduplicates_files = markduplicates_files[grep("WGS", markduplicates_files, invert = TRUE)]
-insertsize_files = insertsize_files[grep("WGS", insertsize_files, invert = TRUE)]
-contest_files = contest_files[grep("WGS", contest_files, invert = TRUE)]
-msings_files = msings_files[grep("WGS", msings_files, invert = TRUE)]
 
 
 # read in the files
 cat("Read in the files...\n")
+<<<<<<< HEAD
 HsMetrics = data.frame()
 for (f in hsmetrics_files) {
   tryCatch({
@@ -78,11 +89,58 @@ for (f in hsmetrics_files) {
                                        stringsAsFactors = FALSE))
   }, error = function(err) {
       print(paste("Sample: ", SAMP, " QC: HsMetrics"))
+=======
+if (!wgs){
+  HsMetrics = data.frame()
+  for (f in hsmetrics_files) {
+    tryCatch({
+      SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
+      DIR = dirname(dirname(dirname(f)))
+      HsMetrics = rbind(HsMetrics, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
+                                                          header = TRUE, stringsAsFactors = FALSE), 
+                                                          stringsAsFactors = FALSE))
+    }, error = function(err) {
+        print(paste("Sample: ", SAMP, " QC: HsMetrics"))
+        print(paste("ERROR: ", err))
+    })
+  }
+  #fix column class for column sometimes read in as character due to a "?" instead of NA
+  HsMetrics$FOLD_80_BASE_PENALTY = as.numeric(HsMetrics$FOLD_80_BASE_PENALTY)
+
+  msings = data.frame()
+  for (f in msings_files) {
+    tryCatch({
+      SAMP = sub("_nodups.MSI_Analysis.txt", "", basename(f))
+      DIR = dirname(dirname(dirname(f)))
+      msings = rbind(msings, cbind(SAMP, DIR, t(read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)))[2,], stringsAsFactors=FALSE)
+    }, error = function(err) {
+      print(paste("Sample: ", SAMP, " QC: mSINGs"))
+>>>>>>> 2d571ed23b0ecac98e83ebbc896842c66f6085b4
       print(paste("ERROR: ", err))
-  })
+    })
+  }
+
+  colnames(msings) = c("SAMP", "DIR", read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)[,1])
+  msings$`msi status`[which(msings$msing_score<0.2)] = "NEG"  # use cut-off 0.2 for MSI-H (default 0.1 is too low)
+  msings$msing_score = as.numeric(msings$msing_score)
+} else {
+  wgsMetrics = data.frame()
+  for (f in wgsmetrics_files) {
+    tryCatch({
+      SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
+      DIR = dirname(dirname(dirname(f)))
+      wgsMetrics = rbind(wgsMetrics, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
+                                                          header = TRUE, stringsAsFactors = FALSE), 
+                                                          stringsAsFactors = FALSE))
+    }, error = function(err) {
+        print(paste("Sample: ", SAMP, " QC: HsMetrics"))
+        print(paste("ERROR: ", err))
+    })
+  }
+  #fix column class for column sometimes read in as character due to a "?" instead of NA
+  wgsMetrics$FOLD_80_BASE_PENALTY = as.numeric(wgsMetrics$FOLD_80_BASE_PENALTY)
 }
-#fix column class for column sometimes read in as character due to a "?" instead of NA
-HsMetrics$FOLD_80_BASE_PENALTY = as.numeric(HsMetrics$FOLD_80_BASE_PENALTY)
+
 
 MarkDuplicates = data.frame()
 for (f in markduplicates_files) {
@@ -137,6 +195,7 @@ for (f in contest_files) {
   })    
 }
 
+<<<<<<< HEAD
 if (length(msings_files) != 0) {
     msings = data.frame()
     for (f in msings_files) {
@@ -157,6 +216,8 @@ if (length(msings_files) != 0) {
 
 # print(msings)
 
+=======
+>>>>>>> 2d571ed23b0ecac98e83ebbc896842c66f6085b4
 # samtools flagstats
 flagstat_data = data.frame(matrix(ncol = 8, nrow = 0))
 colnames(flagstat_data) = c("SAMP", "DIR", "mapped_reads", "paired_reads", "properly_paired_reads", 
@@ -237,6 +298,7 @@ process_samp <- function(sample) {
 }
 
 
+<<<<<<< HEAD
 # merge the QC tables
 if (length(msings_files) == 0){
     qc_merge = merge(merge(merge(merge(HsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
@@ -244,6 +306,14 @@ if (length(msings_files) == 0){
                 flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
 } else {
     qc_merge = merge(merge(merge(merge(merge(HsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
+=======
+# merge the QC tables 
+if (wgs) {
+  qc_merge = merge(merge(merge(merge(wgsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
+                InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")), flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
+} else {
+  qc_merge = merge(merge(merge(merge(merge(HsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
+>>>>>>> 2d571ed23b0ecac98e83ebbc896842c66f6085b4
                 InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")),
                 msings, by = c("SAMP", "DIR"), all.x = TRUE), flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
 }
@@ -272,8 +342,10 @@ qc_merge$doi = qc_merge$DIR == Sys.glob(analysis_dir)
 InsertSize_histogram$soi = InsertSize_histogram$SAMP %in% samples
 InsertSize_histogram$doi = InsertSize_histogram$DIR == Sys.glob(analysis_dir)
 
+print(qc_merge)
 
 # create an ouput table for the samples of interest
+<<<<<<< HEAD
 if (length(msings_files) == 0){
     soi_table = data.table(qc_merge)[i = soi&doi, 
                                     j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, FOLD_80_BASE_PENALTY,
@@ -283,6 +355,18 @@ if (length(msings_files) == 0){
                                     j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, FOLD_80_BASE_PENALTY,
                                             READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE, msing_score)]
 }
+=======
+if (wgs){
+  soi_table = data.table(qc_merge)[i = soi&doi, 
+                                 j =list(SAMP, MEAN_COVERAGE, FOLD_80_BASE_PENALTY,
+                                         READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
+} else {
+  soi_table = data.table(qc_merge)[i = soi&doi, 
+                                 j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, FOLD_80_BASE_PENALTY,
+                                         READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE, msing_score)]
+}
+
+>>>>>>> 2d571ed23b0ecac98e83ebbc896842c66f6085b4
 table_outfile = sub("pdf$", "txt", outfile)
 write.table(x = soi_table, file = table_outfile, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
 
@@ -337,21 +421,32 @@ pdf(file = outfile, width=14)
 my_scatter(x = "READ_PAIRS_EXAMINED", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 1, 0.1),
            x_string = "number of read pairs", y_string = "duplication rate", title_string = "Duplication rate vs Read count")
 
-# coverage vs read count scatter plot
-my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_TARGET_COVERAGE", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5000, 500),
-           x_string = "number of read pairs", y_string = "mean target coverage", title_string = "Coverage vs Read count")
+if (!wgs) {
+  # coverage vs read count scatter plot
+  my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_TARGET_COVERAGE", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5000, 500),
+            x_string = "number of read pairs", y_string = "mean target coverage", title_string = "Coverage vs Read count")
 
-# duplication vs fold enrichment scatter plot
-my_scatter(x = "FOLD_ENRICHMENT", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 5000, 50), ybreaks = waiver(),
-           x_string = "fold enrichment", y_string = "duplication rate", title_string = "Duplication rate vs Fold enrichment")
+} else {
+  # coverage vs read count scatter plot
+  my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_COVERAGE", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5000, 500),
+             x_string = "number of read pairs", y_string = "mean coverage", title_string = "Coverage vs Read count")
 
-# duplication vs on-bait rate scatter plot
-my_scatter(x = "ON_BAIT_BASES/PF_BASES_ALIGNED", y = "PERCENT_DUPLICATION", xbreaks = waiver(), ybreaks = waiver(),
-           x_string = "dedupped on-bait rate", y_string = "duplication rate", title_string = "Duplication rate vs Dedupped on-bait rate")
+}
 
-# fold80 base penalty vs coverage scatter plot
-my_scatter(x = "MEAN_TARGET_COVERAGE", y = "FOLD_80_BASE_PENALTY", xbreaks = seq(0, 5000, 500), ybreaks = waiver(),
-           x_string = "mean target coverage", y_string = "fold 80 base penalty", title_string = "Fold 80 base penalty vs Coverage")
+if (!wgs) {
+  # duplication vs fold enrichment scatter plot
+  my_scatter(x = "FOLD_ENRICHMENT", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 5000, 50), ybreaks = waiver(),
+            x_string = "fold enrichment", y_string = "duplication rate", title_string = "Duplication rate vs Fold enrichment")
+
+  # duplication vs on-bait rate scatter plot
+  my_scatter(x = "ON_BAIT_BASES/PF_BASES_ALIGNED", y = "PERCENT_DUPLICATION", xbreaks = waiver(), ybreaks = waiver(),
+            x_string = "dedupped on-bait rate", y_string = "duplication rate", title_string = "Duplication rate vs Dedupped on-bait rate")
+
+  # fold80 base penalty vs coverage scatter plot
+  my_scatter(x = "MEAN_TARGET_COVERAGE", y = "FOLD_80_BASE_PENALTY", xbreaks = seq(0, 5000, 500), ybreaks = waiver(),
+            x_string = "mean target coverage", y_string = "fold 80 base penalty", title_string = "Fold 80 base penalty vs Coverage")
+}
+
 
 # insert size histogram
 p = ggplot(InsertSize_histogram, aes(x = insert_size, y = count_norm*1e6, group = interaction (SAMP, DIR),
@@ -376,10 +471,18 @@ print(p)
 my_barplot(x = "factor(contamination, levels = sort(unique(contamination)))", ybreaks = waiver(),
              x_string = "contamination, %", title_string = "Contamination")
 
+<<<<<<< HEAD
 # msings score vs read count scatter plot
 if (length(msings_files) != 0){
     my_scatter(x = "READ_PAIRS_EXAMINED", y = "msing_score", xbreaks = seq(0, 1e12, 1e7), ybreaks = waiver(),
                  x_string = "number of read pairs", y_string = "mSINGS score", title_string = "mSINGS score vs Read count")
+=======
+if (!wgs) {
+  # msings score vs read count scatter plot
+  my_scatter(x = "READ_PAIRS_EXAMINED", y = "msing_score", xbreaks = seq(0, 1e12, 1e7), ybreaks = waiver(),
+              x_string = "number of read pairs", y_string = "mSINGS score", title_string = "mSINGS score vs Read count")
+
+>>>>>>> 2d571ed23b0ecac98e83ebbc896842c66f6085b4
 }
 
 my_scatter(x = "mapped_reads", y= "paired_reads", xbreaks = waiver(), ybreaks = waiver(),

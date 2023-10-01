@@ -1,6 +1,28 @@
 import os, re
 from pipeline.utils.clinseq_barcodes import parse_prep_id, compose_sample_str, \
-    extract_unique_capture
+    extract_unique_capture, find_fastqs
+
+
+def get_containers(_path):
+    """
+    """
+    containers = {
+        "base": os.path.join(_path, "autoseq-base.sif"),
+        "franken": os.path.join(_path, "autoseq-franken.sif"),
+        "gatk3": os.path.join(_path, "autoseq-gatk3.sif"),
+        "gridss": os.path.join(_path, "autoseq-gridss.sif"),
+        "jumble": os.path.join(_path, "autoseq-jumble.sif"),
+        "purecn": os.path.join(_path, "autoseq-purecn.sif"),
+        "ensemblvep": os.path.join(_path, "autoseq-ensemblvep.sif"),
+        "somaticseq": os.path.join(_path, "autoseq-somaticseq.sif"),
+        "svcaller": os.path.join(_path, "autoseq-svcaller.sif")
+    }
+
+    for k, v in containers.items():
+        if not os.path.exists(v):
+            raise ValueError("Invalid container PATH to " + v)
+    
+    return containers
 
 
 def get_scheduler(scheduler, filetype):
@@ -66,6 +88,10 @@ class Pipeline:
                 cluster_config = self.cluster_config
             else:
                 cluster_config = get_scheduler(self.profile, 'config')
+<<<<<<< HEAD
+=======
+
+>>>>>>> 2d571ed23b0ecac98e83ebbc896842c66f6085b4
             slurm_submit = get_scheduler(self.profile, 'pyscript')
             slurm_cmd = " --notemp --immediate-submit -j 500 "
             slurm_cmd += " --jobname smk.{{rulename}}.{}-{}.{{jobid}}.sh ".format(self.project_id, self.sdid)
@@ -123,6 +149,34 @@ class SinglePanelResults():
         self.msings_output = None
 
 
+def get_fqwildcards(sample_barcode, libdir):
+    """
+    function to extract fastq prefix and suffix
+
+    param: sample barcode
+    param: library directory
+    return: fastq prefix, suffix for R1 and R2
+    """
+    fq1_files, fq2_files = find_fastqs(sample_barcode, libdir)
+    fq1_abs = [os.path.basename(x) for x in fq1_files]
+    fq2_abs = [os.path.basename(x) for x in fq2_files]
+    fq_prefix = list()
+
+    regex_fq1 = r'(.+)(_1.fastq.gz|_1.fq.gz|R1_\d{3}.fastq.gz)'
+    regex_fq2 = r'(.+)(_2.fastq.gz|_2.fq.gz|R2_\d{3}.fastq.gz)'
+    s1 = ''
+    
+    for fq in fq1_abs:
+        _fq_ = [i for i in re.split(regex_fq1, fq) if i != '']
+        fq_prefix.append(_fq_[0])
+        s1 = _fq_[1]
+
+    _fq_ = [i for i in re.split(regex_fq2, fq2_abs[0]) if i != '']
+    s2 = _fq_[1]
+
+    return fq_prefix, s1, s2
+
+
 def get_capture_bam(unique_capture, bamfiles):
     """
     return bamfiles for given unique capture
@@ -158,6 +212,20 @@ def get_cnvkitref(wildcards, reference):
     return cnvkit_ref
 
 
+def get_jumbleref(wildcards, reference):
+    """
+    return jumble reference file
+    """
+    unique_capture = extract_unique_capture(wildcards.sample)
+    capture_name = get_capture_name(unique_capture.capture_kit_id)
+
+    jumble_ref = None
+    if 'jumble-ref' in reference['targets'][capture_name]:
+        jumble_ref = reference['targets'][capture_name]['jumble-ref']
+
+    return jumble_ref
+
+
 def get_capture_svs(wildcards, outdir):
     """
     return gtfs dictionary for given sample
@@ -165,7 +233,7 @@ def get_capture_svs(wildcards, outdir):
     events = ["DEL", "DUP", "INV", "TRA"]
     gtfs = dict()
     for event in events:
-        gtfs[event] = outdir + "/svs/{}-{}.gtf".format(wildcards.sample, event)
+        gtfs[event] = outdir + "/svs/svcaller/{}-{}.gtf".format(wildcards.sample, event)
 
     return gtfs
 
@@ -183,11 +251,16 @@ def get_readgroup(wildcards):
     """
     return readgroup for alignments
     """
-    library_id = parse_prep_id(wildcards.sample)
-    sample_string = compose_sample_str(extract_unique_capture(wildcards.sample))
+    try:
+        sample = wildcards.sample
+    except AttributeError:
+        sample = wildcards
+
+    library_id = parse_prep_id(sample)
+    sample_string = compose_sample_str(extract_unique_capture(sample))
 
     readgroup = "\"@RG\\tID:{rg_id}\\tSM:{rg_sm}\\tLB:{rg_lb}\\tPL:ILLUMINA\"".format(\
-        rg_id=wildcards.sample, rg_sm=sample_string, rg_lb=library_id)
+        rg_id=sample, rg_sm=sample_string, rg_lb=library_id)
     
     return readgroup
 
@@ -226,6 +299,20 @@ def get_chromosomes(targets):
     
     return chromos
             
+
+def get_target_region(wildcards, chrsizes):
+    """
+    utility function to pass target region param to indelrealigner
+    
+    return: target_region eg: 1:1-122121212
+    """
+    
+    chromo = wildcards.chr
+
+    if chromo in chrsizes:
+        return ":".join([chromo, chrsizes[chromo]])
+
+    raise KeyError(chromo)
 
 
 def get_capture_name(capture_kit_code):

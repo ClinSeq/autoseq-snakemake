@@ -6,6 +6,7 @@ import warnings  # use warnings.warn() rather than print() to output info in thi
 import json
 
 from snakemake.utils import read_job_properties
+from snakemake.logging import logger
 
 import slurm_utils
 
@@ -56,6 +57,7 @@ if dependencies:
 
 # 6) Advanced conversion of parameters
 if ADVANCED_ARGUMENT_CONVERSION:
+    logger.info(f"entering advancer argument conversion .. !!")
     sbatch_options = slurm_utils.advanced_argument_conversion(sbatch_options)
 
 # 7) Format pattern in snakemake style

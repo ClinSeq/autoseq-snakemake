@@ -10,7 +10,7 @@ import subprocess
 from loguru import logger as Log
 import pipeline
 from pipeline.settings import SNAKEFILE
-from pipeline.utils.utils import make_paths_absolute, Pipeline
+from pipeline.utils.utils import make_paths_absolute, Pipeline, get_containers
 from pipeline.utils.clinseq_barcodes import data_available_for_clinseq_barcode, \
     extract_clinseq_barcodes, validate_clinseq_barcodes, convert_barcodes_to_sampledict, \
     check_sampledata, normpath, parse_project
@@ -141,8 +141,8 @@ def launch(context, ref, samples, outdir, libdir,
         raise click.Abort()
     
     if use_singularity:
-        if not os.path.exists(os.path.join(singularity, "autoseq-smk.sif")) or \
-            not os.path.exists(os.path.join(singularity, "gridss.sif")):
+        if not os.path.exists(os.path.join(singularity, "autoseq-base.sif")) or \
+            not os.path.exists(os.path.join(singularity, "autoseq-gridss.sif")):
             Log.error('Singularity file does not exist !!')
             raise click.Abort()
 
@@ -152,11 +152,19 @@ def launch(context, ref, samples, outdir, libdir,
     config_dict['outdir'] = normpath(outdir)
     config_dict['libdir'] = normpath(libdir)
     config_dict['umi'] = umi
-    config_dict['container']['base'] = os.path.join(singularity, "autoseq-smk.sif") if use_singularity else ' '
-    config_dict['container']['gridss'] = os.path.join(singularity, "gridss.sif") if use_singularity else ' '
-    config_dict['container']['franken'] = os.path.join(singularity, "franken.sif") if use_singularity else ' '
-    
-    # update scratch dir
+
+    if use_singularity:
+        config_dict['container'] = get_containers(singularity)
+    else:
+        config_dict['container'] = {
+                                    "base": '', "franken": '',
+                                    "gatk3": '', "gridss": '',
+                                    "jumble": ' ', "purecn": '',
+                                    "ensemblvep": '', "somaticseq": '',
+                                    "svcaller": ''
+                                }
+
+    # update scratch dir 
     if scratch:
         config_dict["params"]["scratch"] = scratch
     
@@ -192,11 +200,15 @@ def launch(context, ref, samples, outdir, libdir,
         
         bind_paths.add(os.path.dirname(os.path.dirname(config_dict['reference'])))
 
-    snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), SNAKEFILE[pipeline])
+    if pipeline in SNAKEFILE:
+        snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), SNAKEFILE[pipeline])
+    else:
+        Log.error(f"{pipeline} does not exist")
+        raise click.Abort()
 
     autoseq = Pipeline(snakefile = snakefile, 
-                      config = out_configpath,
-                      cluster_config = cluster_config, 
+                      config = out_configpath, 
+                      cluster_config = cluster_config,
                       sdid = sdid,
                       project_id = project_id,
                       workdir = outdir, 

@@ -11,7 +11,11 @@ class TestWorkflow(unittest.TestCase):
     def setUp(self):
         self.snakefile = "pipeline/autoseq/Snakefile"
         self.to_snakefile = "pipeline/tumor_only/Snakefile"
+<<<<<<< HEAD
         self.snakefile_sd = "pipeline/autoseq-sd/Snakefile"
+=======
+        self.wgs_snakefile = "pipeline/autoseq-wgs/Snakefile"
+>>>>>>> 2d571ed23b0ecac98e83ebbc896842c66f6085b4
         self.config = "tests/test_config.yml"
         self.config_sd = "tests/test_config_sd.yml"
         self.config_noumi = "tests/test_config_non_umi.yml"
@@ -68,6 +72,7 @@ class TestWorkflow(unittest.TestCase):
             self.assertTrue(snakemake.snakemake(self.to_snakefile,
                                                 configfiles=[self.config],
                                                 dryrun=True))
+<<<<<<< HEAD
     
     @patch("pipeline.utils.utils.os.path.isfile")
     @patch("pipeline.utils.utils.get_chromosomes")
@@ -79,4 +84,13 @@ class TestWorkflow(unittest.TestCase):
         with patch("pipeline.utils.utils.open", mocked_open, create=True):
             self.assertTrue(snakemake.snakemake(self.snakefile_sd,
                                                 configfiles=[self.config_sd],
+=======
+
+    @patch("pipeline.utils.utils.os.path.isfile")
+    def test_autoseq_wgs_valid(self, mock_isfile):
+        mock_isfile.return_value = True
+        with patch("pipeline.utils.utils.open", create=True):
+            self.assertTrue(snakemake.snakemake(self.wgs_snakefile,
+                                                configfiles=[self.config],
+>>>>>>> 2d571ed23b0ecac98e83ebbc896842c66f6085b4
                                                 dryrun=True))

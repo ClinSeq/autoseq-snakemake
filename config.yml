@@ -11,8 +11,16 @@ umi: True
 
 container: 
     base: False
-    gridss: False
     franken: False
+    gridss: False
+    gatk3: False
+    gridss: False
+    jumble: False
+    purecn: False
+    ensemblvep: False
+    somaticseq: False
+    svcaller: False
+
 
 outdir: tests
 
@@ -24,6 +32,8 @@ params:
     scratch: /tmp
     bwa:
         threads: 8
+    bcftools:
+        threads: 4
     samblaster:
         rm_dup: " --removeDups "
         threads: 8
@@ -38,6 +48,7 @@ params:
         indel_realigner:
             java_options: "-Xmx8G -XX:ParallelGCThreads=4"
             extra: " -allowPotentiallyMisencodedQuals --maxReadsForRealignment 5000000 --maxReadsInMemory 1000000 "
+            wgs: " -allowPotentiallyMisencodedQuals --maxReadsForRealignment 7000 --maxReadsInMemory 1000000 "
             threads: 3
     picard:
         markdup:
@@ -55,6 +66,9 @@ params:
             threads: 1
         collecthsmetrics:
             java_options: " -XX:ParallelGCThreads=8 "
+            threads: 1
+        collectwgsmetrics:
+            java_options: " -XX:ParallelGCThreads=1 "
             threads: 1
     samtools:
         flagstat: 
@@ -139,5 +153,7 @@ params:
         threads: 8
     multiqc:
         threads: 1
+    sage:
+        threads: 8
     jumble:
         threads: 1
