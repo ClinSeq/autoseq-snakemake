@@ -88,10 +88,7 @@ class Pipeline:
                 cluster_config = self.cluster_config
             else:
                 cluster_config = get_scheduler(self.profile, 'config')
-<<<<<<< HEAD
-=======
-
->>>>>>> 2d571ed23b0ecac98e83ebbc896842c66f6085b4
+            
             slurm_submit = get_scheduler(self.profile, 'pyscript')
             slurm_cmd = " --notemp --immediate-submit -j 500 "
             slurm_cmd += " --jobname smk.{{rulename}}.{}-{}.{{jobid}}.sh ".format(self.project_id, self.sdid)
