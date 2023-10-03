@@ -198,7 +198,7 @@ def launch(context, ref, samples, outdir, libdir,
         bind_paths.add(os.path.dirname(os.path.dirname(config_dict['reference'])))
 
 
-    if pipeline in ["autoseq", "tumor_only", "autoseq-wgs"]:
+    if pipeline in ["autoseq", "tumor_only", "autoseq-wgs", "autoseq-reun"]:
         snakefile = os.path.join(os.path.dirname(os.path.abspath(__file__)), '{}/Snakefile'.format(pipeline))
     else:
         Log.error(f"{pipeline} does not exist")

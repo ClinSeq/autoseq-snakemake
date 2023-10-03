@@ -1,7 +1,10 @@
 
+nodups_suffix = "-nodups.bam" if CANCER_CAPTURE.project == "AL" else "_nodups.bam"
+
+
 rule picard_collectinsertsize:
     input:
-        bam = outdir + "/bams/{sample}_nodups.bam"
+        bam = outdir + "/bams/{sample}" + nodups_suffix
     output:
         metrics = outdir + "/qc/picard/{sample}.picard-insertsize.txt"
     params:
@@ -20,7 +23,7 @@ rule picard_collectinsertsize:
 
 rule picard_collectoxog:
     input:
-        bam = outdir + "/bams/{sample}_nodups.bam",
+        bam = outdir + "/bams/{sample}" + nodups_suffix,
         reference_genome = reference['reference_genome']
     output:
         metrics = outdir + "/qc/picard/{sample}.picard-oxog.txt"
@@ -41,7 +44,7 @@ rule picard_collectoxog:
 
 rule picard_collecthsmetrics:
     input:
-        bam = outdir + "/bams/{sample}_nodups.bam",
+        bam = outdir + "/bams/{sample}" + nodups_suffix,
         reference_genome = reference['reference_genome'],
         target_region = lambda wildcards: get_targets(wildcards, reference,
                                                       'targets-interval_list-slopped20'),
@@ -71,7 +74,7 @@ rule picard_collecthsmetrics:
 
 rule samtools_flagstat:
     input:
-        bam = outdir + "/bams/{sample}_nodups.bam"
+        bam = outdir + "/bams/{sample}" + nodups_suffix
     output:
         outdir + "/qc/samtools/{sample}-flagstats.json"
     threads: params['samtools']['flagstat']['threads']
