@@ -147,6 +147,7 @@ rule purecn:
         minaf = params['purecn']['minaf'],
         maxnonclonal = params['purecn']['maxnonclonal']
     threads: params['purecn']['threads']
+    container: containers['purecn']
     log:
         "{}/logs/{}-purecn.log".format(outdir, CANCER_CAPTURE_STR)
     shell:
@@ -200,6 +201,7 @@ rule gatk3_contest_cancer:
         tmpdir = params['scratch'],
         min_genotype_ratio = params['contest_cancer']['min_genotype_ratio']
     threads: params['contest_cancer']['threads']
+    container: containers['gatk3']
     log:
         outdir + "/logs/contamination/contest-{}.log".format(CANCER_CAPTURE_STR)
     shell:
@@ -225,6 +227,7 @@ rule gatk3_contest_normal:
         tmpdir = params['scratch'],
         min_genotype_ratio = params['contest_cancer']['min_genotype_ratio']
     threads: params['contest_cancer']['threads']
+    container: containers['gatk3']
     log:
         outdir + "/logs/contamination/contest-{}.log".format(NORMAL_CAPTURE_STR)
     shell:
@@ -265,6 +268,7 @@ rule overview_plot:
         samples = ":".join(samples_of_interest),
         mainpath = dirname(dirname(outdir)),
         outdir = outdir
+    container: containers['purecn']
     log:
         "{}/logs/qc_overview-{}-{}.log".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     shell:

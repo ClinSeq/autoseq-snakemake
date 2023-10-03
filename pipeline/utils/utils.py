@@ -3,6 +3,28 @@ from pipeline.utils.clinseq_barcodes import parse_prep_id, compose_sample_str, \
     extract_unique_capture, find_fastqs
 
 
+def get_containers(_path):
+    """
+    """
+    containers = {
+        "base": os.path.join(_path, "autoseq-base.sif"),
+        "franken": os.path.join(_path, "autoseq-franken.sif"),
+        "gatk3": os.path.join(_path, "autoseq-gatk3.sif"),
+        "gridss": os.path.join(_path, "autoseq-gridss.sif"),
+        "jumble": os.path.join(_path, "autoseq-jumble.sif"),
+        "purecn": os.path.join(_path, "autoseq-purecn.sif"),
+        "ensemblvep": os.path.join(_path, "autoseq-ensemblvep.sif"),
+        "somaticseq": os.path.join(_path, "autoseq-somaticseq.sif"),
+        "svcaller": os.path.join(_path, "autoseq-svcaller.sif")
+    }
+
+    for k, v in containers.items():
+        if not os.path.exists(v):
+            raise ValueError("Invalid container PATH to " + v)
+    
+    return containers
+
+
 def get_scheduler(scheduler, filetype):
     """
     In cluster environment, to get sheduler script and config file
@@ -32,11 +54,12 @@ class Pipeline:
     Class pipeline to build snakmake command based on given args.
 
     """
-    def __init__(self, snakefile, config, sdid, project_id, workdir, dryrun, 
+    def __init__(self, snakefile, config, cluster_config, sdid, project_id, workdir, dryrun, 
                 profile, jobdb, smk_option, use_singularity, bind_paths, cores='4'):
         self.snakefile = snakefile
         self.cores = cores
         self.configfile = config
+        self.cluster_config = cluster_config
         self.sdid = sdid
         self.project_id = project_id
         self.workdir = workdir
@@ -61,8 +84,12 @@ class Pipeline:
             smk_opt = self.smk_option
 
         if self.profile == 'slurm':
+            if self.cluster_config:
+                cluster_config = self.cluster_config
+            else:
+                cluster_config = get_scheduler(self.profile, 'config')
+
             slurm_submit = get_scheduler(self.profile, 'pyscript')
-            cluster_config = get_scheduler(self.profile, 'config')
             slurm_cmd = " --notemp --immediate-submit -j 500 "
             slurm_cmd += " --jobname smk.{{rulename}}.{}-{}.{{jobid}}.sh ".format(self.project_id, self.sdid)
             slurm_cmd += " --cluster-config {} ".format(cluster_config)
@@ -203,7 +230,7 @@ def get_capture_svs(wildcards, outdir):
     events = ["DEL", "DUP", "INV", "TRA"]
     gtfs = dict()
     for event in events:
-        gtfs[event] = outdir + "/svs/{}-{}.gtf".format(wildcards.sample, event)
+        gtfs[event] = outdir + "/svs/svcaller/{}-{}.gtf".format(wildcards.sample, event)
 
     return gtfs
 

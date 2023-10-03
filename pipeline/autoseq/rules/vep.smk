@@ -5,12 +5,13 @@ rule vep_annotation:
         reference = reference["reference_genome"],
         brca_exchange = reference["brca_exchange"],
         vep_dir = reference['vep_dir'],
-        germline = "{}/variants/{}-all.germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
+        germline = "{}/variants/haplotypecaller/{}.haplotypecaller-germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
         somatic = "{}/variants/{}-{}-all.somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     output:
         germline = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR),
         somatic = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: params['vep']['threads']
+    container: containers['ensemblvep']
     shell:
         "source activate ensembl-vep && "
         "vep --vcf --output_file STDOUT " 
@@ -40,6 +41,7 @@ rule vep_vardict:
     output:
         "{}/variants/vardict/{}-{}.vardict-somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: params['vep']['threads']
+    container: containers['ensemblvep']
     shell:
         "source activate ensembl-vep && "
         "vep --vcf --output_file STDOUT " 

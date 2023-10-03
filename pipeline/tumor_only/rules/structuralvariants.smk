@@ -7,11 +7,12 @@ rule svcaller_run:
         bam = outdir + "/bams/{sample}_nodups.bam",
         reference = reference["reference_genome"]
     output:
-        gtf = outdir + "/svs/{sample}-{events}.gtf",
-        bam = outdir + "/svs/{sample}-{events}.bam",
+        gtf = outdir + "/svs/svcaller/{sample}-{events}.gtf",
+        bam = outdir + "/svs/svcaller/{sample}-{events}.bam",
     params: 
         tmpdir = params['scratch']
     threads: params['svcaller']['threads']
+    container: containers['svcaller']
     log:
         outdir + "/logs/svs/svcaller-{sample}-{events}.log"
     shell:
@@ -31,9 +32,10 @@ rule sveffect_predict:
         ar_regions = reference["ar_regions"],
         fusion_regions = reference["fusion_regions"]
     output:
-        combined_bed = outdir + "/svs/{sample}_combined.bed",
-        effects_json = outdir + "/svs/{sample}_effects.json"
+        combined_bed = outdir + "/svs/svcaller/{sample}_combined.bed",
+        effects_json = outdir + "/svs/svcaller/{sample}_effects.json"
     threads: params['svcaller']['threads']
+    container: containers['svcaller']
     log:
         outdir + "/logs/svs/sveffect-{sample}.log"
     shell:
@@ -50,6 +52,26 @@ rule sveffect_predict:
         "source deactivate"
 
 
+rule svcaller_merge:
+    input:
+        unpack(lambda wildcards: get_capture_svs(wildcards, outdir)),
+        DEL_bam = outdir + "/svs/svcaller/{sample}-DEL.bam",
+        DUP_bam = outdir + "/svs/svcaller/{sample}-DUP.bam",
+        INV_bam = outdir + "/svs/svcaller/{sample}-INV.bam",
+        TRA_bam = outdir + "/svs/svcaller/{sample}-TRA.bam"
+    output:
+        svs_bam = outdir + "/svs/{sample}-svs.bam",
+        svs_gtf = outdir + "/svs/{sample}-svs.gtf"
+    threads: 8
+    log:
+        outdir + "/logs/svs/svcaller-merge-{sample}.log"
+    shell:
+        "samtools merge -c -p {output.svs_bam} {input.DEL_bam} "
+        " {input.DUP_bam} {input.INV_bam} {input.TRA_bam} && "
+        "cat {input.DEL} {input.DUP} {input.INV} {input.TRA} "
+        " > {output.svs_gtf} "
+
+
 rule generateIGVnavInput_svcaller:
     input:
         capture_to_results[CANCER_CAPTURE].svs.values()
@@ -57,7 +79,7 @@ rule generateIGVnavInput_svcaller:
         svcaller_tumor = "{}/svs/igv/{}_svcaller.mut".format(outdir, CANCER_CAPTURE_STR)
     params:
         cancer_str = CANCER_CAPTURE_STR,
-        svs_dir = outdir + "/svs/",
+        svs_dir = outdir + "/svs/svcaller/",
         igvout = outdir + "/svs/igv/"
     log:
         outdir + "/logs/generateIGVnavInput_svcaller-{}.log".format(CANCER_CAPTURE_STR)
@@ -74,7 +96,8 @@ rule annotate_generateIGVnavInput:
         svcaller_tumor = "{}/svs/igv/{}_svcaller.mut".format(outdir, CANCER_CAPTURE_STR),
         genes = reference["genes_bed"],
         targets = reference['sv_filter'],
-        cgcann = reference['cgcann']
+        cgcann = reference['cgcann'],
+        exons = reference['exons_gtf']
     output:
         "{}/svs/igv/{}-sv-annotated.txt".format(outdir, CANCER_CAPTURE_STR)
     params:
@@ -85,4 +108,4 @@ rule annotate_generateIGVnavInput:
     shell:        
         "generateIGVnavInput_SV.py --input {params.svs_dir} --cgc {input.cgcann} "
             " --annotBed {input.genes} --target {params.capture_kit_id} {input.targets} "
-            " --output {output} 2> {log} "
+            " --exons {input.exons} --output {output} 2> {log} "

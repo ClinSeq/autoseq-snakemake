@@ -60,11 +60,14 @@ class GenerateSymlink():
                 symlinks = (('variants','.vep.vcf.gz'),('bams','nodups.bam'), ('bams','nodups.bam.bai'),
                             ('bams','clipoverlap.bam'), ('bams','clipoverlap.bai'), ('cnv', '.bedGraph'),
                             ('variants', '.bedGraph'), ('svs/igv','.mut'), ('svs','.gtf'), 
-                            ('svs','.bam'), ('svs','.bai'), ('', 'igvnav-input.txt')) + args
+                            ('svs/gridss', 'bam.sv.bam'), ('svs/gridss', 'bam.sv.bam.csi'), 
+                            ('svs/gridss', 'assembly.bam'), ('svs','.bam'), ('svs','.bai'),
+                            ('', 'igvnav-input.txt')) + args
             else:
                 symlinks = (('variants','.vep.vcf'),('bams','nodups.bam'), ('bams','nodups.bam.bai'),
                             ('bams','clipoverlap.bam'), ('bams','clipoverlap.bai'), ('variants','.vep.vcf'), 
                             ('cnv', '.bedGraph'), ('variants', '.bedGraph'), ('svs/igv','.mut'), ('svs','.gtf'), 
+                            ('svs/gridss', 'bam.sv.bam'), ('svs/gridss', 'bam.sv.bam.csi'), 
                             ('svs','.bam'), ('svs','.bai'), ('', 'igvnav-input.txt')) + args
             
             for each_input in symlinks:
@@ -96,8 +99,8 @@ class GenerateSymlink():
                      ('sv', 'mut_svaba_germline','.*_(germline)_svaba.mut$'),
                      ('sv', 'mut_gridss_normal', '^(?:(?!CFDNA).)*_gridss.mut$'),
                      ('sv', 'mut_svcaller_normal', '^(?:(?!CFDNA).)*_svcaller.mut$'),
-                     ('sv', 'gtf_cfdna', '.*-CFDNA-.*(DEL|DUP|INV|TRA).gtf$'),
-                     ('sv', 'gtf_normal', '^(?:(?!CFDNA).)*(DEL|DUP|INV|TRA).gtf$'),
+                     ('sv', 'gtf_cfdna', '.*-CFDNA-.*svs.gtf$'),
+                     ('sv', 'gtf_normal', '^(?:(?!CFDNA).)*svs.gtf$'),
                      ('snps', 'bam_cfdna', '.*-CFDNA-.*_clipoverlap.bam$'),
                      ('snps', 'bam_normal', '^(?:(?!CFDNA).)*clipoverlap.bam$'),
                      ('cnv', 'flank_profile_cfdna', '.*-CFDNA-.*_profile.bedGraph'),
@@ -108,13 +111,13 @@ class GenerateSymlink():
                      ]
             
         if self.is_wgs:
-            all_files.extend([('sv', 'bam_cfdna', '.*-CFDNA-.*(DEL|DUP|INV|TRA).bam$'),
-                              ('sv', 'bam_normal', '^(?:(?!CFDNA).)*(DEL|DUP|INV|TRA).bam$'),
-                              ('snps', 'vep', '.*.all.(somatic|germline).vep.vcf.gz$')
+            all_files.extend([('snps', 'vep', '.*.all.(somatic|germline).vep.vcf.gz$'),
+                              ('sv', 'bam_gridss_normal', '^(?:(?!CFDNA|T).)*nodups.bam.sv.bam$'),
+                              ('sv', 'bam_gridss_tumor', '.*-(T|CFDNA).*nodups.bam.sv.bam$')
                             ])
         else:
-            all_files.extend([('sv', 'bam_cfdna', '.*-CFDNA-.*(DEL|DUP|INV|TRA|contigs.sort).bam$'),
-                              ('sv', 'bam_normal', '^(?:(?!CFDNA).)*(DEL|DUP|INV|TRA|contigs.sort).bam$'),
+            all_files.extend([('sv', 'bam_cfdna', '.*-CFDNA-.*(svs|targeted.bam.sv).bam$'),
+                              ('sv', 'bam_normal', '^(?:(?!CFDNA).)*(svs|targeted.bam.sv).bam$'),
                               ('snps', 'vep', '.*.all.(somatic|germline).vep.vcf$')
                             ])
 
@@ -272,7 +275,8 @@ class GenerateSymlink():
                     ('sv', 'mut_svaba_somatic'),  ('sv', 'mut_svcaller_cfdna'), ('sv', 'mut_gridss_cfdna'),
                     ('sv', 'mut_lumpy'), ('sv', 'gtf_cfdna'),
                     ('sv', 'mut_svaba_germline'), ('sv', 'mut_svcaller_normal'), ('sv', 'mut_gridss_normal'),
-                    ('sv', 'gtf_normal')]
+                    ('sv', 'gtf_normal'), ('sv', 'bam_gridss_normal'), 
+                    ('sv', 'bam_gridss_tumor')]
 
         sv_resource= ""
         sv_bam_panel= ""
@@ -293,7 +297,7 @@ class GenerateSymlink():
                     continue
 
                 #sv_resource += resource_path.format(path_name=full_path)
-
+                
                 if each_track.startswith('bam'):
                     sv_resource += resource_path.format(path_name=full_path)
                     regex = ".*-(N|CFDNA|T)-.*(DEL|DUP|INV|TRA).bam$"
@@ -303,7 +307,7 @@ class GenerateSymlink():
                     else:
                         bam_color = '175,175,175'
                     sv_bam_track = tracks_bam_str.format(bam_file_full=full_path, bam_file=each_file, color=bam_color)
-                    sv_bam_panel += panel_str.format(panel_height=150, panel_width=2543, panel_name=each_file, tracks=sv_bam_track)
+                    sv_bam_panel += panel_str.format(panel_height=50, panel_width=2543, panel_name=each_file, tracks=sv_bam_track)
 
                 if each_track.startswith('mut'):
                     # get content of SDID column to append to id and name fields in the track
