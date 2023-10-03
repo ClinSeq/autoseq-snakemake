@@ -80,6 +80,7 @@ class TestWorkflow(unittest.TestCase):
         with patch("pipeline.utils.utils.open", mocked_open, create=True):
             self.assertTrue(snakemake.snakemake(self.snakefile_sd,
                                                 configfiles=[self.config_sd],
+                                                dryrun=True))
 
     @patch("pipeline.utils.utils.os.path.isfile")
     def test_autoseq_wgs_valid(self, mock_isfile):

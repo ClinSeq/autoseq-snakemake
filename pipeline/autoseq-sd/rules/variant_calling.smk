@@ -9,7 +9,7 @@ rule gatk4_haplotypecaller:
         bam = capture_to_results[NORMAL_CAPTURE].umibam,
         reference = reference['reference_genome'],
         dbsnp = reference["dbSNP"],
-        interval_list = reference['small_design'][capture_s2]['targets-interval_list'],
+        interval_list = sd_targets[sd_capture_snv]['targets-interval_list'],
     output:
         vcf = "{}/variants/haplotypecaller/{}.haplotypecaller-germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
     params:
@@ -46,11 +46,12 @@ rule gatk4_mutect2:
         reference = reference['reference_genome'],
         normal_bam = capture_to_results[NORMAL_CAPTURE].umibam,
         tumor_bam = capture_to_results[CANCER_CAPTURE].umibam,
-        interval_list = reference['small_design'][capture_s2]['targets-interval_list']
+        interval_list = sd_targets[sd_capture_snv]['targets-interval_list']
     output:
         bam = "{}/variants/mutect/{}-{}-mutect.bam".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         vcf = "{}/variants/mutect/{}-{}-gatk-mutect-somatic.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         filtered_vcf = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        normalized_vcf = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered-normalized.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
         java_options = params['gatk4']['mutect2']['java_options'],
         normalid = compose_sample_str(NORMAL_CAPTURE),
@@ -71,18 +72,22 @@ rule gatk4_mutect2:
         " -bamout {output.bam} -O {output.vcf} && "
         " gatk --java-options '-Xmx10g -Djava.io.tmpdir={params.tmpdir}' "
         " FilterMutectCalls  -R {input.reference} "
+        " --max-alt-allele-count 2 "
         " -V {output.vcf}  "
-        " -O {output.filtered_vcf} "
+        " -O {output.filtered_vcf} 2>> {log} && "
+        " vt decompose -s {output.filtered_vcf} "
+        " | vt normalize  -r {input.reference} - "
+        " | bgzip > {output.normalized_vcf} 2>> {log} "
 
 
-somatic_vcf['mutect2'] = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+somatic_vcf['mutect2'] = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered-normalized.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
 
 rule sage_somatic:
     input:
         normal_bam = capture_to_results[NORMAL_CAPTURE].umibam,
         tumor_bam = capture_to_results[CANCER_CAPTURE].umibam,
         reference = reference['reference_genome'],
-        panel_bed = reference['targets'][capture_name]['targets-bed-slopped20'],
+        panel_bed = sd_targets[sd_capture_snv]['targets-bed'],
         known_hotspots = reference['wgs']['hartwig']['known-hotspots-somatic-vcf'],
         high_confi_bed = reference['wgs']['hartwig']['NA12878-highconf-bed'],
         ensembl_dir = reference['wgs']['hartwig']['ensembl-dir']
@@ -199,7 +204,7 @@ rule vardict_purecn:
         dbsnp = reference["dbSNP"],
         normal_bam = capture_to_results[NORMAL_CAPTURE].umibam,
         cancer_bam = capture_to_results[CANCER_CAPTURE].umibam,
-        target_bed = reference['small_design'][capture_s2]['targets-bed']
+        target_bed = sd_targets[sd_capture_snv]['targets-bed']
     output:
         "{}/variants/{}-{}.vardict-somatic-purecn.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     params:
@@ -237,7 +242,7 @@ rule vardict_purecn:
 
 rule vcf_add_sample:
     input:
-        germline_vcf = "{}/variants/{}-all.germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
+        germline_vcf = "{}/variants/haplotypecaller/{}.haplotypecaller-germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
         tumor_bam = capture_to_results[CANCER_CAPTURE].umibam
     output:
         vcf = "{}/variants/{}-and-{}.germline-variants-with-somatic-afs.vcf.gz".format(
@@ -271,7 +276,6 @@ rule make_allelic_fraction_track:
 rule somatic_generateIGVnav:
     input:
         somatic = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-        vardict_vcf = "{}/variants/vardict/{}-{}.vardict-somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
         oncokb = reference['oncokb']
     output:
         "{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)

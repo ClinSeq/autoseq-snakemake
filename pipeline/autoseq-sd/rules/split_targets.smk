@@ -2,9 +2,9 @@
 
 rule split_target_1:
     input:
-        target = reference['small_design'][capture_p2]['targets-bed']
+        target = sd_targets['targets-bed']
     output:
-        expand(outdir + "/bams/split_targets/target.p2.{chr}.bed", chr = all_chromosomes)
+        expand(outdir + "/bams/split_targets/target.sd.{chr}.bed", chr = all_chromosomes)
     params: 
         outdir = outdir
     shell:
@@ -17,9 +17,9 @@ rule split_target_1:
 
 rule split_target_2:
     input:
-        target = reference['small_design'][capture_s2]['targets-bed']
+        target = sd_targets[sd_capture_snv]['targets-bed']
     output:
-        expand(outdir + "/bams/split_targets/target.s2.{chr}.bed", chr = all_chromosomes)
+        expand(outdir + "/bams/split_targets/target.snv.{chr}.bed", chr = all_chromosomes)
     params: 
         outdir = outdir
     shell:
@@ -79,11 +79,12 @@ rule samtools_merge_realign_1:
         expand(outdir + "/bams/split_targets/bam/{{sample}}_realigned-1.{chr}.bam", chr = all_chromosomes),
         outdir + "/bams/split_targets/bam/{sample}_umimapped.nochr.bam"
     output:
-        outdir + "/bams/{sample}_realigned-1.bam"
+        bam = outdir + "/bams/{sample}_realigned-1.bam",
+        bai = outdir + "/bams/{sample}_realigned-1.bam.bai"
     run:
         bamfiles = " ".join(input)
-        shell("samtools merge -c -p {output} {bamfiles}")
-        shell("samtools index {output} ")
+        shell("samtools merge -c -p {output.bam} {bamfiles}")
+        shell("samtools index {output.bam} ")
         shell("rm {bamfiles}")        
 
 
@@ -92,9 +93,10 @@ rule samtools_merge_realign_2:
         expand(outdir + "/bams/split_targets/bam/{{sample}}_realigned-2.{chr}.bam", chr = all_chromosomes),
         outdir + "/bams/split_targets/bam/{sample}_umimapped-2.nochr.bam"
     output:
-        outdir + "/bams/{sample}_realigned-2.bam"
+        bam = outdir + "/bams/{sample}_realigned-2.bam",
+        bai = outdir + "/bams/{sample}_realigned-2.bam.bai"
     run:
         bamfiles = " ".join(input)
-        shell("samtools merge -c -p {output} {bamfiles}")
-        shell("samtools index {output} ")
+        shell("samtools merge -c -p {output.bam} {bamfiles}")
+        shell("samtools index {output.bam} ")
         shell("rm {bamfiles}")

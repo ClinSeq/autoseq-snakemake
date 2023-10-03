@@ -11,8 +11,15 @@ umi: True
 
 container: 
     base: False
-    gridss: False
     franken: False
+    gridss: False
+    gatk3: False
+    gridss: False
+    jumble: False
+    purecn: False
+    ensemblvep: False
+    somaticseq: False
+    svcaller: False
 
 outdir: tests
 
@@ -141,3 +148,5 @@ params:
         threads: 1
     jumble: 
         threads: 1
+    sage:
+        threads: 8

@@ -6,8 +6,8 @@ rule svcaller_run:
         bam = outdir + "/bams/{sample}_nodups.bam",
         reference = reference["reference_genome"]
     output:
-        gtf = outdir + "/svs/{sample}-{events}.gtf",
-        bam = outdir + "/svs/{sample}-{events}.bam",
+        gtf = outdir + "/svs/svcaller/{sample}-{events}.gtf",
+        bam = outdir + "/svs/svcaller/{sample}-{events}.bam",
     params: 
         tmpdir = params['scratch']
     threads: params['svcaller']['threads']
@@ -30,8 +30,8 @@ rule sveffect_predict:
         ar_regions = reference["ar_regions"],
         fusion_regions = reference["fusion_regions"]
     output:
-        combined_bed = outdir + "/svs/{sample}_combined.bed",
-        effects_json = outdir + "/svs/{sample}_effects.json"
+        combined_bed = outdir + "/svs/svcaller/{sample}_combined.bed",
+        effects_json = outdir + "/svs/svcaller/{sample}_effects.json"
     threads: params['svcaller']['threads']
     log:
         outdir + "/logs/svs/sveffect-{sample}.log"
@@ -102,7 +102,7 @@ rule generateIGVnavInput_svcaller:
 rule gridss_extract_overlapping_fragments:
     input:
         bam = outdir + "/bams/{sample}_nodups.bam",
-        target_bed = reference['targets'][capture_name]['targets-bed-slopped20']
+        target_bed = sd_targets[sd_capture_base]['targets-bed']
     output:
         bam = outdir + "/svs/gridss/{sample}-gridss-targeted.bam"
     params:

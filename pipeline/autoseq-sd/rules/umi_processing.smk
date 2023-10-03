@@ -29,7 +29,8 @@ rule bwa_umialignment:
         bam = outdir + "/bams/{sample}_unmapped.bam",
         reference_genome = reference['bwaIndex']
     output:
-        bam = outdir + "/bams/{sample}_umimapped.bam"
+        bam = outdir + "/bams/{sample}_umimapped.bam",
+        bai = outdir + "/bams/{sample}_umimapped.bai"
     params:
         java_options = params['picard']['merge_bam']['java_options'],
         tmpdir = os.path.join(params['scratch'], 
@@ -53,7 +54,7 @@ rule gatk3_targetcreator_umi_1:
     input:
         bam = outdir + "/bams/split_targets/bam/{sample}_umimapped.{chr}.bam",
         reference_genome = reference['reference_genome'],
-        target_region = outdir + "/bams/split_targets/target.p2.{chr}.bed",
+        target_region = outdir + "/bams/split_targets/target.sd.{chr}.bed",
         known_1kg = reference["1KG"],
         known_mills_gs = reference["Mills_and_1KG_gold_standard"]
     output:
@@ -83,7 +84,7 @@ rule gatk3_indelrealigner_umi_1:
     input:
         bam = outdir + "/bams/split_targets/bam/{sample}_umimapped.{chr}.bam",
         reference_genome = reference['reference_genome'],
-        target_region = outdir + "/bams/split_targets/target.p2.{chr}.bed",
+        target_region = outdir + "/bams/split_targets/target.sd.{chr}.bed",
         known_1kg = reference["1KG"],
         known_mills_gs = reference["Mills_and_1KG_gold_standard"],
         target_intervals = outdir + "/bams/split_targets/{sample}_umi_{chr}.intervals"
@@ -159,7 +160,8 @@ rule bwa_umialignment_2:
         bam = outdir + "/bams/{sample}_consensus.bam",
         reference_genome = reference['bwaIndex']
     output:
-        bam = outdir + "/bams/{sample}_umimapped-2.bam"
+        bam = outdir + "/bams/{sample}_umimapped-2.bam",
+        bai = outdir + "/bams/{sample}_umimapped-2.bai"
     params:
         java_options = params['picard']['merge_bam']['java_options'],
         tmpdir = os.path.join(params['scratch'], 
@@ -183,7 +185,7 @@ rule gatk3_targetcreator_umi_2:
     input:
         bam = outdir + "/bams/split_targets/bam/{sample}_umimapped-2.{chr}.bam",
         reference_genome = reference['reference_genome'],
-        target_region = outdir + "/bams/split_targets/target.s2.{chr}.bed",
+        target_region = outdir + "/bams/split_targets/target.snv.{chr}.bed",
         known_1kg = reference["1KG"],
         known_mills_gs = reference["Mills_and_1KG_gold_standard"]
     output:
@@ -213,7 +215,7 @@ rule gatk3_indelrealigner_umi_2:
     input:
         bam = outdir + "/bams/split_targets/bam/{sample}_umimapped-2.{chr}.bam",
         reference_genome = reference['reference_genome'],
-        target_region = outdir + "/bams/split_targets/target.s2.{chr}.bed",
+        target_region = outdir + "/bams/split_targets/target.snv.{chr}.bed",
         known_1kg = reference["1KG"],
         known_mills_gs = reference["Mills_and_1KG_gold_standard"],
         target_intervals = outdir + "/bams/split_targets/bam/{sample}_consensus_{chr}.intervals"
@@ -246,7 +248,8 @@ rule fgbio_filterconsensus:
         bam = outdir + "/bams/{sample}_realigned-2.bam",
         reference_genome = reference['reference_genome']
     output:
-        bam = outdir + "/bams/{sample}_consensus_filtered.bam"
+        bam = outdir + "/bams/{sample}_consensus_filtered.bam",
+        bai = outdir + "/bams/{sample}_consensus_filtered.bai"
     params:
         java_options = params['fgbio']['filterconsensus']['java_options'],
         error_rate = params['fgbio']['filterconsensus']['error_rate'],
@@ -273,6 +276,7 @@ rule fgbio_clipbam:
         reference_genome = reference['reference_genome']
     output:
         bam = outdir + "/bams/{sample}_clipoverlap.bam",
+        bai = outdir + "/bams/{sample}_clipoverlap.bai",
         metrics_txt = outdir + "/bams/{sample}_clipoverlap_metrix.txt"
     params:
         java_options = params['fgbio']['clipbam']['java_options'],
@@ -319,18 +323,30 @@ rule rm_interbamfiles:
     input:
         expand(outdir + "/bams/{sample}_unmapped.bam", sample=all_clinseq_barcodes),
         expand(outdir + "/bams/{sample}_umimapped.bam", sample=all_clinseq_barcodes),
+        expand(outdir + "/bams/{sample}_umimapped.bai", sample=all_clinseq_barcodes),
         expand(outdir + "/bams/{sample}_realigned-1.bam", sample=all_clinseq_barcodes),
+        expand(outdir + "/bams/{sample}_realigned-1.bam.bai", sample=all_clinseq_barcodes),
         expand(outdir + "/bams/{sample}_groupedbyumi.bam", sample=all_clinseq_barcodes),
         expand(outdir + "/bams/{sample}_consensus.bam", sample=all_clinseq_barcodes),
         expand(outdir + "/bams/{sample}_umimapped-2.bam", sample=all_clinseq_barcodes),
+        expand(outdir + "/bams/{sample}_umimapped-2.bai", sample=all_clinseq_barcodes),
         expand(outdir + "/bams/{sample}_realigned-2.bam", sample=all_clinseq_barcodes),
+        expand(outdir + "/bams/{sample}_realigned-2.bam.bai", sample=all_clinseq_barcodes),
         expand(outdir + "/bams/{sample}_consensus_filtered.bam", sample=all_clinseq_barcodes),
+        expand(outdir + "/bams/{sample}_consensus_filtered.bai", sample=all_clinseq_barcodes),
         expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=all_clinseq_barcodes),
-        expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes)
+        expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes),
+        expand(outdir + "/fastqs/{sample}_concatenated_1.fastq.gz", sample=all_clinseq_barcodes),
+        expand(outdir + "/fastqs/{sample}_concatenated_2.fastq.gz", sample=all_clinseq_barcodes)
     output:
         outdir + "/bams/intermediate_bamfiles.removed"
+    params:
+        split_targets = outdir + "/bams/split_targets/"
+    log:
+        outdir + "/logs/remove_intermediate_{sample}.log".format(sample="_".join(all_clinseq_barcodes))
     run:
         del_bam = [bam for bam in input if 'clipoverlap' not in bam and 'nodups' not in bam]
         bamfiles = " ".join(del_bam)
-        shell("rm {bamfiles} ")
+        shell("rm {bamfiles} 2> {log} ")
+        shell("rm -rf {params.split_targets} 2>> {log} ")
         shell("touch {output} ")

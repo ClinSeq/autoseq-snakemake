@@ -65,8 +65,8 @@ rule picard_collecthsmetrics_nodups:
     input:
         bam = outdir + "/bams/{sample}_nodups.bam",
         reference_genome = reference['reference_genome'],
-        target_region = reference['small_design'][capture_b2]["targets-interval_list"],
-        bait_regions = reference['small_design'][capture_b2]["targets-interval_list"]
+        target_region = sd_targets[sd_capture_base]["targets-interval_list"],
+        bait_regions = sd_targets[sd_capture_base]["targets-interval_list"]
     output:
         metrics = outdir + "/qc/picard/{sample}_nodups.picard-hsmetrics.txt"
     params:
@@ -93,8 +93,8 @@ rule picard_collecthsmetrics_clipoverlap:
     input:
         bam = outdir + "/bams/{sample}_clipoverlap.bam",
         reference_genome = reference['reference_genome'],
-        target_region = reference['small_design'][capture_s2]["targets-interval_list"],
-        bait_regions = reference['small_design'][capture_s2]["targets-interval_list"]
+        target_region = sd_targets[sd_capture_snv]["targets-interval_list"],
+        bait_regions = sd_targets[sd_capture_snv]["targets-interval_list"]
     output:
         metrics = outdir + "/qc/picard/{sample}_clipoverlap.picard-hsmetrics.txt"
     params:
