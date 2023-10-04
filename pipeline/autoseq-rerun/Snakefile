@@ -63,10 +63,10 @@ CANCER_CAPTURE = [extract_unique_capture(sample)
                     for sample in all_clinseq_barcodes 
                         if '-CFDNA-' in sample or '-T-' in sample][0]
 
-cancer_sample  =  [for sample in all_clinseq_barcodes 
-                        if '-CFDNA-' in sample or '-T-' in sample][0]
-normal_sample  =  [for sample in all_clinseq_barcodes 
-                        if '-N-' in sample][0]
+cancer_sample  =  [sample for sample in all_clinseq_barcodes 
+                            if '-CFDNA-' in sample or '-T-' in sample][0]
+normal_sample  =  [sample for sample in all_clinseq_barcodes 
+                            if '-N-' in sample][0]
 NORMAL_CAPTURE_STR = compose_lib_capture_str(NORMAL_CAPTURE)
 CANCER_CAPTURE_STR = compose_lib_capture_str(CANCER_CAPTURE)
 NORMAL_SAMPLE_STR = compose_sample_str(NORMAL_CAPTURE)
