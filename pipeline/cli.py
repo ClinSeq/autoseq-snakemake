@@ -12,7 +12,7 @@ import pipeline
 from pipeline.utils.utils import make_paths_absolute, Pipeline, get_containers
 from pipeline.utils.clinseq_barcodes import data_available_for_clinseq_barcode, \
     extract_clinseq_barcodes, validate_clinseq_barcodes, convert_barcodes_to_sampledict, \
-    check_sampledata, normpath, parse_project
+    check_sampledata, normpath, parse_project, clinseq_barcode_is_valid
 
 
 def console_autoseq():
@@ -116,9 +116,22 @@ def launch(context, ref, samples, outdir, libdir,
     sample_json = json.load(open(samples))
     sdid = sample_json['sdid']
 
-    Log.info(f"Looking for fastq files {sdid} in {libdir}")
-    sampledata, all_clinseq_barcodes = check_sampledata(libdir, sample_json)
-    Log.info(f"Libraries {all_clinseq_barcodes} have data. Using it.")
+    if pipeline != "autoseq-rerun":
+        Log.info(f"Looking for fastq files {sdid} in {libdir}")
+        sampledata, all_clinseq_barcodes = check_sampledata(libdir, sample_json)
+        Log.info(f"Libraries {all_clinseq_barcodes} have data. Using it.")
+    else:
+        Log.info(f"Looking for input files {sdid} in {libdir}")
+        sampledata = sample_json
+        all_clinseq_barcodes = []
+        
+        for sample_type in ['N', 'T', 'CFDNA']:
+            for clinseq_barcode in sampledata[sample_type]:
+                if clinseq_barcode_is_valid(clinseq_barcode):
+                    all_clinseq_barcodes.append(clinseq_barcode)
+                else:
+                    raise ValueError("Invalid clinseq barcode: " + clinseq_barcode)
+
 
     if not configfile:
         tool_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
