@@ -48,7 +48,7 @@ outdir = config['outdir']
 
 all_clinseq_barcodes = []
 for sample_type in ['N', 'T', 'CFDNA']:
-    for clinseq_barcode in sampledata[sample_type]:
+    for clinseq_barcode in samples[sample_type]:
         if clinseq_barcode_is_valid(clinseq_barcode):
             all_clinseq_barcodes.append(clinseq_barcode)
         else:
@@ -132,17 +132,17 @@ OUTPUT.append(MSI)
 ###### CNV workflow OUTPUTS
 
 CNV_OUTPUT = list()
-CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cns", sample=all_clinseq_barcodes))
-CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cnr", sample=all_clinseq_barcodes))
-CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_profile.bedGraph", sample=all_clinseq_barcodes))
-CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_segments.bedGraph", sample=all_clinseq_barcodes))
+CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cns", sample=clinseq_barcodes))
+CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}.cnr", sample=clinseq_barcodes))
+CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_profile.bedGraph", sample=clinseq_barcodes))
+CNV_OUTPUT.append(expand(outdir + "/cnv/{sample}_segments.bedGraph", sample=clinseq_barcodes))
 CNV_OUTPUT.append("{}/variants/{}-{}-liqbio-cna.json".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 CNV_OUTPUT.append("{}/qc/{}-{}-liqbio-purity.json".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 CNV_OUTPUT.append("{}/qc/{}-{}-liqbio-cna.png".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 CNV_OUTPUT.append("{}/qc/{}-{}-frankenplot.html".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 OUTPUT.append(CNV_OUTPUT)
 
-for sample in all_clinseq_barcodes:
+for sample in clinseq_barcodes:
     # cnv results to sample capture 
     if '-N-' in sample:
         capture_to_results[NORMAL_CAPTURE].cns = outdir + "/cnv/{}.cns".format(sample)
@@ -162,6 +162,23 @@ for sample in all_clinseq_barcodes:
         if '-CFDNA-' in sample or '-T-' in sample:
             capture_to_results[CANCER_CAPTURE].svs[event] = "{}/svs/svcaller/{}-{}.gtf".format(outdir, sample, event)
 
+VARIANTS = list()
+VARIANTS.append("{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR))
+VARIANTS.append("{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
+VARIANTS.append(expand(outdir + "/svs/svcaller/{sample}-{events}.gtf", sample=all_clinseq_barcodes, events=["DEL", "DUP", "INV", "TRA"]))
+VARIANTS.append(expand(outdir + "/svs/svcaller/{sample}_effects.json", sample=all_clinseq_barcodes))
+VARIANTS.append(expand(outdir + "/svs/{sample}-svs.bam", sample=all_clinseq_barcodes))
+VARIANTS.append(expand(outdir + "/svs/{sample}-svs.gtf", sample=all_clinseq_barcodes))
+VARIANTS.append("{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+
+IGV = list()
+IGV.append("{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
+IGV.append("{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR))
+IGV.append("{}/variants/{}-and-{}.germline-variants-somatic-afs.bedGraph".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+OUTPUT.append(VARIANTS)
+OUTPUT.append(IGV)
+
+
 
 wildcard_constraints:
     sdid = samples['sdid'],
@@ -174,18 +191,36 @@ containers = config['container']
 
 rule all:
     input: 
-        OUTPUT
+        OUTPUT,
+        directory("{}/multiqc".format(outdir)),
+        "{}/IGVnav/igv_session_sv.xml".format(outdir),
+        "{}/IGVnav/igv_session_snps.xml".format(outdir)
     output:
         outdir + "/analysis_finished"
     shell:
         "date +'%Y-%m-%d T%T %:z' > {output}"
 
 
+rule generate_symlinks:
+    input:
+        OUTPUT
+    output:
+        "{}/IGVnav/igv_session_sv.xml".format(outdir),
+        "{}/IGVnav/igv_session_snps.xml".format(outdir)
+    params:
+        outdir = outdir,
+        target_bed = targets
+    log:
+        "{}/logs/generate_symlinks.log".format(outdir)
+    shell:
+        "generate_symlinks.py --targets {params.target_bed} --outdir {params.outdir}  2> {log} "
+
 
 include: "rules/qc.smk"
 include: "rules/cnvcalling.smk"
-# include: "rules/germline.smk"
-# include: "rules/somatic.smk"
-# include: "rules/structuralvariants.smk"
-# include: "rules/vep.smk"
+include: "rules/germline.smk"
+include: "rules/somatic.smk"
+include: "rules/vep.smk"
+include: "rules/structuralvariants.smk"
+
 

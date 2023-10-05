@@ -1,7 +1,7 @@
 
 rule svcaller_run:
     input:
-        bam = outdir + "/bams/{sample}_nodups.bam",
+        bam = outdir + "/bams/{sample}" + nodups_suffix,
         reference = reference["reference_genome"]
     output:
         gtf = outdir + "/svs/svcaller/{sample}-{events}.gtf",
@@ -105,7 +105,7 @@ envvars:
 
 rule gridss_extract_overlapping_fragments:
     input:
-        bam = outdir + "/bams/{sample}_nodups.bam",
+        bam = outdir + "/bams/{sample}" + _nodups.bam,
         target_bed = reference['targets'][capture_name]['targets-bed-slopped20']
     output:
         bam = outdir + "/svs/gridss/{sample}-gridss-targeted.bam"

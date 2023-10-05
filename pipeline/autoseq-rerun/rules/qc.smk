@@ -284,7 +284,7 @@ rule multiqc:
 rule overview_plot:
     input:
         PICARD_QC,
-        expand(outdir + "/qc/samtools/{sample}-flagstats.json", sample = all_clinseq_barcodes),
+        expand(outdir + "/qc/samtools/{sample}-flagstats.json", sample = clinseq_barcodes),
         "{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR),
         "{}/contamination/{}.contest.txt".format(outdir, NORMAL_CAPTURE_STR),
         "{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR),

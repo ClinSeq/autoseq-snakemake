@@ -1,4 +1,5 @@
 
+cancerBam = capture_to_results[CANCER_CAPTURE].umibam if umi else capture_to_results[CANCER_CAPTURE].bamfile
 
 rule gatk4_mutect2:
     input:
@@ -153,3 +154,79 @@ rule gatk3_combinevariants:
         " --variant {input.consensus_indel} " 
         " --assumeIdenticalSamples  | bgzip > {output} && "
         " tabix -p vcf {output} 2> {log} "
+    
+
+rule vardict_purecn:
+    input:
+        reference = reference['reference_genome'],
+        reference_dict = reference["reference_dict"],
+        dbsnp = reference["dbSNP"],
+        normal_bam = normalBam,
+        cancer_bam = cancerBam,
+        target_bed = reference['targets'][capture_name]['targets-bed-slopped20']
+    output:
+        "{}/variants/{}-{}.vardict-somatic-purecn.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    params:
+        tmpdir = params['scratch'],
+        normalid = compose_sample_str(NORMAL_CAPTURE),
+        tumorid = compose_sample_str(CANCER_CAPTURE),
+        min_alt_frac = params['vardict']['min_alt_frac'],
+        min_num_reads = 6,
+        tmpvcf = f"{params['scratch']}/{uuid.uuid4()}.vcf.gz"
+    threads: params['vardict']['threads']
+    shell:
+        "VarDict -G {input.reference} "
+            " -th {threads} "
+            "-f {params.min_alt_frac} "
+            "-N {params.tumorid} "
+            "-r {params.min_num_reads} "
+            " -b \"{input.cancer_bam}|{input.normal_bam}\" "
+            " -c 1 -S 2 -E 3 -g 4 -Q 10 {input.target_bed} "
+            " | testsomatic.R " 
+            " | var2vcf_paired.pl -P 0.9 -m 4.25 -f {params.min_alt_frac} "
+            " -N \"{params.tumorid}|{params.normalid}\" "
+            " | awk -F$'\\t' -v OFS='\\t' '{{if ($0 !~ /^#/) gsub(/[KMRYSWBVHDX]/, \"N\", $4) }} {{print}}' " 
+            " |  awk -F$'\\t' -v OFS='\\t' '$1!~/^#/ && $4 == $5 {{next}} {{print}}'" 
+            " | sed 's/Somatic;/Somatic;SOMATIC;/g' " 
+            " | sed '/^#CHROM/i ##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description=\"Somatic event\">' " 
+            " | vcfstreamsort -w 1000 " 
+            " | bcftools view --apply-filters .,PASS " 
+            " | vcfsorter.pl {input.reference_dict} /dev/stdin "
+            " | bgzip > {params.tmpvcf} && tabix -p vcf {params.tmpvcf} && "
+            " bcftools annotate --annotation {input.dbsnp} --columns ID "
+            " --output-type z --output {output} {params.tmpvcf} "
+            " && tabix -p vcf {output} && "
+            "rm {params.tmpvcf} "
+
+
+rule vcf_add_sample:
+    input:
+        germline_vcf = "{}/variants/haplotypecaller/{}.haplotypecaller-germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
+        tumor_bam = cancerBam
+    output:
+        vcf = "{}/variants/{}-and-{}.germline-variants-with-somatic-afs.vcf.gz".format(
+            outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    params:
+        tumorid = CANCER_SAMPLE_STR,
+        tmpdir = os.path.join(params['scratch'], 
+                    "vcfaddsample-{}".format(str(uuid.uuid4())))
+    threads: params['vcfaddsample']['threads']
+    shell:
+        "vcf_filter.py --no-filtered  {input.germline_vcf} "
+        " sq --site-quality 5 | bgzip > {params.tmpdir}.vcf.gz && "
+        " vcf_add_sample.py --filter_hom --samplename {params.tumorid}  " 
+        " {params.tmpdir}.vcf.gz  {input.tumor_bam} "
+        " | bgzip > {output.vcf} && "
+        " tabix -p vcf {output.vcf} && " 
+        " rm {params.tmpdir}.vcf.gz "
+
+
+rule make_allelic_fraction_track:
+    input:
+        vcf = "{}/variants/{}-and-{}.germline-variants-with-somatic-afs.vcf.gz".format(
+            outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    output:
+        "{}/variants/{}-and-{}.germline-variants-somatic-afs.bedGraph".format(
+            outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    shell:
+        "generate_allelic_fraction_bedGraph.py  --output {output}  {input.vcf} "

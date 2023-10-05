@@ -213,7 +213,7 @@ def get_jumbleref(wildcards, reference):
     """
     return jumble reference file
     """
-    unique_capture = extract_unique_capture(wildcards.sample)
+    unique_capture = extract_unique_capture(wildcards.sample, validation=False)
     capture_name = get_capture_name(unique_capture.capture_kit_id)
 
     jumble_ref = None
@@ -266,7 +266,7 @@ def get_targets(wildcards, reference, key):
     """
     return bed file corresponds to capture id
     """
-    unique_capture = extract_unique_capture(wildcards.sample)
+    unique_capture = extract_unique_capture(wildcards.sample, validation = False)
     targets = get_capture_name(unique_capture.capture_kit_id)
     
     return reference['targets'][targets][key]
@@ -276,7 +276,7 @@ def get_target_name(wildcards):
     """
     return capture id
     """
-    unique_capture = extract_unique_capture(wildcards.sample)
+    unique_capture = extract_unique_capture(wildcards.sample, validation = False)
     targets = get_capture_name(unique_capture.capture_kit_id)
     
     return targets

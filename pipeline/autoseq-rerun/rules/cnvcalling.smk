@@ -1,10 +1,10 @@
 
-capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
-cancer_sample = [_ for _ in all_clinseq_barcodes if '-T-' in _ or '-CFDNA-' in _]
+#capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
+#cancer_sample = [_ for _ in clinseq_barcodes if '-T-' in _ or '-CFDNA-' in _]
 
 rule jumblerun_cnv:
     input:
-        bam = outdir + "/bams/{sample}_nodups.bam",
+        bam = outdir + "/bams/{sample}" + nodups_suffix,
         reference = lambda wildcards: get_jumbleref(wildcards, reference)
     output:
         cns = outdir + "/cnv/{sample}.cns",

@@ -1,4 +1,5 @@
 
+normalBam = capture_to_results[NORMAL_CAPTURE].umibam if umi else capture_to_results[NORMAL_CAPTURE].bamfile
 
 rule gatk4_haplotypecaller:
     input:
