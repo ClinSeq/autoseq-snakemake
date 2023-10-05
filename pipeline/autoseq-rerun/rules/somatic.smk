@@ -1,4 +1,5 @@
 
+somatic_vcf = dict()
 cancerBam = capture_to_results[CANCER_CAPTURE].umibam if umi else capture_to_results[CANCER_CAPTURE].bamfile
 
 rule gatk4_mutect2:
@@ -155,6 +156,20 @@ rule gatk3_combinevariants:
         " --assumeIdenticalSamples  | bgzip > {output} && "
         " tabix -p vcf {output} 2> {log} "
     
+
+rule somatic_generateIGVnav:
+    input:
+        somatic = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        oncokb = reference['oncokb'],
+        cgcann = reference['cgcann']
+    output:
+        "{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    params:
+        vcftype = "somatic"
+    shell:
+        "generateIGVnavInput.py {input.somatic} {input.oncokb} "
+        " {params.vcftype} --cgc {input.cgcann} --output {output} "
+
 
 rule vardict_purecn:
     input:

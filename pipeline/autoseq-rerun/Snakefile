@@ -102,7 +102,9 @@ for bam in BAM_FILES:
 samples_capture_str = [compose_lib_capture_str(unique_capture) 
                             for unique_capture in [NORMAL_CAPTURE, CANCER_CAPTURE]]
 
-clinseq_barcodes = sample_capture_str if CANCER_CAPTURE.project == "AL" else all_clinseq_barcodes
+clinseq_barcodes = samples_capture_str if CANCER_CAPTURE.project == "AL" else all_clinseq_barcodes
+capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
+targets = reference['targets'][capture_name]['targets-bed-slopped20']
 
 ###### QC workflow OUTPUTS
 OUTPUT = list()
@@ -165,10 +167,10 @@ for sample in clinseq_barcodes:
 VARIANTS = list()
 VARIANTS.append("{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR))
 VARIANTS.append("{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
-VARIANTS.append(expand(outdir + "/svs/svcaller/{sample}-{events}.gtf", sample=all_clinseq_barcodes, events=["DEL", "DUP", "INV", "TRA"]))
-VARIANTS.append(expand(outdir + "/svs/svcaller/{sample}_effects.json", sample=all_clinseq_barcodes))
-VARIANTS.append(expand(outdir + "/svs/{sample}-svs.bam", sample=all_clinseq_barcodes))
-VARIANTS.append(expand(outdir + "/svs/{sample}-svs.gtf", sample=all_clinseq_barcodes))
+VARIANTS.append(expand(outdir + "/svs/svcaller/{sample}-{events}.gtf", sample=clinseq_barcodes, events=["DEL", "DUP", "INV", "TRA"]))
+VARIANTS.append(expand(outdir + "/svs/svcaller/{sample}_effects.json", sample=clinseq_barcodes))
+VARIANTS.append(expand(outdir + "/svs/{sample}-svs.bam", sample=clinseq_barcodes))
+VARIANTS.append(expand(outdir + "/svs/{sample}-svs.gtf", sample=clinseq_barcodes))
 VARIANTS.append("{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
 
 IGV = list()

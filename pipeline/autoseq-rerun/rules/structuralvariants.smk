@@ -1,4 +1,7 @@
 
+normal_barcode = [_ for _ in clinseq_barcodes if '-N-' in _ ][0] 
+tumor_barcode = [_ for _ in clinseq_barcodes if '-T-' in _ or '-CFDNA-' in _][0]
+
 rule svcaller_run:
     input:
         bam = outdir + "/bams/{sample}" + nodups_suffix,
@@ -105,7 +108,7 @@ envvars:
 
 rule gridss_extract_overlapping_fragments:
     input:
-        bam = outdir + "/bams/{sample}" + _nodups.bam,
+        bam = outdir + "/bams/{sample}" + nodups_suffix,
         target_bed = reference['targets'][capture_name]['targets-bed-slopped20']
     output:
         bam = outdir + "/svs/gridss/{sample}-gridss-targeted.bam"
