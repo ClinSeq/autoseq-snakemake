@@ -290,10 +290,10 @@ rule overview_plot:
         "{}/qc/{}-contam-qc-call.json".format(outdir, CANCER_CAPTURE_STR),
         msings_output
     output:
-        "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest))
+        "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_capture_str))
     params:
-        samples = ":".join(samples_of_interest),
-        mainpath = dirname(dirname(outdir)),
+        samples = ":".join(samples_capture_str),
+        mainpath = os.path.dirname(os.path.dirname(outdir)),
         outdir = outdir
     container: containers['purecn']
     log:

@@ -12,6 +12,7 @@ class TestWorkflow(unittest.TestCase):
         self.snakefile = "pipeline/autoseq/Snakefile"
         self.to_snakefile = "pipeline/tumor_only/Snakefile"
         self.wgs_snakefile = "pipeline/autoseq-wgs/Snakefile"
+        self.rerun_snakefile = "pipeline/autoseq-rerun/Snakefile"
         self.config = "tests/test_config.yml"
         self.config_noumi = "tests/test_config_non_umi.yml"
         self.reference = "tests/dummy_genome/dummy_genome.json"
@@ -75,3 +76,17 @@ class TestWorkflow(unittest.TestCase):
             self.assertTrue(snakemake.snakemake(self.wgs_snakefile,
                                                 configfiles=[self.config],
                                                 dryrun=True))
+    
+    # @patch("pipeline.utils.utils.os.path.isfile")
+    # @patch("os.symlink")
+    # @patch("os.makedirs")
+    # def test_autoseq_rerun_valid(self, mock_isfile, mock_os_symlink, mock_makedirs):
+    #     mock_isfile.return_value = True
+    #     mocked_open = mock_open(read_data='{"1", "2", "3", "4", "5", "6", "7", "8", "X", "Y"}')
+    #     mock_os_symlink.return_value = True
+    #     mock_makedirs.return_value = True
+
+    #     with patch("pipeline.utils.utils.open", mocked_open, create=True):
+    #         self.assertTrue(snakemake.snakemake(self.rerun_snakefile,
+    #                                             configfiles=[self.config],
+    #                                             dryrun=True))
