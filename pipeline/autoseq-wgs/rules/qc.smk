@@ -101,6 +101,7 @@ rule gatk3_contest_cancer:
         tmpdir = params['scratch'],
         min_genotype_ratio = params['contest_cancer']['min_genotype_ratio']
     threads: params['contest_cancer']['threads']
+    container: containers['gatk3']
     log:
         outdir + "/logs/contamination/contest-{}.log".format(CANCER_CAPTURE_STR)
     shell:
@@ -126,6 +127,7 @@ rule gatk3_contest_normal:
         tmpdir = params['scratch'],
         min_genotype_ratio = params['contest_cancer']['min_genotype_ratio']
     threads: params['contest_cancer']['threads']
+    container: containers['gatk3']
     log:
         outdir + "/logs/contamination/contest-{}.log".format(NORMAL_CAPTURE_STR)
     shell:
