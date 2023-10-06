@@ -27,15 +27,18 @@ opt <- parse_args(OptionParser(option_list = option_list))
 
 # using the example in the GRIDSS /example directory
 vcf <- readVcf(opt$vcf, "hg19")
-info(header(vcf)) = unique(as(rbind(as.data.frame(info(header(vcf))), data.frame(
-	row.names=c("SIMPLE_TYPE"),
-	Number=c("1"),
-	Type=c("String"),
-	Description=c("Simple event type annotation based purely on breakend position and orientation."))), "DataFrame"))
+if (dim(vcf)[1] != 0) {
+  info(header(vcf)) = unique(as(rbind(as.data.frame(info(header(vcf))), data.frame(
+    row.names=c("SIMPLE_TYPE"),
+    Number=c("1"),
+    Type=c("String"),
+    Description=c("Simple event type annotation based purely on breakend position and orientation."))), "DataFrame"))
 
-gr <- breakpointRanges(vcf)
-svtype <- simpleEventType(gr)
-info(vcf)$SIMPLE_TYPE <- NA_character_
-info(vcf[gr$sourceId])$SIMPLE_TYPE <- svtype
-# info(vcf[gr$sourceId])$SVLEN <- gr$svLen
-writeVcf(vcf, opt$output_vcf)
+  gr <- breakpointRanges(vcf)
+  svtype <- simpleEventType(gr)
+  info(vcf)$SIMPLE_TYPE <- NA_character_
+  info(vcf[gr$sourceId])$SIMPLE_TYPE <- svtype
+  # info(vcf[gr$sourceId])$SVLEN <- gr$svLen
+  writeVcf(vcf, opt$output_vcf)
+}
+
