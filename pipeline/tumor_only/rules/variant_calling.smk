@@ -247,6 +247,7 @@ rule somaticseq_merge:
     params:
         tmpdir = params['scratch']
     threads: params['somaticseq']['threads']
+    container: containers['somaticseq']
     log:
         "{}/logs/variants/{}-{}-somaticseq.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:

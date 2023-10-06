@@ -1,0 +1,157 @@
+import os
+import uuid
+import json
+import collections
+
+include: "../utils/utils.py"
+include: "../utils/clinseq_barcodes.py"
+
+shell.prefix("set -eo pipefail;")
+
+# Reading parameters
+samples = json.load(open(config['samples']))
+params = config['params']
+refjson = json.load(open(config['reference']))
+
+# loading reference files
+basepath = os.path.dirname(config['reference'])
+reference = make_paths_absolute(refjson, basepath)
+umi = config['umi']
+libdir = config['libdir']
+steps = config['steps']
+outdir = config['outdir']
+
+# Need to check clinseq_barcodes and data available for those valid barcodes
+sampledata, all_clinseq_barcodes = check_sampledata(libdir, samples)
+
+
+# NORMAL, CANCER SAMPLES
+for sample in all_clinseq_barcodes:
+    if '-N-' in sample:
+        NORMAL_CAPTURE = extract_unique_capture(sample)
+    
+    if '-CFDNA-' in sample or '-T-' in sample:
+        CANCER_CAPTURE = extract_unique_capture(sample)
+
+NORMAL_CAPTURE_STR = compose_lib_capture_str(NORMAL_CAPTURE)
+CANCER_CAPTURE_STR = compose_lib_capture_str(CANCER_CAPTURE)
+NORMAL_SAMPLE_STR = compose_sample_str(NORMAL_CAPTURE)
+CANCER_SAMPLE_STR = compose_sample_str(CANCER_CAPTURE)
+
+# Extract chromosome from target capture bed
+sd_capture = get_capture_name(CANCER_CAPTURE.capture_kit_id)
+sd_capture_snv = "snvindel"
+sd_capture_base = "baseline"
+
+sd_targets = reference['small_design'][sd_capture]
+sd_chromo = list(get_chromosomes(sd_targets['targets-bed']))
+sd_chromo_snv = list(get_chromosomes(sd_targets[sd_capture_snv]['targets-bed']))
+
+all_chromosomes = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', 'X', 'Y']
+
+samples_of_interest = [compose_lib_capture_str(unique_capture) 
+                            for unique_capture in [NORMAL_CAPTURE, CANCER_CAPTURE]]
+
+capture_to_results = collections.defaultdict(SinglePanelResults)
+OUTPUT = list()
+
+# 1. Preprocessing and Alignment 
+if 'ALL' in steps or 'preprocess' in steps:
+    BAM_FILES = expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes)
+    UMIBAM_FILES = expand(outdir + "/bams/{sample}_clipoverlap.bam", sample=all_clinseq_barcodes)
+    
+    OUTPUT.append(BAM_FILES)
+    if umi:
+        OUTPUT.append(UMIBAM_FILES)
+
+capture_to_results[NORMAL_CAPTURE].bamfile = get_capture_bam(NORMAL_CAPTURE, BAM_FILES)
+capture_to_results[CANCER_CAPTURE].bamfile = get_capture_bam(CANCER_CAPTURE, BAM_FILES)
+capture_to_results[NORMAL_CAPTURE].umibam = get_capture_bam(NORMAL_CAPTURE, UMIBAM_FILES)
+capture_to_results[CANCER_CAPTURE].umibam = get_capture_bam(CANCER_CAPTURE, UMIBAM_FILES)
+
+# 2. QC
+if 'ALL' in steps or 'qc' in steps:
+    FASTQC = expand(outdir + "/qc/fastqc/{sample}/", sample=all_clinseq_barcodes)
+    OUTPUT.append(FASTQC)
+
+    PICARD_QC = list()
+    PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-insertsize.txt", 
+                            sample=all_clinseq_barcodes))
+    PICARD_QC.append(expand(outdir + "/qc/picard/{sample}.picard-oxog.txt",
+                            sample=all_clinseq_barcodes))
+    PICARD_QC.append(expand(outdir + "/qc/picard/{sample}_clipoverlap.picard-hsmetrics.txt",
+                            sample=all_clinseq_barcodes))
+    PICARD_QC.append(expand(outdir + "/qc/picard/{sample}_nodups.picard-hsmetrics.txt",
+                            sample=all_clinseq_barcodes))
+    QC_overview = "{}/qc/{}.qc_overview.pdf".format(outdir, "_".join(samples_of_interest))
+    OUTPUT.append(QC_overview)
+
+# 3. Variant calling
+if 'ALL' in steps or 'variants' in steps:
+    VARIANTS = list()
+    VARIANTS.append("{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR))
+    VARIANTS.append("{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
+    VARIANTS.append(expand(outdir + "/svs/svcaller/{sample}-{events}.gtf", sample=all_clinseq_barcodes, events=["DEL", "DUP", "INV", "TRA"]))
+    VARIANTS.append(expand(outdir + "/svs/svcaller/{sample}_effects.json", sample=all_clinseq_barcodes))
+    VARIANTS.append(expand(outdir + "/svs/{sample}-svs.bam", sample=all_clinseq_barcodes))
+    VARIANTS.append(expand(outdir + "/svs/{sample}-svs.gtf", sample=all_clinseq_barcodes))
+    VARIANTS.append("{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+
+    IGV = list()
+    IGV.append("{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR))
+    IGV.append("{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR))
+    IGV.append("{}/variants/{}-and-{}.germline-variants-somatic-afs.bedGraph".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR))
+
+    OUTPUT.append(VARIANTS)
+    OUTPUT.append(IGV)
+
+
+wildcard_constraints:
+    sdid = samples['sdid'],
+    sample = "|".join(all_clinseq_barcodes),
+    events = "|".join(["DEL", "DUP", "INV", "TRA"]),
+    sd_chr = "|".join(sd_chromo),
+    sd_chr_snv = "|".join(sd_chromo_snv),
+    chr = "|".join(all_chromosomes)
+
+
+container: config['container']['base']
+containers = config['container']
+
+
+rule all:
+    input: 
+        "{}/IGVnav/igv_session_sv.xml".format(outdir),
+        "{}/IGVnav/igv_session_snps.xml".format(outdir)
+    output:
+        outdir + "/analysis_finished"
+    shell:
+        "date +'%Y-%m-%d T%T %:z' > {output}"
+
+
+rule generate_symlinks:
+    input:
+        OUTPUT,
+        outdir + "/bams/intermediate_bamfiles.removed"
+    output:
+        "{}/IGVnav/igv_session_sv.xml".format(outdir),
+        "{}/IGVnav/igv_session_snps.xml".format(outdir)
+    params:
+        outdir = outdir,
+        target_bed = sd_targets['targets-bed']
+    log:
+        "{}/logs/generate_symlinks.log".format(outdir)
+    shell:
+        "generate_symlinks.py --targets {params.target_bed} --outdir {params.outdir}  2> {log} " 
+
+
+include: "rules/split_targets.smk"
+include: "../autoseq/rules/pre_processing.smk"
+if umi:
+    include: "rules/umi_processing.smk"
+else:
+    include: "../autoseq/rules/alignment.smk"
+include: "rules/qc.smk"
+include: "rules/variant_calling.smk"
+include: "../autoseq/rules/vep.smk"
+include: "rules/structuralvariants.smk"

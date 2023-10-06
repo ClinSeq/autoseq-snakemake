@@ -490,7 +490,8 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
                                                           (svs_svcaller_df['TOOL'] == "svcaller")])
 
         # find exons overlapping svs
-        hits_idx = set(svs_gridss_pr.intersect(exons).idx)
+        hits_gridss = svs_gridss_pr.intersect(exons)
+        hits_idx = set(hits_gridss.idx) if hits_gridss else set()
         hits_svc = svs_svcaller_pr.intersect(exons)
         _idx = set(hits_svc.idx) if hits_svc else set()
         hits_idx.update(_idx)

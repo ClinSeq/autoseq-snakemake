@@ -44,7 +44,7 @@ if (wgs){
 }
 
 markduplicates_files = dir(Sys.glob(paste0(main_path, "/*/*/qc/picard")), 
-                           pattern = "markdup.metrics.txt$", recursive = TRUE, full.names = TRUE)
+                           pattern = "markdup.*metrics.txt$", recursive = TRUE, full.names = TRUE)
 insertsize_files = dir(Sys.glob(paste0(main_path, "/*/*/qc/picard")), 
                            pattern = "picard-insertsize.txt$", recursive = TRUE, full.names = TRUE)
 contest_files = dir(Sys.glob(paste0(main_path, "/*/*/contamination")), 
@@ -77,9 +77,16 @@ if (!wgs){
     tryCatch({
       SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
       DIR = dirname(dirname(dirname(f)))
-      HsMetrics = rbind(HsMetrics, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
-                                                          header = TRUE, stringsAsFactors = FALSE), 
-                                                          stringsAsFactors = FALSE))
+      tmp_df = read.table(f, skip = 6, nrow = 1, sep = "\t", 
+                          header = TRUE, stringsAsFactors = FALSE)
+      #for newer format files, remove additional columns, for compatibility with older format files
+      tmp_df = tmp_df[,which(! colnames(tmp_df) %in% c("MIN_TARGET_COVERAGE", "PCT_TARGET_BASES_250X", "PCT_TARGET_BASES_500X", 
+                                                      "PCT_TARGET_BASES_1000X", "PCT_TARGET_BASES_2500X", "PCT_TARGET_BASES_5000X", 
+                                                      "PCT_TARGET_BASES_10000X", "PCT_TARGET_BASES_25000X", "PCT_TARGET_BASES_50000X", 
+                                                      "PCT_TARGET_BASES_100000X"))]
+      #merge with overall df
+      HsMetrics = rbind(HsMetrics, cbind(SAMP, DIR, tmp_df, 
+                                        stringsAsFactors = FALSE))
     }, error = function(err) {
         print(paste("Sample: ", SAMP, " QC: HsMetrics"))
         print(paste("ERROR: ", err))
@@ -87,22 +94,23 @@ if (!wgs){
   }
   #fix column class for column sometimes read in as character due to a "?" instead of NA
   HsMetrics$FOLD_80_BASE_PENALTY = as.numeric(HsMetrics$FOLD_80_BASE_PENALTY)
-
-  msings = data.frame()
-  for (f in msings_files) {
-    tryCatch({
-      SAMP = sub("_nodups.MSI_Analysis.txt", "", basename(f))
-      DIR = dirname(dirname(dirname(f)))
-      msings = rbind(msings, cbind(SAMP, DIR, t(read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)))[2,], stringsAsFactors=FALSE)
-    }, error = function(err) {
-      print(paste("Sample: ", SAMP, " QC: mSINGs"))
-      print(paste("ERROR: ", err))
-    })
-  }
-
-  colnames(msings) = c("SAMP", "DIR", read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)[,1])
-  msings$`msi status`[which(msings$msing_score<0.2)] = "NEG"  # use cut-off 0.2 for MSI-H (default 0.1 is too low)
-  msings$msing_score = as.numeric(msings$msing_score)
+  if (length(msings_files) != 0) {
+    msings = data.frame()
+    for (f in msings_files) {
+      tryCatch({
+        SAMP = sub("_nodups.MSI_Analysis.txt", "", basename(f))
+        DIR = dirname(dirname(dirname(f)))
+        msings = rbind(msings, cbind(SAMP, DIR, t(read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)))[2,], stringsAsFactors=FALSE)
+      }, error = function(err) {
+        print(paste("Sample: ", SAMP, " QC: mSINGs"))
+        print(paste("ERROR: ", err))
+      })
+    }
+    colnames(msings) = c("SAMP", "DIR", read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)[,1])
+    msings$`msi status`[which(msings$msing_score<0.2)] = "NEG"  # use cut-off 0.2 for MSI-H (default 0.1 is too low)
+    msings$msing_score = as.numeric(msings$msing_score)
+  } 
+  
 } else {
   wgsMetrics = data.frame()
   for (f in wgsmetrics_files) {
@@ -125,7 +133,7 @@ if (!wgs){
 MarkDuplicates = data.frame()
 for (f in markduplicates_files) {
     tryCatch({
-        SAMP = sub("-picard-markdup.metrics.txt", "", basename(f))
+        SAMP = sub("-markdups-metrics.txt", "", sub("-picard-markdup.metrics.txt", "", basename(f)))  # remove both old and new style file name pattern
         DIR = dirname(dirname(dirname(f)))
         MarkDuplicates = rbind(MarkDuplicates, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
                                                                     header = TRUE, stringsAsFactors = FALSE), 
@@ -228,6 +236,24 @@ for (d in unique(InsertSize_histogram$DIR)) {
 }
 
 
+# convert HsMetrics from long format table to wide format table in case there are samples with metrics for both nodups and clipoverlap bams
+# HsMetrics = data.table(HsMetrics)  # convert to data table for convenience 
+# HsMetrics[, bamtype := HsMetrics[, tstrsplit(SAMP, split = "_")]$V2]  # extract bam type (dedup method) from sample name
+# HsMetrics[, SAMP := HsMetrics[, tstrsplit(SAMP, split = "_")]$V1]  # remove bam type (dedup method) from sample name
+# HsMetrics[is.na(bamtype), bamtype := "nodups"]  # set bamtype to "nodups" if it's NA (when only one instance of HsMetrics was run for a sample)
+# HsMetrics = dcast(HsMetrics, SAMP + DIR + BAIT_SET ~ bamtype, 
+#                   value.var = c("MEAN_TARGET_COVERAGE", "FOLD_ENRICHMENT", "FOLD_80_BASE_PENALTY", 
+#                                 "ON_BAIT_BASES", "PF_BASES_ALIGNED"))  # cast from long to wide format
+# ### TODO: change column names with nodups to not have it, for backwards compatibility??
+# The structure of having multiple HsMetrics values per sample will not work without updates to curator. How to do this should be done propelry in the furutre, but no time right now.
+# Instead, in case of small design samples, for now just display the HsMetrics values from the nodups bam in the table for curator
+# -->
+# remove "clipoverlap" entries in HsMetrics table for small design samples
+HsMetrics = HsMetrics[grep("_clipoverlap", HsMetrics$SAMP, invert = TRUE),]
+# remove "_nodups" from sample names
+HsMetrics$SAMP = sub("_nodups", "", HsMetrics$SAMP)
+
+
 process_samp <- function(sample) {
     pre = unlist(strsplit(sample, split = "-"))
     tmp = paste(pre[1:5], collapse="-")
@@ -236,11 +262,11 @@ process_samp <- function(sample) {
     return(paste(c(tmp, libkit, capture), collapse="-"))
 }
 
-
 # merge the QC tables 
-if (wgs) {
+if (wgs || length(msings_files) == 0) {
   qc_merge = merge(merge(merge(merge(wgsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
-                InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")), flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
+                InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")), 
+                flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
 } else {
   qc_merge = merge(merge(merge(merge(merge(HsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
                 InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")),
@@ -278,6 +304,10 @@ if (wgs){
   soi_table = data.table(qc_merge)[i = soi&doi, 
                                  j =list(SAMP, MEAN_COVERAGE, FOLD_80_BASE_PENALTY,
                                          READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
+} else if (length(msings_files) == 0){
+  soi_table = data.table(qc_merge)[i = soi&doi, 
+                                    j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, FOLD_80_BASE_PENALTY,
+                                            READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
 } else {
   soi_table = data.table(qc_merge)[i = soi&doi, 
                                  j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, FOLD_80_BASE_PENALTY,
@@ -308,7 +338,7 @@ my_barplot = function(x, ybreaks, x_string, title_string) {
     geom_bar(aes(group = capture, fill = capture), width = 0.5, alpha = 0.7, color = "black") +
     geom_bar(data = subset(qc_merge, soi), width = 0.5, fill = "blue", show.legend = FALSE) + # the sample of interest
     geom_bar(data = subset(qc_merge, soi&doi), width = 0.5, fill = "red", show.legend = FALSE) + # the sample of interest
-    scale_fill_manual(values = c("antiquewhite", "aliceblue", "lightpink", "palegreen")) +
+    scale_fill_manual(values = c("antiquewhite", "aliceblue", "lightpink", "palegreen", "plum2")) +
     scale_y_continuous(breaks = ybreaks) +
     scale_x_discrete(name = x_string) +
     facet_wrap(~sample_type, ncol = 1) +
@@ -323,7 +353,7 @@ my_scatter = function(x, y, xbreaks, ybreaks, x_string, y_string, title_string) 
     geom_point(data = subset(qc_merge, soi), aes_string(x = x, y = y), fill = "blue", size = 3, show.legend = FALSE) +
     geom_point(data = subset(qc_merge, soi&doi), aes_string(x = x, y = y), fill = "red", size = 3, show.legend = FALSE) +
     scale_alpha_manual(values = c(0.7, 1)) +
-    scale_shape_manual(values = c(24, 25, 21, 22), guide = guide_legend(override.aes = list(fill = NA))) +
+    scale_shape_manual(values = c(24, 25, 21, 22, 23), guide = guide_legend(override.aes = list(fill = NA))) +
     scale_x_continuous(name = x_string, breaks = xbreaks) +
     scale_y_continuous(name = y_string, breaks = ybreaks) +
     facet_wrap(~sample_type, ncol = 1) +
@@ -388,11 +418,11 @@ print(p)
 my_barplot(x = "factor(contamination, levels = sort(unique(contamination)))", ybreaks = waiver(),
              x_string = "contamination, %", title_string = "Contamination")
 
-if (!wgs) {
+
+if (!wgs || length(msings_files) != 0) {
   # msings score vs read count scatter plot
   my_scatter(x = "READ_PAIRS_EXAMINED", y = "msing_score", xbreaks = seq(0, 1e12, 1e7), ybreaks = waiver(),
               x_string = "number of read pairs", y_string = "mSINGS score", title_string = "mSINGS score vs Read count")
-
 }
 
 my_scatter(x = "mapped_reads", y= "paired_reads", xbreaks = waiver(), ybreaks = waiver(),

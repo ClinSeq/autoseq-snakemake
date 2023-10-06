@@ -1,5 +1,5 @@
 
-samples: tests/test_liqbio_sample.json
+samples: tests/test_liqbio_sd.json
 
 reference: tests/dummy_genome/dummy_genome.json
 
@@ -21,24 +21,21 @@ container:
     somaticseq: False
     svcaller: False
 
-
 outdir: tests
 
 steps: ALL
 
-gnomAD: "/nfs/PROBIO/gnomad/r2.1/genomes/gnomad.genomes.r2.1.sites.noVEP.vcf.gz"
+gnomAD: "tests/dummy_genome/gnomad.genomes.r2.1.sites.noVEP.vcf.gz"
 
 params:
     scratch: /tmp
     bwa:
         threads: 8
-    bcftools:
-        threads: 4
     samblaster:
         rm_dup: " --removeDups "
         threads: 8
     fastqc:
-        threads: 4
+        threads: 1
     gatk3:
         threads: 1
         target_creator:
@@ -48,7 +45,6 @@ params:
         indel_realigner:
             java_options: "-Xmx8G -XX:ParallelGCThreads=4"
             extra: " -allowPotentiallyMisencodedQuals --maxReadsForRealignment 5000000 --maxReadsInMemory 1000000 "
-            wgs: " -allowPotentiallyMisencodedQuals --maxReadsForRealignment 7000 --maxReadsInMemory 1000000 "
             threads: 3
     picard:
         markdup:
@@ -66,9 +62,6 @@ params:
             threads: 1
         collecthsmetrics:
             java_options: " -XX:ParallelGCThreads=8 "
-            threads: 1
-        collectwgsmetrics:
-            java_options: " -XX:ParallelGCThreads=1 "
             threads: 1
     samtools:
         flagstat: 
@@ -107,7 +100,7 @@ params:
         threads: 1
     cnstoseg:
         threads: 1
-    cnv_tracks:
+    cnvkit_tracks:
         threads: 1
     gatk4:
         threads: 1
@@ -153,7 +146,7 @@ params:
         threads: 8
     multiqc:
         threads: 1
+    jumble: 
+        threads: 1
     sage:
         threads: 8
-    jumble:
-        threads: 1
