@@ -1,10 +1,51 @@
 import os, re
+import glob
 from pipeline.utils.clinseq_barcodes import parse_prep_id, compose_sample_str, \
-    extract_unique_capture, find_fastqs
+    extract_unique_capture, find_fastqs, compose_lib_capture_str
+
+
+def extract_bam(sample, libdir, umi = False):
+    """
+    for re-run pipeline, need to extract sample specific bam files
+    from library directory
+
+    params: 
+    sample: clinseqbarcode
+    libdir: library directory path
+    umi   : umi based processing or not
+    """
+    project = sample.split("-")[0]
+
+    if project == "AL":
+        sample_capture_str = compose_lib_capture_str(extract_unique_capture(sample))
+        pattern_bam = libdir + "/" + sample_capture_str + "*nodups.bam"
+    
+    if project in ["PB", "LB"]:
+        pattern_bam = libdir + "/" + sample + "*nodups.bam"
+        pattern_umibam = libdir + "/" + sample + "*clipoverlap.bam"
+        pattern_umibai = libdir + "/" + sample + "*clipoverlap.bai"
+    
+    pattern_bai = pattern_bam +  ".bai"
+    if umi:
+        umi_bam  = glob.glob(pattern_umibam)
+        umi_bai  = glob.glob(pattern_umibai)
+        if len(umi_bam) == 1:
+            return(umi_bam[0], umi_bai[0])
+        else:
+            raise ValueError("Invalid UMI bam search: " + sample)
+
+    nodups_bam = glob.glob(pattern_bam)
+    nodups_bai = glob.glob(pattern_bai)
+    if len(nodups_bam) == 1:
+        return(nodups_bam[0], nodups_bai[0])
+    else:
+        raise ValueError(" ".join(["Invalid bam : ", sample, nodups_bam]))
 
 
 def get_containers(_path):
     """
+    fetch containers for each conda env 
+    
     """
     containers = {
         "base": os.path.join(_path, "autoseq-base.sif"),

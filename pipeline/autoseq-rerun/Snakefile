@@ -8,33 +8,6 @@ include: "../utils/utils.py"
 include: "../utils/clinseq_barcodes.py"
 
 
-def extract_bam(sample, libdir, umi = False):
-    """
-    """
-    project = sample.split("-")[0]
-
-    if project == "AL":
-        sample_capture_str = compose_lib_capture_str(extract_unique_capture(sample))
-        pattern = libdir + "/" + sample_capture_str + "*nodups.bam"
-    
-    if project in ["PB", "LB"]:
-        pattern = libdir + "/" + sample + "*nodups.bam"
-        umibam_pattern = libdir + "/" + sample + "*clipoverlap.bam"
-    
-    if umi:
-        umi_bam  = glob.glob(umibam_pattern)
-        if len(umi_bam) == 1:
-            return str(umi_bam[0])
-        else:
-            raise ValueError("Invalid UMI bam search: " + sample)
-
-    nodups_bam = glob.glob(pattern)
-    if len(nodups_bam) == 1:
-        return str(nodups_bam[0])
-    else:
-        raise ValueError(" ".join(["Invalid bam : ", sample, nodups_bam]))
-
-
 samples = json.load(open(config['samples']))
 params = config['params']
 refjson = json.load(open(config['reference']))
@@ -77,16 +50,21 @@ CANCER_SAMPLE_STR = compose_sample_str(CANCER_CAPTURE)
 
 capture_to_results = collections.defaultdict(SinglePanelResults)
 BAM_FILES = list()
-capture_to_results[NORMAL_CAPTURE].bamfile = extract_bam(normal_sample, libdir) 
-capture_to_results[CANCER_CAPTURE].bamfile = extract_bam(cancer_sample, libdir) 
-BAM_FILES.append(capture_to_results[NORMAL_CAPTURE].bamfile)
-BAM_FILES.append(capture_to_results[CANCER_CAPTURE].bamfile)
+NORMAL_BAM, NORMAL_BAI = extract_bam(normal_sample, libdir)
+CANCER_BAM, CANCER_BAI = extract_bam(cancer_sample, libdir)
+capture_to_results[NORMAL_CAPTURE].bamfile = NORMAL_BAM
+capture_to_results[CANCER_CAPTURE].bamfile = CANCER_BAM
+BAM_FILES.extend([NORMAL_BAM, NORMAL_BAI])
+BAM_FILES.extend([CANCER_BAM, CANCER_BAI])
+
 
 if umi:
-    NORMAL_UMIBAM = extract_bam(normal_sample, libdir, umi) 
-    CANCER_UMIBAM = extract_bam(normal_sample, libdir, umi) 
-    BAM_FILES.append(NORMAL_UMIBAM)
-    BAM_FILES.append(CANCER_UMIBAM)
+    NORMAL_UMIBAM, NORMAL_UMIBAI = extract_bam(normal_sample, libdir, umi) 
+    CANCER_UMIBAM, CANCER_UMIBAI = extract_bam(cancer_sample, libdir, umi) 
+    capture_to_results[NORMAL_CAPTURE].umibam = NORMAL_UMIBAM
+    capture_to_results[CANCER_CAPTURE].umibam = CANCER_UMIBAM
+    BAM_FILES.extend([NORMAL_UMIBAM, NORMAL_UMIBAI])
+    BAM_FILES.extend([CANCER_UMIBAM, CANCER_UMIBAI])
 
 for bam in BAM_FILES:
     bname = os.path.basename(bam)
