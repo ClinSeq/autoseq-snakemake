@@ -39,6 +39,6 @@ if (dim(vcf)[1] != 0) {
   info(vcf)$SIMPLE_TYPE <- NA_character_
   info(vcf[gr$sourceId])$SIMPLE_TYPE <- svtype
   # info(vcf[gr$sourceId])$SVLEN <- gr$svLen
-  writeVcf(vcf, opt$output_vcf)
 }
+writeVcf(vcf, opt$output_vcf)
 
