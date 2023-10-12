@@ -69,6 +69,16 @@ capture_to_results[CANCER_CAPTURE].bamfile = get_capture_bam(CANCER_CAPTURE, BAM
 capture_to_results[NORMAL_CAPTURE].umibam = get_capture_bam(NORMAL_CAPTURE, UMIBAM_FILES)
 capture_to_results[CANCER_CAPTURE].umibam = get_capture_bam(CANCER_CAPTURE, UMIBAM_FILES)
 
+
+for sample in all_clinseq_barcodes:
+    # svs results to sample capture
+    for event in ["DEL", "DUP", "INV", "TRA"]:
+        if '-N-' in sample:
+            capture_to_results[NORMAL_CAPTURE].svs[event] = "{}/svs/svcaller/{}-{}.gtf".format(outdir, sample, event)
+        
+        if '-CFDNA-' in sample or '-T-' in sample:
+            capture_to_results[CANCER_CAPTURE].svs[event] = "{}/svs/svcaller/{}-{}.gtf".format(outdir, sample, event)
+
 # 2. QC
 if 'ALL' in steps or 'qc' in steps:
     FASTQC = expand(outdir + "/qc/fastqc/{sample}/", sample=all_clinseq_barcodes)
