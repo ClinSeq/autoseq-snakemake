@@ -127,11 +127,20 @@ rule samtools_flagstat:
         "samtools flagstat -@ {threads} -O json {input.bam} > {output} "
 
 
+###### Normal samples can have different capture kit ids
+
+n_capture = get_capture_name(NORMAL_CAPTURE.capture_kit_id)
+t_capture = get_capture_name(CANCER_CAPTURE.capture_kit_id)
+n_capture = n_capture if n_capture in reference['small_design'] else t_capture
+
+###########################################################
+
+
 rule create_popvcf:
     input:
         popvcf = reference["swegene_common"],
-        normal_target = reference['small_design'][get_capture_name(NORMAL_CAPTURE.capture_kit_id)]['targets-bed'],
-        cancer_target = reference['small_design'][get_capture_name(CANCER_CAPTURE.capture_kit_id)]['targets-bed']
+        normal_target = reference['small_design'][n_capture]['targets-bed'],
+        cancer_target = reference['small_design'][t_capture]['targets-bed']
     output:
         outdir + "/contamination/pop_vcf_{}-{}.vcf".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
