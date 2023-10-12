@@ -11,6 +11,7 @@ rule svcaller_run:
     params: 
         tmpdir = params['scratch']
     threads: params['svcaller']['threads']
+    container: containers['svcaller']
     log:
         outdir + "/logs/svs/svcaller-{sample}-{events}.log"
     shell:
@@ -33,6 +34,7 @@ rule sveffect_predict:
         combined_bed = outdir + "/svs/svcaller/{sample}_combined.bed",
         effects_json = outdir + "/svs/svcaller/{sample}_effects.json"
     threads: params['svcaller']['threads']
+    container: containers['svcaller']
     log:
         outdir + "/logs/svs/sveffect-{sample}.log"
     shell:
