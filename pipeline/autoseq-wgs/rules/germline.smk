@@ -11,7 +11,6 @@ rule gatk4_haplotypecaller:
         interval_list = intervals_dir + "human_g1k_v37_decoy.{suf}.interval_list"
     output:
         vcf = haplotype_vcf_prefix + ".{suf}.vcf.gz",
-        normalized_vcf = haplotype_vcf_prefix + "-normalized.{suf}.vcf.gz"
     wildcard_constraints:
         suf = "|".join(suffix)
     params:
@@ -26,24 +25,20 @@ rule gatk4_haplotypecaller:
         " -I {input.bam}  "
         " -L {input.interval_list} "
         " --dbsnp {input.dbsnp} "
-        " -O {output.vcf} 2> {log} && "
-        " vt decompose -s {output.vcf} "
-        " | vt normalize  -r {input.reference} - "
-        " | bgzip > {output.normalized_vcf} 2>> {log} && "
-        " tabix -p vcf {output.normalized_vcf} 2>> {log} "
+        " -O {output.vcf} 2> {log}  "
 
 
 rule haplotypecaller_vcfmerge:
     input:
-        expand(haplotype_vcf_prefix + "-normalized.{suf}.vcf.gz", suf=suffix)
+        expand(haplotype_vcf_prefix + ".{suf}.vcf.gz", suf=suffix)
     output:
-        hp_vcf = haplotype_vcf_prefix + "-normalized.vcf.gz",
+        hp_vcf = haplotype_vcf_prefix + ".vcf.gz",
         vcf = "{}/variants/{}-all.germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
     threads: params['bcftools']['threads']
     log:
         "{}/logs/variants/{}-haplotypecaller-germline-merge.log".format(outdir, NORMAL_CAPTURE_STR)
     shell:
-        "bcftools concat --threads {threads} -a "
+        "bcftools concat -D --threads {threads} -a "
         " -O z {input} > {output.hp_vcf} 2> {log} && "
         " cp {output.hp_vcf} {output.vcf} && "
         " tabix -p vcf {output.vcf} "
