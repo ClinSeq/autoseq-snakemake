@@ -86,7 +86,7 @@ rule generateIGVnavInput_svcaller:
     params:
         cancer_str = CANCER_CAPTURE_STR,
         normal_str = NORMAL_CAPTURE_STR,
-        svs_dir = outdir + "/svs/",
+        svs_dir = outdir + "/svs/svcaller/",
         igvout = outdir + "/svs/igv/"
     shell:
         "generateIGVnavInput_SV.py --input {params.svs_dir} "
