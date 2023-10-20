@@ -278,7 +278,7 @@ if (wgs) {
 } else if (is_rerun) {
   qc_merge = merge(merge(merge(merge(HsMetrics, InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")), 
                 msings, by = c("SAMP", "DIR"), all.x = TRUE), flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
-} else if (is_sd) {
+} else if (isTRUE(is_sd)) {
   qc_merge = merge(merge(merge(merge(HsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
                 InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")),
                 flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
@@ -319,7 +319,7 @@ if (wgs){
   soi_table = data.table(qc_merge)[i = soi&doi, 
                                  j =list(SAMP, MEAN_COVERAGE, FOLD_80_BASE_PENALTY,
                                          READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
-} else if (is_sd){
+} else if (isTRUE(is_sd)){
   soi_table = data.table(qc_merge)[i = soi&doi, 
                                     j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, FOLD_80_BASE_PENALTY,
                                             MEAN_TARGET_COVERAGE_clipoverlap, FOLD_ENRICHMENT_clipoverlap, dedupped_on_bait_rate_clipoverlap=ON_BAIT_BASES_clipoverlap/PF_BASES_ALIGNED_clipoverlap, 
@@ -444,7 +444,7 @@ my_barplot(x = "factor(contamination, levels = sort(unique(contamination)))", yb
              x_string = "contamination, %", title_string = "Contamination")
 
 
-if (!wgs && length(msings_files) != 0 && !is_rerun) {
+if (!wgs && !isTRUE(is_sd) && !is_rerun) {
   # msings score vs read count scatter plot
   my_scatter(x = "READ_PAIRS_EXAMINED", y = "msing_score", xbreaks = seq(0, 1e12, 1e7), ybreaks = waiver(),
               x_string = "number of read pairs", y_string = "mSINGS score", title_string = "mSINGS score vs Read count")
