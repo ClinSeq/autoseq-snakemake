@@ -259,4 +259,5 @@ rule overview_plot:
                         "-d {params.outdir} "
                         "-o {output} "
                         "-m {params.mainpath} "
+                        "-p autoseq-sd "
 

@@ -21,7 +21,9 @@ option_list <- list(
   make_option(c("-m", "--mainpath"), action = "store", type = "character",
               default = "/nfs/PROBIO/autoseq-output", help = "Path to output pdf file"),
   make_option(c("-w", "--wgs"), action = "store_true", 
-              default=FALSE, help = "Option to analyze WGS qc metrics")
+              default=FALSE, help = "Option to analyze WGS qc metrics"),
+  make_option(c("-p", "--pipeline"), action = "store", type = "character",
+              default=NULL, help = "Option to analyze WGS qc metrics")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -30,6 +32,7 @@ analysis_dir = opt$analysisdir
 outfile = opt$outfile
 main_path = opt$mainpath
 wgs = opt$wgs
+is_sd = ifelse(opt$pipeline == "autoseq-sd", TRUE, FALSE)
 
 # find the qc files for all samples
 cat("Find all available qc files...\n")
@@ -129,7 +132,6 @@ if (!wgs){
   wgsMetrics$FOLD_80_BASE_PENALTY = as.numeric(wgsMetrics$FOLD_80_BASE_PENALTY)
 }
 
-is_sd = ifelse(length(msings_files) == 0 && !wgs, TRUE, FALSE)
 is_rerun = ifelse(length(markduplicates_files) == 0, TRUE, FALSE)
 MarkDuplicates = data.frame()
 for (f in markduplicates_files) {
@@ -317,7 +319,7 @@ if (wgs){
   soi_table = data.table(qc_merge)[i = soi&doi, 
                                  j =list(SAMP, MEAN_COVERAGE, FOLD_80_BASE_PENALTY,
                                          READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
-} else if (length(msings_files) == 0){
+} else if (is_sd){
   soi_table = data.table(qc_merge)[i = soi&doi, 
                                     j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, FOLD_80_BASE_PENALTY,
                                             MEAN_TARGET_COVERAGE_clipoverlap, FOLD_ENRICHMENT_clipoverlap, dedupped_on_bait_rate_clipoverlap=ON_BAIT_BASES_clipoverlap/PF_BASES_ALIGNED_clipoverlap, 
