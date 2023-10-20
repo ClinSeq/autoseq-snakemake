@@ -247,21 +247,21 @@ if (! is_rerun) {
 
 
 # convert HsMetrics from long format table to wide format table in case there are samples with metrics for both nodups and clipoverlap bams
-# HsMetrics = data.table(HsMetrics)  # convert to data table for convenience 
-# HsMetrics[, bamtype := HsMetrics[, tstrsplit(SAMP, split = "_")]$V2]  # extract bam type (dedup method) from sample name
-# HsMetrics[, SAMP := HsMetrics[, tstrsplit(SAMP, split = "_")]$V1]  # remove bam type (dedup method) from sample name
-# HsMetrics[is.na(bamtype), bamtype := "nodups"]  # set bamtype to "nodups" if it's NA (when only one instance of HsMetrics was run for a sample)
-# HsMetrics = dcast(HsMetrics, SAMP + DIR + BAIT_SET ~ bamtype, 
-#                   value.var = c("MEAN_TARGET_COVERAGE", "FOLD_ENRICHMENT", "FOLD_80_BASE_PENALTY", 
-#                                 "ON_BAIT_BASES", "PF_BASES_ALIGNED"))  # cast from long to wide format
+HsMetrics = data.table(HsMetrics)  # convert to data table for convenience 
+HsMetrics[, bamtype := HsMetrics[, tstrsplit(SAMP, split = "_")]$V2]  # extract bam type (dedup method) from sample name
+HsMetrics[, SAMP := HsMetrics[, tstrsplit(SAMP, split = "_")]$V1]  # remove bam type (dedup method) from sample name
+HsMetrics[is.na(bamtype), bamtype := "nodups"]  # set bamtype to "nodups" if it's NA (when only one instance of HsMetrics was run for a sample)
+HsMetrics = dcast(HsMetrics, SAMP + DIR + BAIT_SET ~ bamtype, 
+                  value.var = c("MEAN_TARGET_COVERAGE", "FOLD_ENRICHMENT", "FOLD_80_BASE_PENALTY", 
+                                "ON_BAIT_BASES", "PF_BASES_ALIGNED"))  # cast from long to wide format
 # ### TODO: change column names with nodups to not have it, for backwards compatibility??
 # The structure of having multiple HsMetrics values per sample will not work without updates to curator. How to do this should be done propelry in the furutre, but no time right now.
 # Instead, in case of small design samples, for now just display the HsMetrics values from the nodups bam in the table for curator
 # -->
 # remove "clipoverlap" entries in HsMetrics table for small design samples
-HsMetrics = HsMetrics[grep("_clipoverlap", HsMetrics$SAMP, invert = TRUE),]
+# HsMetrics = HsMetrics[grep("_clipoverlap", HsMetrics$SAMP, invert = TRUE),]
 # remove "_nodups" from sample names
-HsMetrics$SAMP = sub("_nodups", "", HsMetrics$SAMP)
+# HsMetrics$SAMP = sub("_nodups", "", HsMetrics$SAMP)
 
 
 process_samp <- function(sample) {

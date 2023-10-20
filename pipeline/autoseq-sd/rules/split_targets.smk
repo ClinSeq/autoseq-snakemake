@@ -1,5 +1,10 @@
 
-
+##################################################################
+### For split_target rule, NEED TO USE ALL CHROMOSOMES in small-design
+### Since, SD doesn't have all chromosomes. which will affect the
+### realignment spliting and merging process
+###
+##################################################################
 rule split_target_1:
     input:
         target = sd_targets['targets-bed']
