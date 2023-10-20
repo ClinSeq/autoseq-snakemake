@@ -885,6 +885,7 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes[,start:=start-1e3][,end
 {
     vcf <- readVcf(opts$somatic_mut_vcf,genome = "GRCh37")
     vcf <- vcf[rowRanges(vcf)$FILTER %in% c('PASS','LowQual')]
+    if (length(vcf)>50000) vcf <- vcf[rowRanges(vcf)$FILTER %in% c('PASS')]
 
     salf <- NULL
 
