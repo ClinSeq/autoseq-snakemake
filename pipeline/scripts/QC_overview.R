@@ -257,9 +257,15 @@ HsMetrics = dcast(HsMetrics, SAMP + DIR + BAIT_SET ~ bamtype,
                   value.var = c("MEAN_TARGET_COVERAGE", "FOLD_ENRICHMENT", "FOLD_80_BASE_PENALTY", 
                                 "ON_BAIT_BASES", "PF_BASES_ALIGNED"))  # cast from long to wide format
 
-# removing _nodups from column names of HsMetrics, To have minimal changes in the codebase
-# By default If its not clipoverlap, its nodups bam metrics 
-names(HsMetrics) <- sub("*_nodups", "", names(HsMetrics))
+# fix HsMetrics column names
+if (is_sd) {
+  # clarify that clipoverlap data is for snv/indel regions and nodups data is for baseline regions, in small design pipeline
+  names(HsMetrics) <- sub("_nodups", "_baseline_regions", names(HsMetrics))
+  names(HsMetrics) <- sub("_clipoverlap", "_snv_indel_regions", names(HsMetrics))
+} else {
+  # removing _nodups from column names of HsMetrics, To have minimal changes in the codebase
+  names(HsMetrics) <- sub("*_nodups", "", names(HsMetrics))
+}
 
 
 process_samp <- function(sample) {
@@ -321,9 +327,11 @@ if (wgs){
                                          READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
 } else if (isTRUE(is_sd)){
   soi_table = data.table(qc_merge)[i = soi&doi, 
-                                    j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, FOLD_80_BASE_PENALTY,
-                                            MEAN_TARGET_COVERAGE_clipoverlap, FOLD_ENRICHMENT_clipoverlap, dedupped_on_bait_rate_clipoverlap=ON_BAIT_BASES_clipoverlap/PF_BASES_ALIGNED_clipoverlap, 
-                                            FOLD_80_BASE_PENALTY_clipoverlap, READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
+                                    j =list(SAMP, MEAN_TARGET_COVERAGE_snv_indel_regions, MEAN_TARGET_COVERAGE_baseline_regions, FOLD_ENRICHMENT_snv_indel_regions, FOLD_ENRICHMENT_baseline_regions, 
+                                            dedupped_on_bait_rate_snv_indel_regions=ON_BAIT_BASES_snv_indel_regions/PF_BASES_ALIGNED_snv_indel_regions, 
+                                            dedupped_on_bait_rate_baseline_regions=ON_BAIT_BASES_baseline_regions/PF_BASES_ALIGNED_baseline_regions, 
+                                            FOLD_80_BASE_PENALTY_snv_indel_regions, FOLD_80_BASE_PENALTY_baseline_regions,
+                                            READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
 } else if (is_rerun) {
   soi_table = data.table(qc_merge)[i = soi&doi, 
                                     j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, FOLD_80_BASE_PENALTY,
@@ -382,17 +390,27 @@ my_scatter = function(x, y, xbreaks, ybreaks, x_string, y_string, title_string) 
 
 # Plot histograms and scatter plots
 cat(paste0("Create plots (saved in ", outfile, ") ...\n"))
+# TODO: fix issue that only last plot generated in each if clause is saved to pdf due to unknown reason
 pdf(file = outfile, width=14)
 if (!is_rerun) {
   # duplication vs read count scatter plot
   my_scatter(x = "READ_PAIRS_EXAMINED", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 1, 0.1),
             x_string = "number of read pairs", y_string = "duplication rate", title_string = "Duplication rate vs Read count")
 
-  if (!wgs) {
+  if (isTRUE(is_sd)) {
+    # coverage vs read count scatter plot, SNV/indels
+    my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_TARGET_COVERAGE_snv_indel_regions", 
+               xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5e4, 500),
+               x_string = "number of read pairs", y_string = "mean target coverage, SNV/indel regions", title_string = "SNV/indel coverage vs Total read count")
+    # coverage vs read count scatter plot, baseline
+    my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_TARGET_COVERAGE_baseline_regions", 
+               xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5e4, 500),
+               x_string = "number of read pairs", y_string = "mean target coverage, baseline regions", title_string = "Baseline coverage vs Total read count")
+    
+  } else if (!wgs) {
     # coverage vs read count scatter plot
     my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_TARGET_COVERAGE", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5000, 500),
               x_string = "number of read pairs", y_string = "mean target coverage", title_string = "Coverage vs Read count")
-
   } else {
     # coverage vs read count scatter plot
     my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_COVERAGE", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5000, 500),
@@ -403,19 +421,44 @@ if (!is_rerun) {
 
 
 if (!wgs) {
-  if (!is_rerun) {
-    # duplication vs fold enrichment scatter plot
-    my_scatter(x = "FOLD_ENRICHMENT", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 5000, 50), ybreaks = waiver(),
-              x_string = "fold enrichment", y_string = "duplication rate", title_string = "Duplication rate vs Fold enrichment")
-
-    # duplication vs on-bait rate scatter plot
-    my_scatter(x = "ON_BAIT_BASES/PF_BASES_ALIGNED", y = "PERCENT_DUPLICATION", xbreaks = waiver(), ybreaks = waiver(),
-              x_string = "dedupped on-bait rate", y_string = "duplication rate", title_string = "Duplication rate vs Dedupped on-bait rate")
+  if (isTRUE(is_sd)) {
+    # duplication vs fold enrichment scatter plot, SNV/indels
+    my_scatter(x = "FOLD_ENRICHMENT_snv_indel_regions", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 5000, 50), ybreaks = waiver(),
+               x_string = "fold enrichment, SNV/indel regions", y_string = "duplication rate", title_string = "Total duplication rate vs SNV/indel fold enrichment")
+    # duplication vs fold enrichment scatter plot, baseline
+    my_scatter(x = "FOLD_ENRICHMENT_snv_indel_regions", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 5000, 50), ybreaks = waiver(),
+               x_string = "fold enrichment, baseline regions", y_string = "duplication rate", title_string = "Total duplication rate vs Baseline fold enrichment")
+    
+    # duplication vs on-bait rate scatter plot, SNV/indels
+    my_scatter(x = "ON_BAIT_BASES_snv_indel_regions/PF_BASES_ALIGNED_snv_indel_regions", y = "PERCENT_DUPLICATION", xbreaks = waiver(), ybreaks = waiver(),
+               x_string = "dedupped on-bait rate, SNV/indel regions", y_string = "duplication rate", title_string = "Total duplication rate vs SNV/indel dedupped on-bait rate")
+    # duplication vs on-bait rate scatter plot, baseline
+    my_scatter(x = "ON_BAIT_BASES_snv_indel_regions/PF_BASES_ALIGNED_snv_indel_regions", y = "PERCENT_DUPLICATION", xbreaks = waiver(), ybreaks = waiver(),
+               x_string = "dedupped on-bait rate, baseline regions", y_string = "duplication rate", title_string = "Total duplication rate vs Baseline dedupped on-bait rate")
+    
+    # fold80 base penalty vs coverage scatter plot, SNV/indels
+    my_scatter(x = "MEAN_TARGET_COVERAGE_snv_indel_regions", y = "FOLD_80_BASE_PENALTY_snv_indel_regions", xbreaks = seq(0, 5e4, 500), ybreaks = waiver(),
+               x_string = "mean target coverage, SNV/indel regions", y_string = "fold 80 base penalty, SNV/indel regions", 
+               title_string = "SNV/indel regions fold 80 base penalty vs SNV/indel regions Coverage")
+    # fold80 base penalty vs coverage scatter plot, baseline
+    my_scatter(x = "MEAN_TARGET_COVERAGE_snv_indel_regions", y = "FOLD_80_BASE_PENALTY_snv_indel_regions", xbreaks = seq(0, 5e4, 500), ybreaks = waiver(),
+               x_string = "mean target coverage, baseline regions", y_string = "fold 80 base penalty, baseline regions", 
+               title_string = "Baseline regions fold 80 base penalty vs Baseline regions Coverage")
+  } else {
+    if (!is_rerun) {
+      # duplication vs fold enrichment scatter plot
+      my_scatter(x = "FOLD_ENRICHMENT", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 5000, 50), ybreaks = waiver(),
+                 x_string = "fold enrichment", y_string = "duplication rate", title_string = "Duplication rate vs Fold enrichment")
+      
+      # duplication vs on-bait rate scatter plot
+      my_scatter(x = "ON_BAIT_BASES/PF_BASES_ALIGNED", y = "PERCENT_DUPLICATION", xbreaks = waiver(), ybreaks = waiver(),
+                 x_string = "dedupped on-bait rate", y_string = "duplication rate", title_string = "Duplication rate vs Dedupped on-bait rate")
+    }
+    
+    # fold80 base penalty vs coverage scatter plot
+    my_scatter(x = "MEAN_TARGET_COVERAGE", y = "FOLD_80_BASE_PENALTY", xbreaks = seq(0, 5000, 500), ybreaks = waiver(),
+               x_string = "mean target coverage", y_string = "fold 80 base penalty", title_string = "Fold 80 base penalty vs Coverage")
   }
-  
-  # fold80 base penalty vs coverage scatter plot
-  my_scatter(x = "MEAN_TARGET_COVERAGE", y = "FOLD_80_BASE_PENALTY", xbreaks = seq(0, 5000, 500), ybreaks = waiver(),
-            x_string = "mean target coverage", y_string = "fold 80 base penalty", title_string = "Fold 80 base penalty vs Coverage")
 }
 
 if (!is_rerun) {
