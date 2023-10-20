@@ -254,14 +254,10 @@ HsMetrics[is.na(bamtype), bamtype := "nodups"]  # set bamtype to "nodups" if it'
 HsMetrics = dcast(HsMetrics, SAMP + DIR + BAIT_SET ~ bamtype, 
                   value.var = c("MEAN_TARGET_COVERAGE", "FOLD_ENRICHMENT", "FOLD_80_BASE_PENALTY", 
                                 "ON_BAIT_BASES", "PF_BASES_ALIGNED"))  # cast from long to wide format
-# ### TODO: change column names with nodups to not have it, for backwards compatibility??
-# The structure of having multiple HsMetrics values per sample will not work without updates to curator. How to do this should be done propelry in the furutre, but no time right now.
-# Instead, in case of small design samples, for now just display the HsMetrics values from the nodups bam in the table for curator
-# -->
-# remove "clipoverlap" entries in HsMetrics table for small design samples
-# HsMetrics = HsMetrics[grep("_clipoverlap", HsMetrics$SAMP, invert = TRUE),]
-# remove "_nodups" from sample names
-# HsMetrics$SAMP = sub("_nodups", "", HsMetrics$SAMP)
+
+# removing _nodups from column names of HsMetrics, To have minimal changes in the codebase
+# By default If its not clipoverlap, its nodups bam metrics 
+names(HsMetrics) <- sub("*_nodups", "", names(HsMetrics))
 
 
 process_samp <- function(sample) {
@@ -324,7 +320,8 @@ if (wgs){
 } else if (length(msings_files) == 0){
   soi_table = data.table(qc_merge)[i = soi&doi, 
                                     j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, FOLD_80_BASE_PENALTY,
-                                            READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
+                                            MEAN_TARGET_COVERAGE_clipoverlap, FOLD_ENRICHMENT_clipoverlap, dedupped_on_bait_rate_clipoverlap=ON_BAIT_BASES_clipoverlap/PF_BASES_ALIGNED_clipoverlap, 
+                                            FOLD_80_BASE_PENALTY_clipoverlap, READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
 } else if (is_rerun) {
   soi_table = data.table(qc_merge)[i = soi&doi, 
                                     j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, FOLD_80_BASE_PENALTY,
