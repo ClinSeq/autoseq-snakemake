@@ -25,10 +25,10 @@ args <- rbind(
     c("normal_cnr", NA, 2, "character", "normal bin file from CNVkit"),
     c("normal_cns", NA, 2, "character", "normal segment file from CNVkit"),
     c("het_snps_vcf", NA, 1, "character", "heterozygous SNPs .vcf file"),
-    c("purecn_csv", NA, 1, "character", "PureCN result .csv file"),
-    c("purecn_genes_csv", NA, 1, "character", "PureCN result _genes.csv"),
-    c("purecn_loh_csv", NA, 1, "character", "PureCN result _loh.csv"),
-    c("purecn_variants_csv", NA, 1, "character", "PureCN result _variants.csv"),
+    c("purecn_csv", NA, 2, "character", "PureCN result .csv file"),
+    c("purecn_genes_csv", NA, 2, "character", "PureCN result _genes.csv"),
+    c("purecn_loh_csv", NA, 2, "character", "PureCN result _loh.csv"),
+    c("purecn_variants_csv", NA, 2, "character", "PureCN result _variants.csv"),
     c("svcaller_T_DEL", NA, 2, "character", "Tumor SV caller DEL-events.gtf"),
     c("svcaller_T_DUP", NA, 2, "character", "Tumor SV caller DUP-events.gtf"),
     c("svcaller_T_INV", NA, 2, "character", "Tumor SV caller INV-events.gtf"),
@@ -884,7 +884,7 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes[,start:=start-1e3][,end
 
 {
     vcf <- readVcf(opts$somatic_mut_vcf,genome = "GRCh37")
-    vcf <- vcf[rowRanges(vcf)$FILTER == 'PASS']
+    vcf <- vcf[rowRanges(vcf)$FILTER %in% c('PASS','LowQual')]
 
     salf <- NULL
 
@@ -1317,14 +1317,15 @@ if (!t_only) { # normal
 
 
 # Read PureCN files -------------------------------------------------------
-
-{
+purecn_files <- c(opts$purecn_csv, opts$purecn_variants_csv, opts$purecn_genes_csv, opts$purecn_loh_csv)
+purecn_stat <- NULL
+if (all(!is.null(purecn_files))) {
     # files to read (purity/ploidy, mutations and snps, gene copy number and LOH, segmented copy number and LOH)
-    purecn_files = c(opts$purecn_csv, opts$purecn_variants_csv, opts$purecn_genes_csv, opts$purecn_loh_csv)
+    purecn_files <- c(opts$purecn_csv, opts$purecn_variants_csv, opts$purecn_genes_csv, opts$purecn_loh_csv)
     # variables to assign to
-    purecn_variables = c("purecn_stat", "purecn_vars", "purecn_genes", "purecn_loh")
+    purecn_variables<- c("purecn_stat", "purecn_vars", "purecn_genes", "purecn_loh")
     # colnames to use if no data avialable and mock df created
-    purecn_colnames = list(
+    purecn_colnames<- list(
         c("Sampleid","Purity","Ploidy","Sex","Contamination","Flagged","Failed","Curated","Comment"),
         c("Sampleid", "chr", "start", "end", "ID", "REF", "ALT", "SOMATIC.M0", "SOMATIC.M1", "SOMATIC.M2",
           "SOMATIC.M3", "SOMATIC.M4", "SOMATIC.M5", "SOMATIC.M6", "SOMATIC.M7", "GERMLINE.M0", "GERMLINE.M1",
@@ -1338,7 +1339,7 @@ if (!t_only) { # normal
         c("Sampleid", "chr", "start", "end", "arm", "C", "M", "type")
     )
     # sample id to use if no data avialable and mock df created
-    sampid = sub(".csv","", basename(purecn_files[1]))  # NB: is this correct, or should there also be the "-nodups" ending to conform with samples with PureCN data?
+    sampid <- sub(".csv","", basename(purecn_files[1]))  # NB: is this correct, or should there also be the "-nodups" ending to conform with samples with PureCN data?
     for (i in 1:length(purecn_files)) {
         if (file.size(purecn_files[i]) == 0) {  # if no valid PureCN output produced, create mock df
             assign(purecn_variables[i],
@@ -1348,10 +1349,11 @@ if (!t_only) { # normal
             assign(purecn_variables[i], read.delim(purecn_files[i], sep = ',', stringsAsFactors = F))
         }
     }
+    purecn_loh <- as.data.table(purecn_loh)
+    purecn_loh[,C:=round(C)][,M:=round(M)]
 }
 
-purecn_loh <- as.data.table(purecn_loh)
-purecn_loh[,C:=round(C)][,M:=round(M)]
+
 
 # # assign PureCN copy number status to bins
 # binranges <- makeGRangesFromDataFrame(bins[,.(chromosome,start,end)])
