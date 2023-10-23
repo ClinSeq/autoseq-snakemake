@@ -21,7 +21,9 @@ option_list <- list(
   make_option(c("-m", "--mainpath"), action = "store", type = "character",
               default = "/nfs/PROBIO/autoseq-output", help = "Path to output pdf file"),
   make_option(c("-w", "--wgs"), action = "store_true", 
-              default=FALSE, help = "Option to analyze WGS qc metrics")
+              default=FALSE, help = "Option to analyze WGS qc metrics"),
+  make_option(c("-p", "--pipeline"), action = "store", type = "character",
+              default=NULL, help = "Option to analyze WGS qc metrics")
 )
 
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -30,6 +32,7 @@ analysis_dir = opt$analysisdir
 outfile = opt$outfile
 main_path = opt$mainpath
 wgs = opt$wgs
+is_sd = ifelse(opt$pipeline == "autoseq-sd", TRUE, FALSE)
 
 # find the qc files for all samples
 cat("Find all available qc files...\n")
@@ -44,7 +47,7 @@ if (wgs){
 }
 
 markduplicates_files = dir(Sys.glob(paste0(main_path, "/*/*/qc/picard")), 
-                           pattern = "markdup.metrics.txt$", recursive = TRUE, full.names = TRUE)
+                           pattern = "markdup.*metrics.txt$", recursive = TRUE, full.names = TRUE)
 insertsize_files = dir(Sys.glob(paste0(main_path, "/*/*/qc/picard")), 
                            pattern = "picard-insertsize.txt$", recursive = TRUE, full.names = TRUE)
 contest_files = dir(Sys.glob(paste0(main_path, "/*/*/contamination")), 
@@ -77,9 +80,16 @@ if (!wgs){
     tryCatch({
       SAMP = strsplit(basename(f), split = "\\.")[[1]][1]
       DIR = dirname(dirname(dirname(f)))
-      HsMetrics = rbind(HsMetrics, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
-                                                          header = TRUE, stringsAsFactors = FALSE), 
-                                                          stringsAsFactors = FALSE))
+      tmp_df = read.table(f, skip = 6, nrow = 1, sep = "\t", 
+                          header = TRUE, stringsAsFactors = FALSE)
+      #for newer format files, remove additional columns, for compatibility with older format files
+      tmp_df = tmp_df[,which(! colnames(tmp_df) %in% c("MIN_TARGET_COVERAGE", "PCT_TARGET_BASES_250X", "PCT_TARGET_BASES_500X", 
+                                                      "PCT_TARGET_BASES_1000X", "PCT_TARGET_BASES_2500X", "PCT_TARGET_BASES_5000X", 
+                                                      "PCT_TARGET_BASES_10000X", "PCT_TARGET_BASES_25000X", "PCT_TARGET_BASES_50000X", 
+                                                      "PCT_TARGET_BASES_100000X"))]
+      #merge with overall df
+      HsMetrics = rbind(HsMetrics, cbind(SAMP, DIR, tmp_df, 
+                                        stringsAsFactors = FALSE))
     }, error = function(err) {
         print(paste("Sample: ", SAMP, " QC: HsMetrics"))
         print(paste("ERROR: ", err))
@@ -87,22 +97,23 @@ if (!wgs){
   }
   #fix column class for column sometimes read in as character due to a "?" instead of NA
   HsMetrics$FOLD_80_BASE_PENALTY = as.numeric(HsMetrics$FOLD_80_BASE_PENALTY)
-
-  msings = data.frame()
-  for (f in msings_files) {
-    tryCatch({
-      SAMP = sub("_nodups.MSI_Analysis.txt", "", basename(f))
-      DIR = dirname(dirname(dirname(f)))
-      msings = rbind(msings, cbind(SAMP, DIR, t(read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)))[2,], stringsAsFactors=FALSE)
-    }, error = function(err) {
-      print(paste("Sample: ", SAMP, " QC: mSINGs"))
-      print(paste("ERROR: ", err))
-    })
-  }
-
-  colnames(msings) = c("SAMP", "DIR", read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)[,1])
-  msings$`msi status`[which(msings$msing_score<0.2)] = "NEG"  # use cut-off 0.2 for MSI-H (default 0.1 is too low)
-  msings$msing_score = as.numeric(msings$msing_score)
+  if (length(msings_files) != 0) {
+    msings = data.frame()
+    for (f in msings_files) {
+      tryCatch({
+        SAMP = sub("_nodups.MSI_Analysis.txt", "", basename(f))
+        DIR = dirname(dirname(dirname(f)))
+        msings = rbind(msings, cbind(SAMP, DIR, t(read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)))[2,], stringsAsFactors=FALSE)
+      }, error = function(err) {
+        print(paste("Sample: ", SAMP, " QC: mSINGs"))
+        print(paste("ERROR: ", err))
+      })
+    }
+    colnames(msings) = c("SAMP", "DIR", read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)[,1])
+    msings$`msi status`[which(msings$msing_score<0.2)] = "NEG"  # use cut-off 0.2 for MSI-H (default 0.1 is too low)
+    msings$msing_score = as.numeric(msings$msing_score)
+  } 
+  
 } else {
   wgsMetrics = data.frame()
   for (f in wgsmetrics_files) {
@@ -121,19 +132,19 @@ if (!wgs){
   wgsMetrics$FOLD_80_BASE_PENALTY = as.numeric(wgsMetrics$FOLD_80_BASE_PENALTY)
 }
 
-
+is_rerun = ifelse(length(markduplicates_files) == 0, TRUE, FALSE)
 MarkDuplicates = data.frame()
 for (f in markduplicates_files) {
-    tryCatch({
-        SAMP = sub("-picard-markdup.metrics.txt", "", basename(f))
-        DIR = dirname(dirname(dirname(f)))
-        MarkDuplicates = rbind(MarkDuplicates, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
-                                                                    header = TRUE, stringsAsFactors = FALSE), 
-                                                                    stringsAsFactors = FALSE))
-    }, error = function(err) {
-      print(paste("Sample: ", SAMP, " QC: MarkDuplicates"))
-      print(paste("ERROR: ", err))
-    }) 
+  tryCatch({
+      SAMP = sub("-markdups-metrics.txt", "", sub("-picard-markdup.metrics.txt", "", basename(f)))  # remove both old and new style file name pattern
+      DIR = dirname(dirname(dirname(f)))
+      MarkDuplicates = rbind(MarkDuplicates, cbind(SAMP, DIR, read.table(f, skip = 6, nrow = 1, sep = "\t", 
+                                                                  header = TRUE, stringsAsFactors = FALSE), 
+                                                                  stringsAsFactors = FALSE))
+  }, error = function(err) {
+    print(paste("Sample: ", SAMP, " QC: MarkDuplicates"))
+    print(paste("ERROR: ", err))
+  }) 
 }
 
 InsertSize = data.frame()
@@ -159,13 +170,19 @@ ContEst = data.frame()
 for (f in contest_files) {
   tryCatch({
     fname = strsplit(basename(f), split = "\\.")[[1]][1]
-    clinseq_barcodes = rev(strsplit(f, split = "/")[[1]])[3]
-    samples = unlist(strsplit(clinseq_barcodes, split = "_"))
-    if(grepl('-N-', fname, fixed=TRUE)){
-      SAMP = samples[2]
+    project = unlist(strsplit(fname, split = "-"))[1]
+    if (project == "AL") {
+      SAMP = fname
     } else {
-      SAMP = samples[1]
+      clinseq_barcodes = rev(strsplit(f, split = "/")[[1]])[3]
+      samples = unlist(strsplit(clinseq_barcodes, split = "_"))
+      if(grepl('-N-', fname, fixed=TRUE)){
+        SAMP = samples[2]
+      } else {
+        SAMP = samples[1]
+      }
     }
+    
     DIR = dirname(dirname(f))
     ContEst = rbind(ContEst, cbind(SAMP, DIR, read.table(f, nrow = 1, sep = "\t", header = TRUE, stringsAsFactors = FALSE), 
                                   stringsAsFactors = FALSE))
@@ -217,14 +234,43 @@ for (d in unique(InsertSize_histogram$DIR)) {
 }
 
 
-# add normalized counts for insert size histogram
+# add normalized counts for insert size histogram 
+# In rerun pipeline we don't have markdup stats, so skip thi insertsize histogram plot
 InsertSize_histogram$count_norm = NA
-for (d in unique(InsertSize_histogram$DIR)) {
-  for (s in unique(subset(InsertSize_histogram, DIR == d)$SAMP)) {
-    tot_reads = MarkDuplicates$READ_PAIRS_EXAMINED[which(MarkDuplicates$DIR == d & MarkDuplicates$SAMP == s)]
-    idx = which(InsertSize_histogram$DIR == d & InsertSize_histogram$SAMP == s)
-    InsertSize_histogram$count_norm[idx] = InsertSize_histogram$All_Reads.fr_count[idx]/tot_reads
+if (! is_rerun) {
+  for (d in unique(InsertSize_histogram$DIR)) {
+    for (s in unique(subset(InsertSize_histogram, DIR == d)$SAMP)) {
+      tot_reads = MarkDuplicates$READ_PAIRS_EXAMINED[which(MarkDuplicates$DIR == d & MarkDuplicates$SAMP == s)]
+      idx = which(InsertSize_histogram$DIR == d & InsertSize_histogram$SAMP == s)
+      InsertSize_histogram$count_norm[idx] = InsertSize_histogram$All_Reads.fr_count[idx]/tot_reads
+    }
   }
+}
+
+
+# convert HsMetrics from long format table to wide format table in case there are samples with metrics for both nodups and clipoverlap bams
+HsMetrics = data.table(HsMetrics)  # convert to data table for convenience 
+HsMetrics[, bamtype := as.character(NA)] # compatible for R data.table latest version
+
+tmp = HsMetrics[, tstrsplit(SAMP, split = "_")]$V2
+if (! is.null(tmp)){
+  HsMetrics[, bamtype := HsMetrics[, tstrsplit(SAMP, split = "_")]$V2]  # extract bam type (dedup method) from sample name
+  HsMetrics[, SAMP := HsMetrics[, tstrsplit(SAMP, split = "_")]$V1]  # remove bam type (dedup method) from sample name
+}
+
+HsMetrics[is.na(bamtype), bamtype := "nodups"]  # set bamtype to "nodups" if it's NA (when only one instance of HsMetrics was run for a sample)
+HsMetrics = dcast(HsMetrics, SAMP + DIR + BAIT_SET ~ bamtype, 
+                  value.var = c("MEAN_TARGET_COVERAGE", "FOLD_ENRICHMENT", "FOLD_80_BASE_PENALTY", 
+                                "ON_BAIT_BASES", "PF_BASES_ALIGNED"))  # cast from long to wide format
+
+# fix HsMetrics column names
+if (isTRUE(is_sd)) {
+  # clarify that clipoverlap data is for snv/indel regions and nodups data is for baseline regions, in small design pipeline
+  names(HsMetrics) <- sub("_nodups", "_baseline_regions", names(HsMetrics))
+  names(HsMetrics) <- sub("_clipoverlap", "_snv_indel_regions", names(HsMetrics))
+} else {
+  # removing _nodups from column names of HsMetrics, To have minimal changes in the codebase
+  names(HsMetrics) <- sub("*_nodups", "", names(HsMetrics))
 }
 
 
@@ -236,11 +282,18 @@ process_samp <- function(sample) {
     return(paste(c(tmp, libkit, capture), collapse="-"))
 }
 
-
 # merge the QC tables 
 if (wgs) {
   qc_merge = merge(merge(merge(merge(wgsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
-                InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")), flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
+                InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")), 
+                flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
+} else if (is_rerun) {
+  qc_merge = merge(merge(merge(merge(HsMetrics, InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")), 
+                msings, by = c("SAMP", "DIR"), all.x = TRUE), flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
+} else if (isTRUE(is_sd)) {
+  qc_merge = merge(merge(merge(merge(HsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
+                InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")),
+                flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
 } else {
   qc_merge = merge(merge(merge(merge(merge(HsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
                 InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")),
@@ -271,13 +324,24 @@ qc_merge$doi = qc_merge$DIR == Sys.glob(analysis_dir)
 InsertSize_histogram$soi = InsertSize_histogram$SAMP %in% samples
 InsertSize_histogram$doi = InsertSize_histogram$DIR == Sys.glob(analysis_dir)
 
-print(qc_merge)
+#print(qc_merge)
 
 # create an ouput table for the samples of interest
 if (wgs){
   soi_table = data.table(qc_merge)[i = soi&doi, 
                                  j =list(SAMP, MEAN_COVERAGE, FOLD_80_BASE_PENALTY,
                                          READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
+} else if (isTRUE(is_sd)){
+  soi_table = data.table(qc_merge)[i = soi&doi, 
+                                    j =list(SAMP, MEAN_TARGET_COVERAGE_snv_indel_regions, MEAN_TARGET_COVERAGE_baseline_regions, FOLD_ENRICHMENT_snv_indel_regions, FOLD_ENRICHMENT_baseline_regions, 
+                                            dedupped_on_bait_rate_snv_indel_regions=ON_BAIT_BASES_snv_indel_regions/PF_BASES_ALIGNED_snv_indel_regions, 
+                                            dedupped_on_bait_rate_baseline_regions=ON_BAIT_BASES_baseline_regions/PF_BASES_ALIGNED_baseline_regions, 
+                                            FOLD_80_BASE_PENALTY_snv_indel_regions, FOLD_80_BASE_PENALTY_baseline_regions,
+                                            READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
+} else if (is_rerun) {
+  soi_table = data.table(qc_merge)[i = soi&doi, 
+                                    j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, FOLD_80_BASE_PENALTY,
+                                            "contamination_%"=contamination, MEDIAN_INSERT_SIZE, msing_score)]
 } else {
   soi_table = data.table(qc_merge)[i = soi&doi, 
                                  j =list(SAMP, MEAN_TARGET_COVERAGE, FOLD_ENRICHMENT, dedupped_on_bait_rate=ON_BAIT_BASES/PF_BASES_ALIGNED, FOLD_80_BASE_PENALTY,
@@ -308,7 +372,7 @@ my_barplot = function(x, ybreaks, x_string, title_string) {
     geom_bar(aes(group = capture, fill = capture), width = 0.5, alpha = 0.7, color = "black") +
     geom_bar(data = subset(qc_merge, soi), width = 0.5, fill = "blue", show.legend = FALSE) + # the sample of interest
     geom_bar(data = subset(qc_merge, soi&doi), width = 0.5, fill = "red", show.legend = FALSE) + # the sample of interest
-    scale_fill_manual(values = c("antiquewhite", "aliceblue", "lightpink", "palegreen")) +
+    scale_fill_manual(values = c("antiquewhite", "aliceblue", "lightpink", "palegreen", "plum2")) +
     scale_y_continuous(breaks = ybreaks) +
     scale_x_discrete(name = x_string) +
     facet_wrap(~sample_type, ncol = 1) +
@@ -318,81 +382,123 @@ my_barplot = function(x, ybreaks, x_string, title_string) {
 
 # plotting function to create desired scatter plots
 my_scatter = function(x, y, xbreaks, ybreaks, x_string, y_string, title_string) {
-  ggplot(qc_merge, aes(shape = capture)) +
+  p = ggplot(qc_merge, aes(shape = capture)) +
     geom_point(aes_string(x = x, y = y), size = 3) +
     geom_point(data = subset(qc_merge, soi), aes_string(x = x, y = y), fill = "blue", size = 3, show.legend = FALSE) +
     geom_point(data = subset(qc_merge, soi&doi), aes_string(x = x, y = y), fill = "red", size = 3, show.legend = FALSE) +
     scale_alpha_manual(values = c(0.7, 1)) +
-    scale_shape_manual(values = c(24, 25, 21, 22), guide = guide_legend(override.aes = list(fill = NA))) +
+    scale_shape_manual(values = c(24, 25, 21, 22, 23), guide = guide_legend(override.aes = list(fill = NA))) +
     scale_x_continuous(name = x_string, breaks = xbreaks) +
     scale_y_continuous(name = y_string, breaks = ybreaks) +
     facet_wrap(~sample_type, ncol = 1) +
     ggtitle(title_string, subtitle = "Red symbols show present samples, blue symbols show these samples if run earlier")
+  
+  print(p)
 }
 
 # Plot histograms and scatter plots
 cat(paste0("Create plots (saved in ", outfile, ") ...\n"))
+# TODO: fix issue that only last plot generated in each if clause is saved to pdf due to unknown reason
 pdf(file = outfile, width=14)
+if (!is_rerun) {
+  # duplication vs read count scatter plot
+  my_scatter(x = "READ_PAIRS_EXAMINED", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 1, 0.1),
+            x_string = "number of read pairs", y_string = "duplication rate", title_string = "Duplication rate vs Read count")
 
-# duplication vs read count scatter plot
-my_scatter(x = "READ_PAIRS_EXAMINED", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 1, 0.1),
-           x_string = "number of read pairs", y_string = "duplication rate", title_string = "Duplication rate vs Read count")
+  if (isTRUE(is_sd)) {
+    # coverage vs read count scatter plot, SNV/indels
+    my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_TARGET_COVERAGE_snv_indel_regions", 
+               xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5e4, 500),
+               x_string = "number of read pairs", y_string = "mean target coverage, SNV/indel regions", title_string = "SNV/indel coverage vs Total read count")
+    # coverage vs read count scatter plot, baseline
+    my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_TARGET_COVERAGE_baseline_regions", 
+               xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5e4, 500),
+               x_string = "number of read pairs", y_string = "mean target coverage, baseline regions", title_string = "Baseline coverage vs Total read count")
+    
+  } else if (!wgs) {
+    # coverage vs read count scatter plot
+    my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_TARGET_COVERAGE", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5000, 500),
+              x_string = "number of read pairs", y_string = "mean target coverage", title_string = "Coverage vs Read count")
+  } else {
+    # coverage vs read count scatter plot
+    my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_COVERAGE", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5000, 500),
+              x_string = "number of read pairs", y_string = "mean coverage", title_string = "Coverage vs Read count")
+
+  }
+}
+
 
 if (!wgs) {
-  # coverage vs read count scatter plot
-  my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_TARGET_COVERAGE", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5000, 500),
-            x_string = "number of read pairs", y_string = "mean target coverage", title_string = "Coverage vs Read count")
-
-} else {
-  # coverage vs read count scatter plot
-  my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_COVERAGE", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5000, 500),
-             x_string = "number of read pairs", y_string = "mean coverage", title_string = "Coverage vs Read count")
-
+  if (isTRUE(is_sd)) {
+    # duplication vs fold enrichment scatter plot, SNV/indels
+    my_scatter(x = "FOLD_ENRICHMENT_snv_indel_regions", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 5000, 50), ybreaks = waiver(),
+               x_string = "fold enrichment, SNV/indel regions", y_string = "duplication rate", title_string = "Total duplication rate vs SNV/indel fold enrichment")
+    # duplication vs fold enrichment scatter plot, baseline
+    my_scatter(x = "FOLD_ENRICHMENT_snv_indel_regions", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 5000, 50), ybreaks = waiver(),
+               x_string = "fold enrichment, baseline regions", y_string = "duplication rate", title_string = "Total duplication rate vs Baseline fold enrichment")
+    
+    # duplication vs on-bait rate scatter plot, SNV/indels
+    my_scatter(x = "ON_BAIT_BASES_snv_indel_regions/PF_BASES_ALIGNED_snv_indel_regions", y = "PERCENT_DUPLICATION", xbreaks = waiver(), ybreaks = waiver(),
+               x_string = "dedupped on-bait rate, SNV/indel regions", y_string = "duplication rate", title_string = "Total duplication rate vs SNV/indel dedupped on-bait rate")
+    # duplication vs on-bait rate scatter plot, baseline
+    my_scatter(x = "ON_BAIT_BASES_snv_indel_regions/PF_BASES_ALIGNED_snv_indel_regions", y = "PERCENT_DUPLICATION", xbreaks = waiver(), ybreaks = waiver(),
+               x_string = "dedupped on-bait rate, baseline regions", y_string = "duplication rate", title_string = "Total duplication rate vs Baseline dedupped on-bait rate")
+    
+    # fold80 base penalty vs coverage scatter plot, SNV/indels
+    my_scatter(x = "MEAN_TARGET_COVERAGE_snv_indel_regions", y = "FOLD_80_BASE_PENALTY_snv_indel_regions", xbreaks = seq(0, 5e4, 500), ybreaks = waiver(),
+               x_string = "mean target coverage, SNV/indel regions", y_string = "fold 80 base penalty, SNV/indel regions", 
+               title_string = "SNV/indel regions fold 80 base penalty vs SNV/indel regions Coverage")
+    # fold80 base penalty vs coverage scatter plot, baseline
+    my_scatter(x = "MEAN_TARGET_COVERAGE_snv_indel_regions", y = "FOLD_80_BASE_PENALTY_snv_indel_regions", xbreaks = seq(0, 5e4, 500), ybreaks = waiver(),
+               x_string = "mean target coverage, baseline regions", y_string = "fold 80 base penalty, baseline regions", 
+               title_string = "Baseline regions fold 80 base penalty vs Baseline regions Coverage")
+  } else {
+    if (!is_rerun) {
+      # duplication vs fold enrichment scatter plot
+      my_scatter(x = "FOLD_ENRICHMENT", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 5000, 50), ybreaks = waiver(),
+                 x_string = "fold enrichment", y_string = "duplication rate", title_string = "Duplication rate vs Fold enrichment")
+      
+      # duplication vs on-bait rate scatter plot
+      my_scatter(x = "ON_BAIT_BASES/PF_BASES_ALIGNED", y = "PERCENT_DUPLICATION", xbreaks = waiver(), ybreaks = waiver(),
+                 x_string = "dedupped on-bait rate", y_string = "duplication rate", title_string = "Duplication rate vs Dedupped on-bait rate")
+    }
+    
+    # fold80 base penalty vs coverage scatter plot
+    my_scatter(x = "MEAN_TARGET_COVERAGE", y = "FOLD_80_BASE_PENALTY", xbreaks = seq(0, 5000, 500), ybreaks = waiver(),
+               x_string = "mean target coverage", y_string = "fold 80 base penalty", title_string = "Fold 80 base penalty vs Coverage")
+  }
 }
 
-if (!wgs) {
-  # duplication vs fold enrichment scatter plot
-  my_scatter(x = "FOLD_ENRICHMENT", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 5000, 50), ybreaks = waiver(),
-            x_string = "fold enrichment", y_string = "duplication rate", title_string = "Duplication rate vs Fold enrichment")
-
-  # duplication vs on-bait rate scatter plot
-  my_scatter(x = "ON_BAIT_BASES/PF_BASES_ALIGNED", y = "PERCENT_DUPLICATION", xbreaks = waiver(), ybreaks = waiver(),
-            x_string = "dedupped on-bait rate", y_string = "duplication rate", title_string = "Duplication rate vs Dedupped on-bait rate")
-
-  # fold80 base penalty vs coverage scatter plot
-  my_scatter(x = "MEAN_TARGET_COVERAGE", y = "FOLD_80_BASE_PENALTY", xbreaks = seq(0, 5000, 500), ybreaks = waiver(),
-            x_string = "mean target coverage", y_string = "fold 80 base penalty", title_string = "Fold 80 base penalty vs Coverage")
+if (!is_rerun) {
+  # insert size histogram
+  p = ggplot(InsertSize_histogram, aes(x = insert_size, y = count_norm*1e6, group = interaction (SAMP, DIR),
+                                  linetype = capture)) +
+    geom_line(color = "black", alpha = 0.5) +
+    geom_line(data = subset(InsertSize_histogram, soi&!doi), color = "blue", show.legend = FALSE) +
+    geom_line(data = subset(InsertSize_histogram, soi&doi), color = "red", show.legend = FALSE) +
+    # scale_linetype(guide = guide_legend(override.aes = list(color = "black"))) +
+    scale_x_continuous(name = "insert size", breaks = seq(0,2000,100)) +
+    scale_y_continuous(name = "count per million reads in total for each sample") +
+    facet_wrap(~sample_type, ncol = 1, scales = "free_y") +
+    ggtitle("Insert size", subtitle = "Red lines show present samples, blue lines show these samples if run earlier.")
+  # add a line marking the length of one chromatosome if any cfDNA sample is present, since this is the typical insert size for cfDNA
+  if (any(grepl("CFDNA", InsertSize_histogram$SAMP))) {
+    p = p + geom_vline(xintercept = 167, alpha = 0.8, linetype = 3) +
+      geom_label(data=data.frame(sample_type="CFDNA"), aes(x = 167, y = Inf), label = "167 bases, length of one chromatosome", 
+                inherit.aes = FALSE, vjust = "top", hjust = 0, nudge_x = 2)
+  }
+  print(p)
 }
-
-
-# insert size histogram
-p = ggplot(InsertSize_histogram, aes(x = insert_size, y = count_norm*1e6, group = interaction (SAMP, DIR),
-                                 linetype = capture)) +
-  geom_line(color = "black", alpha = 0.5) +
-  geom_line(data = subset(InsertSize_histogram, soi&!doi), color = "blue", show.legend = FALSE) +
-  geom_line(data = subset(InsertSize_histogram, soi&doi), color = "red", show.legend = FALSE) +
-  # scale_linetype(guide = guide_legend(override.aes = list(color = "black"))) +
-  scale_x_continuous(name = "insert size", breaks = seq(0,2000,100)) +
-  scale_y_continuous(name = "count per million reads in total for each sample") +
-  facet_wrap(~sample_type, ncol = 1, scales = "free_y") +
-  ggtitle("Insert size", subtitle = "Red lines show present samples, blue lines show these samples if run earlier.")
-# add a line marking the length of one chromatosome if any cfDNA sample is present, since this is the typical insert size for cfDNA
-if (any(grepl("CFDNA", InsertSize_histogram$SAMP))) {
-  p = p + geom_vline(xintercept = 167, alpha = 0.8, linetype = 3) +
-    geom_label(data=data.frame(sample_type="CFDNA"), aes(x = 167, y = Inf), label = "167 bases, length of one chromatosome", 
-               inherit.aes = FALSE, vjust = "top", hjust = 0, nudge_x = 2)
-}
-print(p)
 
 # contamination bar plot
 my_barplot(x = "factor(contamination, levels = sort(unique(contamination)))", ybreaks = waiver(),
              x_string = "contamination, %", title_string = "Contamination")
 
-if (!wgs) {
+
+if (!wgs && !isTRUE(is_sd) && !is_rerun) {
   # msings score vs read count scatter plot
   my_scatter(x = "READ_PAIRS_EXAMINED", y = "msing_score", xbreaks = seq(0, 1e12, 1e7), ybreaks = waiver(),
               x_string = "number of read pairs", y_string = "mSINGS score", title_string = "mSINGS score vs Read count")
-
 }
 
 my_scatter(x = "mapped_reads", y= "paired_reads", xbreaks = waiver(), ybreaks = waiver(),

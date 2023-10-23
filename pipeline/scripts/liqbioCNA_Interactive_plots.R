@@ -164,8 +164,9 @@ data2_exon <- data2[data2$Feature == 'exon',]
 {
   vcf <- readVcf(opts$somatic_mut_vcf,genome = "GRCh37")
   g <- geno(vcf)
+  chr=as.character(seqnames(r))
   r=rowRanges(vcf)
-  if (length(g)>0) { # if there are any somatic mutations...
+  if (length(chr)>0) { # if there are any somatic mutations...
     chr=as.character(seqnames(r))
     pos=data.frame(ranges(r))$start
     salf <- data.frame(N=1:length(chr),chromosome=chr,pos=pos,stringsAsFactors = F)
