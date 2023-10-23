@@ -64,6 +64,7 @@ rule jumblerun_cnv:
     params:
         outdir = outdir + "/cnv/"
     threads: params['jumble']['threads']
+    container: containers['jumble']
     log:
         outdir + "/logs/variants/{sample}-jumblerun-cnv.log"
     shell:
@@ -120,8 +121,9 @@ rule liqbiocna_plot:
         tumor_inv = capture_to_results[CANCER_CAPTURE].svs['INV'],
         tumor_tra = capture_to_results[CANCER_CAPTURE].svs['TRA'],
     threads: params['liqbiocna']['threads']
-    run:
-        shell("source activate franken && " 
+    container: containers['franken']
+    shell:
+        "source activate franken && " 
         "liqbioCNA_Interactive_plots.R  --tumor_cnr {input.tumor_cnr} "
                     "  --tumor_cns {input.tumor_cns} "
                     "  --normal_cnr {input.normal_cnr} "
@@ -146,7 +148,7 @@ rule liqbiocna_plot:
                     "  --cna_json {output.cna_json} "
                     "  --purity_json {output.purity_json} "
                     "  --gene_track {input.gene_track} && "
-        " source deactivate ")
+        " source deactivate "
 
 
 rule franken_plot:
@@ -179,8 +181,9 @@ rule franken_plot:
         tumor_tra = capture_to_results[CANCER_CAPTURE].svs['TRA'],
         frankenplot_rmd = os.environ.get('FRANKEN_RMD')
     threads: params['liqbiocna']['threads']
-    run:
-        shell("source activate jumble-env && " 
+    container: containers['jumble']
+    shell:
+        "source activate jumble-env && " 
         "frankenscript.R  --tumor_cnr {input.tumor_cnr} "
                     "  --tumor_cns {input.tumor_cns} "
                     "  --normal_cnr {input.normal_cnr} "
@@ -201,5 +204,5 @@ rule franken_plot:
                     "  --svcaller_N_TRA {params.normal_tra} "
                     "  --germline_mut_vcf {input.germline_vcf} "
                     "  --somatic_mut_vcf {input.somatic_vcf} "
-                    "  --output {output.frankenplot} || true ")
-        shell("touch  {output.frankenplot} ")
+                    "  --output {output.frankenplot} || true && "
+        "touch  {output.frankenplot} "

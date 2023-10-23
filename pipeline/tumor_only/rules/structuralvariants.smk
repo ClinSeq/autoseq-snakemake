@@ -12,6 +12,7 @@ rule svcaller_run:
     params: 
         tmpdir = params['scratch']
     threads: params['svcaller']['threads']
+    container: containers['svcaller']
     log:
         outdir + "/logs/svs/svcaller-{sample}-{events}.log"
     shell:
@@ -34,6 +35,7 @@ rule sveffect_predict:
         combined_bed = outdir + "/svs/svcaller/{sample}_combined.bed",
         effects_json = outdir + "/svs/svcaller/{sample}_effects.json"
     threads: params['svcaller']['threads']
+    container: containers['svcaller']
     log:
         outdir + "/logs/svs/sveffect-{sample}.log"
     shell:
@@ -66,6 +68,7 @@ rule svcaller_merge:
     shell:
         "samtools merge -c -p {output.svs_bam} {input.DEL_bam} "
         " {input.DUP_bam} {input.INV_bam} {input.TRA_bam} && "
+        "samtools index {output.svs_bam} && "
         "cat {input.DEL} {input.DUP} {input.INV} {input.TRA} "
         " > {output.svs_gtf} "
 
@@ -94,7 +97,8 @@ rule annotate_generateIGVnavInput:
         svcaller_tumor = "{}/svs/igv/{}_svcaller.mut".format(outdir, CANCER_CAPTURE_STR),
         genes = reference["genes_bed"],
         targets = reference['sv_filter'],
-        cgcann = reference['cgcann']
+        cgcann = reference['cgcann'],
+        exons = reference['exons_gtf']
     output:
         "{}/svs/igv/{}-sv-annotated.txt".format(outdir, CANCER_CAPTURE_STR)
     params:
@@ -105,4 +109,4 @@ rule annotate_generateIGVnavInput:
     shell:        
         "generateIGVnavInput_SV.py --input {params.svs_dir} --cgc {input.cgcann} "
             " --annotBed {input.genes} --target {params.capture_kit_id} {input.targets} "
-            " --output {output} 2> {log} "
+            " --exons {input.exons} --output {output} 2> {log} "
