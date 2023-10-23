@@ -250,9 +250,14 @@ if (! is_rerun) {
 
 # convert HsMetrics from long format table to wide format table in case there are samples with metrics for both nodups and clipoverlap bams
 HsMetrics = data.table(HsMetrics)  # convert to data table for convenience 
-HsMetrics[, bamtype := NA]
-HsMetrics[, bamtype := HsMetrics[, tstrsplit(SAMP, split = "_")]$V2]  # extract bam type (dedup method) from sample name
-HsMetrics[, SAMP := HsMetrics[, tstrsplit(SAMP, split = "_")]$V1]  # remove bam type (dedup method) from sample name
+HsMetrics[, bamtype := as.character(NA)] # compatible for R data.table latest version
+
+tmp = HsMetrics[, tstrsplit(SAMP, split = "_")]$V2
+if (! is.null(tmp)){
+  HsMetrics[, bamtype := HsMetrics[, tstrsplit(SAMP, split = "_")]$V2]  # extract bam type (dedup method) from sample name
+  HsMetrics[, SAMP := HsMetrics[, tstrsplit(SAMP, split = "_")]$V1]  # remove bam type (dedup method) from sample name
+}
+
 HsMetrics[is.na(bamtype), bamtype := "nodups"]  # set bamtype to "nodups" if it's NA (when only one instance of HsMetrics was run for a sample)
 HsMetrics = dcast(HsMetrics, SAMP + DIR + BAIT_SET ~ bamtype, 
                   value.var = c("MEAN_TARGET_COVERAGE", "FOLD_ENRICHMENT", "FOLD_80_BASE_PENALTY", 
@@ -319,7 +324,7 @@ qc_merge$doi = qc_merge$DIR == Sys.glob(analysis_dir)
 InsertSize_histogram$soi = InsertSize_histogram$SAMP %in% samples
 InsertSize_histogram$doi = InsertSize_histogram$DIR == Sys.glob(analysis_dir)
 
-print(qc_merge)
+#print(qc_merge)
 
 # create an ouput table for the samples of interest
 if (wgs){
@@ -377,7 +382,7 @@ my_barplot = function(x, ybreaks, x_string, title_string) {
 
 # plotting function to create desired scatter plots
 my_scatter = function(x, y, xbreaks, ybreaks, x_string, y_string, title_string) {
-  ggplot(qc_merge, aes(shape = capture)) +
+  p = ggplot(qc_merge, aes(shape = capture)) +
     geom_point(aes_string(x = x, y = y), size = 3) +
     geom_point(data = subset(qc_merge, soi), aes_string(x = x, y = y), fill = "blue", size = 3, show.legend = FALSE) +
     geom_point(data = subset(qc_merge, soi&doi), aes_string(x = x, y = y), fill = "red", size = 3, show.legend = FALSE) +
@@ -387,6 +392,8 @@ my_scatter = function(x, y, xbreaks, ybreaks, x_string, y_string, title_string) 
     scale_y_continuous(name = y_string, breaks = ybreaks) +
     facet_wrap(~sample_type, ncol = 1) +
     ggtitle(title_string, subtitle = "Red symbols show present samples, blue symbols show these samples if run earlier")
+  
+  print(p)
 }
 
 # Plot histograms and scatter plots
