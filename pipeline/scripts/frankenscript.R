@@ -960,6 +960,7 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes[,start:=start-1e3][,end
 
         salf[,'point mutation':=type]
 
+
     } #end somatic mutations
     #¡”¥¢‰¶\{}≠¿``^’*°°˝◊∑∆É⁄ˇÇ«»¯“ØÆ˚∏ŒˆÜ˜‡É˝˝°◊∑∆⁄≥ˇ
 }
@@ -1374,6 +1375,27 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     wgs <- all(targets$end-targets$start > 500)
     targets[,smooth_log2:=runmed(log2,k = 7)]
     if (wgs) targets[,smooth_log2:=runmed(log2,k = 7)]
+
+
+
+    ## purity from point mutations -----------
+    rough_fraction <- NA
+    if (wgs) try( {
+        d <- density(somatic[chromosome %in% 1:22 &
+                                 AF.T>.07 & AO.T >= 8 &
+                                 FILTER=='PASS' & !str_detect(Existing_variation,'rs')]$AF.T)
+        peak <- d$x[which.max(d$y)]
+        if (peak>.12) rough_fraction <- round(peak,2)
+    }, silent=T)
+    if (!wgs) try( {
+        peak <- median(somatic[chromosome %in% 1:22 &
+                                   #IMPACT %in% c('MODERATE','HIGH') &
+                                   #BIOTYPE %in% c('protein_coding',"") &
+                                   AF.T>.02 & AO.T >= 12 &
+                                   FILTER=='PASS' & !str_detect(Existing_variation,'rs')]$AF.T)
+        if (peak>.025) rough_fraction <- round(peak,2)
+    }, silent=T)
+
 
     p <- NULL
     alpha <- .6
@@ -1848,11 +1870,16 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                            minor_breaks = c(.1,.3,.5,.7,.9),
                            limits = 0:1)
 
+
+
     if (!is.null(somatic)) if (nrow(somatic)>0) p$depth_alleleratio <- p$depth_alleleratio +
         geom_point(data=somatic,mapping = aes(x=2^somatic$log2,y=AF.T,shape=`point mutation`,col=`point mutation`),
                    fill='red',size=ifelse(wgs,.6,.9),show.legend = F) +
         scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22)) +
         scale_color_manual(values = c('snv'='darkred','ins'='red','del'='red','other'='darkred'))
+
+    if (!is.na(rough_fraction)) p$depth_alleleratio <- p$depth_alleleratio +
+        geom_hline(yintercept = rough_fraction,lty=3)
 
     ### depth ---------------------------------------------------------
 
@@ -1900,15 +1927,19 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
 
     stats <- paste0('Coverage: ',
                     paste(round(quantile(snps$depth,c(.1,.9),na.rm=T)),collapse = '-'),
-                    '         Noise: ',
+                    ', Noise: ',
                     noise(targets[gene!='Background']$log2),'%'
     )
-    if (!is.null(purecn)) stats <- paste0(stats,'         PureCN: ',round(purecn$Ploidy,1),'N, ',100*purecn$Purity,'%')
+    stats <- paste0(stats,', SMAF: ', rough_fraction)
+
+    if (!is.null(purecn)) {
+        stats <- paste0(stats,', PureCN: ',round(purecn$Ploidy,1),'N, ',100*purecn$Purity,'%')
+    }
 
     date <- format(Sys.time(), "%a %b %e %Y, %H:%M")
 
     pa <- plot_annotation(
-        title = paste(basename(name),'         ',date,'         ',stats),
+        title = paste(basename(name),'  ',date,'  ',stats),
         caption = paste('Frankenplot 2.0 on',date, '')
     )
 
