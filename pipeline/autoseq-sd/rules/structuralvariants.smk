@@ -1,9 +1,6 @@
 import os
 import uuid 
 
-normal_barcode = [_ for _ in all_clinseq_barcodes if '-N-' in _ ][0] 
-tumor_barcode = [_ for _ in all_clinseq_barcodes if '-T-' in _ or '-CFDNA-' in _][0]
-
 rule svcaller_run:
     input:
         bam = outdir + "/bams/{sample}_nodups.bam",
@@ -78,7 +75,7 @@ rule svcaller_merge:
         "cat {input.DEL} {input.DUP} {input.INV} {input.TRA} "
         " > {output.svs_gtf} "
 
-
+    
 rule generateIGVnavInput_svcaller:
     input:
         capture_to_results[NORMAL_CAPTURE].svs.values(),
@@ -104,14 +101,10 @@ rule generateIGVnavInput_svcaller:
                         " --output {params.igvout} "
 
 
-envvars:
-    "GRIDSS_JAR"
-
-
 rule gridss_extract_overlapping_fragments:
     input:
         bam = outdir + "/bams/{sample}_nodups.bam",
-        target_bed = reference['targets'][capture_name]['targets-bed-slopped20']
+        target_bed = sd_targets[sd_capture_base]['targets-bed']
     output:
         bam = outdir + "/svs/gridss/{sample}-gridss-targeted.bam"
     params:

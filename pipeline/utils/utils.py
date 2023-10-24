@@ -1,10 +1,51 @@
 import os, re
+import glob
 from pipeline.utils.clinseq_barcodes import parse_prep_id, compose_sample_str, \
-    extract_unique_capture, find_fastqs
+    extract_unique_capture, find_fastqs, compose_lib_capture_str
+
+
+def extract_bam(sample, libdir, umi = False):
+    """
+    for re-run pipeline, need to extract sample specific bam files
+    from library directory
+
+    params: 
+    sample: clinseqbarcode
+    libdir: library directory path
+    umi   : umi based processing or not
+    """
+    project = sample.split("-")[0]
+
+    if project == "AL":
+        sample_capture_str = compose_lib_capture_str(extract_unique_capture(sample))
+        pattern_bam = libdir + "/" + sample_capture_str + "*nodups.bam"
+    
+    if project in ["PB", "LB"]:
+        pattern_bam = libdir + "/" + sample + "*nodups.bam"
+        pattern_umibam = libdir + "/" + sample + "*clipoverlap.bam"
+        pattern_umibai = libdir + "/" + sample + "*clipoverlap.bai"
+    
+    pattern_bai = pattern_bam +  ".bai"
+    if umi:
+        umi_bam  = glob.glob(pattern_umibam)
+        umi_bai  = glob.glob(pattern_umibai)
+        if len(umi_bam) == 1:
+            return(umi_bam[0], umi_bai[0])
+        else:
+            raise ValueError("Invalid UMI bam search: " + sample)
+
+    nodups_bam = glob.glob(pattern_bam)
+    nodups_bai = glob.glob(pattern_bai)
+    if len(nodups_bam) == 1:
+        return(nodups_bam[0], nodups_bai[0])
+    else:
+        raise ValueError(" ".join(["Invalid bam : ", sample, nodups_bam]))
 
 
 def get_containers(_path):
     """
+    fetch containers for each conda env 
+    
     """
     containers = {
         "base": os.path.join(_path, "autoseq-base.sif"),
@@ -88,7 +129,7 @@ class Pipeline:
                 cluster_config = self.cluster_config
             else:
                 cluster_config = get_scheduler(self.profile, 'config')
-
+            
             slurm_submit = get_scheduler(self.profile, 'pyscript')
             slurm_cmd = " --notemp --immediate-submit -j 500 "
             slurm_cmd += " --jobname smk.{{rulename}}.{}-{}.{{jobid}}.sh ".format(self.project_id, self.sdid)
@@ -213,7 +254,7 @@ def get_jumbleref(wildcards, reference):
     """
     return jumble reference file
     """
-    unique_capture = extract_unique_capture(wildcards.sample)
+    unique_capture = extract_unique_capture(wildcards.sample, validation=False)
     capture_name = get_capture_name(unique_capture.capture_kit_id)
 
     jumble_ref = None
@@ -266,8 +307,11 @@ def get_targets(wildcards, reference, key):
     """
     return bed file corresponds to capture id
     """
-    unique_capture = extract_unique_capture(wildcards.sample)
+    unique_capture = extract_unique_capture(wildcards.sample, validation = False)
     targets = get_capture_name(unique_capture.capture_kit_id)
+
+    if unique_capture.capture_kit_id in ["P2", "S2", "B2"]:
+        return reference['small-design'][targets][key]
     
     return reference['targets'][targets][key]
 
@@ -276,7 +320,7 @@ def get_target_name(wildcards):
     """
     return capture id
     """
-    unique_capture = extract_unique_capture(wildcards.sample)
+    unique_capture = extract_unique_capture(wildcards.sample, validation = False)
     targets = get_capture_name(unique_capture.capture_kit_id)
     
     return targets
@@ -337,7 +381,13 @@ def get_capture_name(capture_kit_code):
                             "C3": "probio_comprehensive3",
                             "C4": "probio_comprehensive4",
                             "PN": "pancancer2",
-                            "PE": "pancancer2_enzymatic"
+                            "PE": "pancancer2_enzymatic",
+                            "P2": "probio_biomarkersignature2",
+                            "S2": "probio_biomarkersignature2",
+                            "B2": "probio_biomarkersignature2",
+                            "PS": "probio_snvindel",
+                            "S3": "probio_biomarkersignature2", # S3 pointed to S2 capture files
+                            "P3": "probio_biomarkersignature2"
                             }
 
     if capture_kit_code == 'WG':
