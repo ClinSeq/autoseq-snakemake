@@ -25,10 +25,10 @@ args <- rbind(
     c("normal_cnr", NA, 2, "character", "normal bin file from CNVkit"),
     c("normal_cns", NA, 2, "character", "normal segment file from CNVkit"),
     c("het_snps_vcf", NA, 1, "character", "heterozygous SNPs .vcf file"),
-    c("purecn_csv", NA, 1, "character", "PureCN result .csv file"),
-    c("purecn_genes_csv", NA, 1, "character", "PureCN result _genes.csv"),
-    c("purecn_loh_csv", NA, 1, "character", "PureCN result _loh.csv"),
-    c("purecn_variants_csv", NA, 1, "character", "PureCN result _variants.csv"),
+    c("purecn_csv", NA, 2, "character", "PureCN result .csv file"),
+    c("purecn_genes_csv", NA, 2, "character", "PureCN result _genes.csv"),
+    c("purecn_loh_csv", NA, 2, "character", "PureCN result _loh.csv"),
+    c("purecn_variants_csv", NA, 2, "character", "PureCN result _variants.csv"),
     c("svcaller_T_DEL", NA, 2, "character", "Tumor SV caller DEL-events.gtf"),
     c("svcaller_T_DUP", NA, 2, "character", "Tumor SV caller DUP-events.gtf"),
     c("svcaller_T_INV", NA, 2, "character", "Tumor SV caller INV-events.gtf"),
@@ -884,7 +884,8 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes[,start:=start-1e3][,end
 
 {
     vcf <- readVcf(opts$somatic_mut_vcf,genome = "GRCh37")
-    vcf <- vcf[rowRanges(vcf)$FILTER == 'PASS']
+    vcf <- vcf[rowRanges(vcf)$FILTER %in% c('PASS','LowQual')]
+    if (length(vcf)>50000) vcf <- vcf[rowRanges(vcf)$FILTER %in% c('PASS')]
 
     salf <- NULL
 
@@ -958,6 +959,7 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes[,start:=start-1e3][,end
         salf <- (salf[,-1])
 
         salf[,'point mutation':=type]
+
 
     } #end somatic mutations
     #¡”¥¢‰¶\{}≠¿``^’*°°˝◊∑∆É⁄ˇÇ«»¯“ØÆ˚∏ŒˆÜ˜‡É˝˝°◊∑∆⁄≥ˇ
@@ -1317,14 +1319,15 @@ if (!t_only) { # normal
 
 
 # Read PureCN files -------------------------------------------------------
-
-{
+purecn_files <- c(opts$purecn_csv, opts$purecn_variants_csv, opts$purecn_genes_csv, opts$purecn_loh_csv)
+purecn_stat <- NULL
+if (all(!is.null(purecn_files))) {
     # files to read (purity/ploidy, mutations and snps, gene copy number and LOH, segmented copy number and LOH)
-    purecn_files = c(opts$purecn_csv, opts$purecn_variants_csv, opts$purecn_genes_csv, opts$purecn_loh_csv)
+    purecn_files <- c(opts$purecn_csv, opts$purecn_variants_csv, opts$purecn_genes_csv, opts$purecn_loh_csv)
     # variables to assign to
-    purecn_variables = c("purecn_stat", "purecn_vars", "purecn_genes", "purecn_loh")
+    purecn_variables<- c("purecn_stat", "purecn_vars", "purecn_genes", "purecn_loh")
     # colnames to use if no data avialable and mock df created
-    purecn_colnames = list(
+    purecn_colnames<- list(
         c("Sampleid","Purity","Ploidy","Sex","Contamination","Flagged","Failed","Curated","Comment"),
         c("Sampleid", "chr", "start", "end", "ID", "REF", "ALT", "SOMATIC.M0", "SOMATIC.M1", "SOMATIC.M2",
           "SOMATIC.M3", "SOMATIC.M4", "SOMATIC.M5", "SOMATIC.M6", "SOMATIC.M7", "GERMLINE.M0", "GERMLINE.M1",
@@ -1338,7 +1341,7 @@ if (!t_only) { # normal
         c("Sampleid", "chr", "start", "end", "arm", "C", "M", "type")
     )
     # sample id to use if no data avialable and mock df created
-    sampid = sub(".csv","", basename(purecn_files[1]))  # NB: is this correct, or should there also be the "-nodups" ending to conform with samples with PureCN data?
+    sampid <- sub(".csv","", basename(purecn_files[1]))  # NB: is this correct, or should there also be the "-nodups" ending to conform with samples with PureCN data?
     for (i in 1:length(purecn_files)) {
         if (file.size(purecn_files[i]) == 0) {  # if no valid PureCN output produced, create mock df
             assign(purecn_variables[i],
@@ -1348,10 +1351,11 @@ if (!t_only) { # normal
             assign(purecn_variables[i], read.delim(purecn_files[i], sep = ',', stringsAsFactors = F))
         }
     }
+    purecn_loh <- as.data.table(purecn_loh)
+    purecn_loh[,C:=round(C)][,M:=round(M)]
 }
 
-purecn_loh <- as.data.table(purecn_loh)
-purecn_loh[,C:=round(C)][,M:=round(M)]
+
 
 # # assign PureCN copy number status to bins
 # binranges <- makeGRangesFromDataFrame(bins[,.(chromosome,start,end)])
@@ -1371,6 +1375,27 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     wgs <- all(targets$end-targets$start > 500)
     targets[,smooth_log2:=runmed(log2,k = 7)]
     if (wgs) targets[,smooth_log2:=runmed(log2,k = 7)]
+
+
+
+    ## purity from point mutations -----------
+    rough_fraction <- NA
+    if (wgs) try( {
+        d <- density(somatic[chromosome %in% 1:22 &
+                                 AF.T>.07 & AO.T >= 8 &
+                                 FILTER=='PASS' & !str_detect(Existing_variation,'rs')]$AF.T)
+        peak <- d$x[which.max(d$y)]
+        if (peak>.12) rough_fraction <- round(peak,2)
+    }, silent=T)
+    if (!wgs) try( {
+        peak <- median(somatic[chromosome %in% 1:22 &
+                                   #IMPACT %in% c('MODERATE','HIGH') &
+                                   #BIOTYPE %in% c('protein_coding',"") &
+                                   AF.T>.02 & AO.T >= 12 &
+                                   FILTER=='PASS' & !str_detect(Existing_variation,'rs')]$AF.T)
+        if (peak>.025) rough_fraction <- round(peak,2)
+    }, silent=T)
+
 
     p <- NULL
     alpha <- .6
@@ -1845,11 +1870,16 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                            minor_breaks = c(.1,.3,.5,.7,.9),
                            limits = 0:1)
 
+
+
     if (!is.null(somatic)) if (nrow(somatic)>0) p$depth_alleleratio <- p$depth_alleleratio +
         geom_point(data=somatic,mapping = aes(x=2^somatic$log2,y=AF.T,shape=`point mutation`,col=`point mutation`),
                    fill='red',size=ifelse(wgs,.6,.9),show.legend = F) +
         scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22)) +
         scale_color_manual(values = c('snv'='darkred','ins'='red','del'='red','other'='darkred'))
+
+    if (!is.na(rough_fraction)) p$depth_alleleratio <- p$depth_alleleratio +
+        geom_hline(yintercept = rough_fraction,lty=3)
 
     ### depth ---------------------------------------------------------
 
@@ -1897,15 +1927,19 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
 
     stats <- paste0('Coverage: ',
                     paste(round(quantile(snps$depth,c(.1,.9),na.rm=T)),collapse = '-'),
-                    '         Noise: ',
+                    ', Noise: ',
                     noise(targets[gene!='Background']$log2),'%'
     )
-    if (!is.null(purecn)) stats <- paste0(stats,'         PureCN: ',round(purecn$Ploidy,1),'N, ',100*purecn$Purity,'%')
+    stats <- paste0(stats,', SMAF: ', rough_fraction)
+
+    if (!is.null(purecn)) {
+        stats <- paste0(stats,', PureCN: ',round(purecn$Ploidy,1),'N, ',100*purecn$Purity,'%')
+    }
 
     date <- format(Sys.time(), "%a %b %e %Y, %H:%M")
 
     pa <- plot_annotation(
-        title = paste(basename(name),'         ',date,'         ',stats),
+        title = paste(basename(name),'  ',date,'  ',stats),
         caption = paste('Frankenplot 2.0 on',date, '')
     )
 
