@@ -154,43 +154,6 @@ rule contam_caveat:
         " {input}  > {output} 2> {log} "
 
 
-rule purecn:
-    input:
-        cnr = capture_to_results[CANCER_CAPTURE].cnr,
-        seg = capture_to_results[CANCER_CAPTURE].seg,
-        vardict_vcf = "{}/variants/vardict/{}-{}.vardict-somatic-purecn.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
-    output:
-        csv = "{}/purecn/{}.csv".format(outdir, CANCER_CAPTURE_STR),
-        genes_csv = "{}/purecn/{}_genes.csv".format(outdir, CANCER_CAPTURE_STR),
-        variants_csv = "{}/purecn/{}_variants.csv".format(outdir, CANCER_CAPTURE_STR),
-        loh_csv = "{}/purecn/{}_loh.csv".format(outdir, CANCER_CAPTURE_STR)
-    params:
-        tumorid = CANCER_CAPTURE_STR,
-        minaf = params['purecn']['minaf'],
-        maxnonclonal = params['purecn']['maxnonclonal'],
-        outdir = "{}/purecn".format(outdir)
-    threads: params['purecn']['threads']
-    container: containers['purecn']
-    log:
-        "{}/logs/{}-purecn.log".format(outdir, CANCER_CAPTURE_STR)
-    shell:
-        "source activate purecn-env && "
-        "PureCN.R  --out {params.outdir} "
-        " --sampleid {params.tumorid} "
-        " --segfile {input.seg} "
-        " --tumor {input.cnr} "
-        " --vcf {input.vardict_vcf} "
-        " --genome hg19  --funsegmentation none "
-        " --minpurity 0.05  --hzdev 0.1  {params.maxnonclonal} "
-        " {params.minaf}  --error 0.0005 "
-        " --postoptimize &&  "
-        " conda deactivate && "
-        " touch {output.csv} "
-        " {output.genes_csv} "
-        " {output.variants_csv} "
-        " {output.loh_csv} 2> {log} "
-
-
 rule multiqc:
     input:
         PICARD_QC,
