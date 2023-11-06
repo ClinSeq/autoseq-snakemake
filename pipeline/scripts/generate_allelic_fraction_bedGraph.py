@@ -19,7 +19,7 @@ def extract_somatic_afs(vcf_filename, output, loglevel):
     vcf_reader = vcf.Reader(filename=vcf_filename)
 
     # Extract the names of all tumor (i.e. non-normal) samples:
-    non_normal_samples = [sample for sample in vcf_reader.samples if sample.split("-")[3] != "N"]
+    non_normal_samples = [sample for sample in vcf_reader.samples if "N" not in sample]
 
     # Currently just cope with input files containing exactly one tumor sample:
     if len(non_normal_samples) != 1:

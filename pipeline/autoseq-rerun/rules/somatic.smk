@@ -22,12 +22,14 @@ rule gatk4_mutect2:
     log:
         "{}/logs/variants/{}-{}-gatk4-mutect-somatic.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR) 
     shell:
+        "normalId=`samtools view -H {input.normal_bam} | grep \"^@RG\" | cut -f3 | cut -d\':\' -f2 ` && "
+        "tumorId=`samtools view -H {input.tumor_bam} | grep \"^@RG\" | cut -f3 | cut -d\':\' -f2 ` && "
         "gatk --java-options '{params.java_options} -Djava.io.tmpdir={params.tmpdir}' "
         " Mutect2  -R {input.reference} "
         " -I {input.tumor_bam} "
         " -I {input.normal_bam} "
-        " -tumor {params.tumorid}  " 
-        " -normal {params.normalid} " 
+        " -tumor $tumorId  " 
+        " -normal $normalId " 
         " -L {input.interval_list} " 
         " --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter "
         " -bamout {output.bam} -O {output.vcf} 2> {log} && "
