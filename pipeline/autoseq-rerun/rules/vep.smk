@@ -20,7 +20,7 @@ rule vep_annotation:
             " --no_escape --no_stats --everything --offline "
             " --custom {input.brca_exchange},BrcaEx,vcf,exact,0,ClinicalSignificance "
             " --fork {threads} "
-            " -i {input.germline} > {output.germline} && "
+            " -i {input.germline} > {output.germline} || true && "
         "vep --vcf --output_file STDOUT " 
             " --pick --dir {input.vep_dir} "
             " --fasta {input.reference} "
@@ -28,5 +28,5 @@ rule vep_annotation:
             " --no_escape --no_stats --everything --offline "
             " --custom {input.brca_exchange},BrcaEx,vcf,exact,0,ClinicalSignificance "
             " --fork {threads} "
-            " -i {input.somatic} > {output.somatic} "
+            " -i {input.somatic} > {output.somatic} || true "
 
