@@ -133,7 +133,7 @@ def convert_to_libdict(clinseq_barcode):
             "project_id": project_id, "sdid": sdid, "prep_id": prep_id}
 
 
-def extract_unique_capture(clinseq_barcode):
+def extract_unique_capture(clinseq_barcode, validation = True):
     """
     Parses the specified clinseq barcode and produces a corresponding
     UniqueCapture representing the unique library capture corresponding
@@ -142,9 +142,9 @@ def extract_unique_capture(clinseq_barcode):
     :param clinseq_barcode_tuple: A clinseq barcode string
     :return: UniqueCapture named tuple
     """
-
-    if not clinseq_barcode_is_valid(clinseq_barcode):
-        raise ValueError("Invalid clinseq barcode: " + clinseq_barcode)
+    if validation:
+        if not clinseq_barcode_is_valid(clinseq_barcode):
+            raise ValueError("Invalid clinseq barcode: " + clinseq_barcode)
 
     project = parse_project(clinseq_barcode)
     sdid = parse_sdid(clinseq_barcode)
@@ -157,8 +157,8 @@ def extract_unique_capture(clinseq_barcode):
                          sdid,
                          sample_type,
                          sample_id,
-                         extract_kit_id(prep_id),
-                         extract_kit_id(capture_id))
+                         extract_kit_id(prep_id, validation),
+                         extract_kit_id(capture_id, validation))
 
 
 def parse_project(clinseq_barcode):
@@ -262,16 +262,16 @@ def parse_capture_id(clinseq_barcode):
     return clinseq_barcode.split("-")[6]
 
 
-def extract_kit_id(kit_string):
+def extract_kit_id(kit_string, validation = True):
     """
     Extract the kit type from a specified kit string (either library or capture kit).
 
     :param kit_string: A string indicating a kit type, where the first two letters indicate the kit ID. 
     :return: The kit ID, comprising the first two letters.
     """
-
-    if len(kit_string) < 3:
-        raise ValueError("Invalid kit string: " + kit_string)
+    if validation:
+        if len(kit_string) < 3:
+            raise ValueError("Invalid kit string: " + kit_string)
 
     return kit_string[:2]
 

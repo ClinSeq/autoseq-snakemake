@@ -68,6 +68,7 @@ rule svcaller_merge:
     shell:
         "samtools merge -c -p {output.svs_bam} {input.DEL_bam} "
         " {input.DUP_bam} {input.INV_bam} {input.TRA_bam} && "
+        "samtools index {output.svs_bam} && "
         "cat {input.DEL} {input.DUP} {input.INV} {input.TRA} "
         " > {output.svs_gtf} "
 

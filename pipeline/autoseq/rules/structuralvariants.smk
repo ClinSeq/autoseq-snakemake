@@ -2,7 +2,7 @@ import os
 import uuid 
 
 normal_barcode = [_ for _ in all_clinseq_barcodes if '-N-' in _ ][0] 
-tummor_barcode = [_ for _ in all_clinseq_barcodes if '-T-' in _ or '-CFDNA-' in _][0]
+tumor_barcode = [_ for _ in all_clinseq_barcodes if '-T-' in _ or '-CFDNA-' in _][0]
 
 rule svcaller_run:
     input:

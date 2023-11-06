@@ -25,6 +25,23 @@
     "pondir":"pondir",
     "no_chr":"genome/human_g1k_v37_decoy_non_chr.bed",
     "gene_track": "gene_track_output.csv",
+    "small_design": {
+        "probio_biomarkersignature2": {
+            "targets-bed": "intervals/targets/probio_biomarkersignature2.bed",
+            "targets-bed-gz": "intervals/targets/probio_biomarkersignature2.bed.gz",
+            "targets-interval_list": "intervals/targets/probio_biomarkersignature2.interval_list",
+            "snvindel": {
+                "targets-bed": "intervals/targets/probio_snvindel2.bed",
+                "targets-bed-gz": "intervals/targets/probio_snvindel2.bed.gz",
+                "targets-interval_list": "intervals/targets/probio_snvindel2.interval_list"
+            },
+            "baseline": {
+                "targets-bed": "intervals/targets/probio_baseline2.bed",
+                "targets-bed-gz": "intervals/targets/probio_baseline2.bed.gz",
+                "targets-interval_list": "intervals/targets/probio_baseline2.interval_list"
+            }
+        }        
+    },
     "sv_filter": "variants/svfilter_2022-07-11.json",
     "cgcann": "genes/cgcann_filter_v1.txt",
     "exons_gtf": "genes/Homo_sapiens.GRCh37.87.exons-only.gtf",
