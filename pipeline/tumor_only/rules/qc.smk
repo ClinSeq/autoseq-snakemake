@@ -38,6 +38,7 @@ rule picard_collectinsertsize:
             "H=/dev/null "
             "I={input.bam} "
             "O={output.metrics} 2> {log}"
+            " && rm -rf {params.tmpdir} "
 
 
 rule picard_collectoxog:
@@ -59,6 +60,7 @@ rule picard_collectoxog:
             "I={input.bam} "
             "R={input.reference_genome} "
             "O={output.metrics} 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule picard_collecthsmetrics:
@@ -89,6 +91,7 @@ rule picard_collecthsmetrics:
             "BI={input.bait_regions} "
             "BAIT_SET_NAME={params.bait_name} "
             "METRIC_ACCUMULATION_LEVEL=LIBRARY 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule samtools_flagstat:

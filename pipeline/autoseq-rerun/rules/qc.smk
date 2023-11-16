@@ -19,6 +19,7 @@ rule picard_collectinsertsize:
             "H=/dev/null "
             "I={input.bam} "
             "O={output.metrics} 2> {log}"
+            " && rm -rf {params.tmpdir} " 
 
 
 rule picard_collectoxog:
@@ -40,6 +41,7 @@ rule picard_collectoxog:
             "I={input.bam} "
             "R={input.reference_genome} "
             "O={output.metrics} 2> {log} "
+            " && rm -rf {params.tmpdir} " 
 
 
 rule picard_collecthsmetrics:
@@ -70,6 +72,7 @@ rule picard_collecthsmetrics:
             "BI={input.bait_regions} "
             "BAIT_SET_NAME={params.bait_name} "
             "METRIC_ACCUMULATION_LEVEL=LIBRARY 2> {log} "
+            " && rm -rf {params.tmpdir} " 
 
 
 rule samtools_flagstat:
@@ -102,6 +105,7 @@ rule create_popvcf:
             " {input.popvcf}  "
             " --tmpdir {params.tmpdir}  "
             " --output-filename {output} 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule gatk3_contest_cancer:
@@ -128,6 +132,7 @@ rule gatk3_contest_cancer:
             "--popfile {input.popvcf}  "
             "--min_genotype_ratio {params.min_genotype_ratio}  "
             " -o {output} 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule gatk3_contest_normal:
@@ -154,6 +159,7 @@ rule gatk3_contest_normal:
             "--popfile {input.popvcf}  "
             "--min_genotype_ratio {params.min_genotype_ratio}  "
             " -o {output} 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule contam_caveat:

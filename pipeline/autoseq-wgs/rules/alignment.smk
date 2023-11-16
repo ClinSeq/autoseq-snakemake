@@ -112,6 +112,7 @@ rule picard_markdups:
             " OUTPUT=/dev/stdout REMOVE_DUPLICATES={params.rmdups} "
             " | samtools sort -m 2G -@ {threads} -T {params.tmpdir} -o {output.bam} 2> {log}"
             " && samtools index {output.bam} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule rm_interbamfiles:
