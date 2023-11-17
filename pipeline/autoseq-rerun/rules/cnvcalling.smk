@@ -96,7 +96,9 @@ rule liqbiocna_plot:
                     "  --plot_png_normal {output.normal_liqbiocna} "
                     "  --cna_json {output.cna_json} "
                     "  --purity_json {output.purity_json} "
-                    "  --gene_track {input.gene_track} && "
+                    "  --gene_track {input.gene_track} || true && "
+                    " touch {output.liqbiocna_png} {output.normal_liqbiocna} "
+                    " {output.cna_json} {output.purity_json} && "
         " source deactivate "
 
 

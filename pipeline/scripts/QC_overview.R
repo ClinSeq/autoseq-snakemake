@@ -102,6 +102,9 @@ if (!wgs){
     for (f in msings_files) {
       tryCatch({
         SAMP = sub("_nodups.MSI_Analysis.txt", "", basename(f))
+        if (grep('nodups.MSI_Analysis.txt', SAMP, fixed = TRUE)) { # For re-run pipeline ALASSCA Project
+          SAMP = sub("-nodups.MSI_Analysis.txt", "", basename(f))
+        }
         DIR = dirname(dirname(dirname(f)))
         msings = rbind(msings, cbind(SAMP, DIR, t(read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)))[2,], stringsAsFactors=FALSE)
       }, error = function(err) {

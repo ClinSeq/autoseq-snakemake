@@ -20,7 +20,7 @@ rule vep_annotation:
             " --check_existing  --total_length --allele_number "
             " --no_escape --no_stats --everything --offline "
             " --custom {input.brca_exchange},BrcaEx,vcf,exact,0,ClinicalSignificance "
-            " --fork {threads} "
+            " --fork {threads} --format vcf "
             " -i {input.germline} > {output.germline} && "
         "vep --vcf --output_file STDOUT " 
             " --pick --dir {input.vep_dir} "
@@ -28,7 +28,7 @@ rule vep_annotation:
             " --check_existing  --total_length --allele_number "
             " --no_escape --no_stats --everything --offline "
             " --custom {input.brca_exchange},BrcaEx,vcf,exact,0,ClinicalSignificance "
-            " --fork {threads} "
+            " --fork {threads} --format vcf "
             " -i {input.somatic} > {output.somatic} "
 
 
