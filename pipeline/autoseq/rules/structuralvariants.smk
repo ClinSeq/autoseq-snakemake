@@ -24,6 +24,7 @@ rule svcaller_run:
         " --filter-event-overlap "
         " --events-gtf {output.gtf} "
         " --events-bam {output.bam} {input.bam} && "
+        " rm -rf {params.tmpdir} && "
         "source deactivate"
 
 

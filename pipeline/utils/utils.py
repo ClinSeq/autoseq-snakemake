@@ -387,7 +387,8 @@ def get_capture_name(capture_kit_code):
                             "B2": "probio_biomarkersignature2",
                             "PS": "probio_snvindel",
                             "S3": "probio_biomarkersignature2", # S3 pointed to S2 capture files
-                            "P3": "probio_biomarkersignature2"
+                            "P3": "probio_biomarkersignature2",
+                            "N3": "pancancer3"
                             }
 
     if capture_kit_code == 'WG':

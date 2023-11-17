@@ -4,54 +4,6 @@ import uuid
 capture_name = get_capture_name(CANCER_CAPTURE.capture_kit_id)
 cancer_sample = [_ for _ in all_clinseq_barcodes if '-T-' in _ or '-CFDNA-' in _]
 
-# rule cnvkit:
-#     input:
-#         bam = outdir + "/bams/{sample}_nodups.bam",
-#         reference = lambda wildcards: get_cnvkitref(wildcards, reference)
-#     output:
-#         cns = outdir + "/cnv/{sample}.cns",
-#         cnr = outdir + "/cnv/{sample}.cnr"
-#     params:
-#         prefix = os.path.basename(outdir + "/bams/{sample}_nodups"),
-#         tmpdir = os.path.join(params['scratch'], 
-#                     "cnvkit-{}".format(str(uuid.uuid4())))
-#     threads: params['cnvkit']['threads']
-#     shell:
-#         "mkdir -p {params.tmpdir} && "
-#         "cnvkit.py batch {input.bam}  -r {input.reference} "
-#         " -d {params.tmpdir} "
-#         " && cp {params.tmpdir}/{params.prefix}.cns {output.cns}  "
-#         " && cp {params.tmpdir}/{params.prefix}.cnr {output.cnr}  "
-#         " && rm -r {params.tmpdir}"
-
-
-# need to discuss
-# rule cnvkit_fix:
-#     input:
-#         cns = outdir + "/cnv/{sample}.cns",
-#         cnr = outdir + "/cnv/{sample}.cnr",
-#         ref = lambda wildcards: get_cnvkitref(wildcards, reference)
-#     output:
-#         cns = outdir + "/cnv/{sample}-fixed.cns",
-#         cnr = outdir + "/cnv/{sample}-fixed.cnr",
-#     threads: params['cnvkit-fix']['threads']
-#     shell:
-#         "fix_cnvkit.py --input-cnr {input.cnr} "
-#         " --input-cns {input.cns} "
-#         " --input-reference {input.ref} "
-#         " --output-cnr {output.cnr} "
-#         " --output-cns {output.cns} "
-
-
-# rule cnvkit_cnstoseg:
-#     input:
-#         cns = outdir + "/cnv/{sample}.cns",
-#     output:
-#         seg = outdir + "/cnv/{sample}_dnacopy.seg",
-#     threads: params['cnstoseg']['threads']
-#     shell:
-#         "cnvkit.py export seg  -o {output.seg}  {input.cns}"
-
 
 rule jumblerun_cnv:
     input:
@@ -147,7 +99,9 @@ rule liqbiocna_plot:
                     "  --plot_png_normal {output.normal_liqbiocna} "
                     "  --cna_json {output.cna_json} "
                     "  --purity_json {output.purity_json} "
-                    "  --gene_track {input.gene_track} && "
+                    "  --gene_track {input.gene_track} || true && "
+                    " touch {output.liqbiocna_png} {output.normal_liqbiocna} "
+                    " {output.cna_json} {output.purity_json} && "
         " source deactivate "
 
 
