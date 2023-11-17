@@ -102,7 +102,7 @@ if (!wgs){
     for (f in msings_files) {
       tryCatch({
         SAMP = sub("_nodups.MSI_Analysis.txt", "", basename(f))
-        if (is.null(SAMP)) { # For re-run pipeline ALASSCA Project
+        if (grep('nodups.MSI_Analysis.txt', SAMP, fixed = TRUE)) { # For re-run pipeline ALASSCA Project
           SAMP = sub("-nodups.MSI_Analysis.txt", "", basename(f))
         }
         DIR = dirname(dirname(dirname(f)))
