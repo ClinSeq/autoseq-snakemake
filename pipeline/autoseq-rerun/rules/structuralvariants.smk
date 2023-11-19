@@ -10,7 +10,8 @@ rule svcaller_run:
         gtf = outdir + "/svs/svcaller/{sample}-{events}.gtf",
         bam = outdir + "/svs/svcaller/{sample}-{events}.bam",
     params: 
-        tmpdir = params['scratch']
+        tmpdir = os.path.join(params['scratch'], 
+                                "svcaller-run-{}".format(str(uuid.uuid4()))),
     threads: params['svcaller']['threads']
     container: containers['svcaller']
     log:
