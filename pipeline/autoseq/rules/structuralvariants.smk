@@ -20,6 +20,7 @@ rule svcaller_run:
         outdir + "/logs/svs/svcaller-{sample}-{events}.log"
     shell:
         "source activate svcallerenv  && "
+        "mkdir {params.tmpdir} && "
         "svcaller run-all --tmp-dir {params.tmpdir} --event-type {wildcards.events} "
         " --fasta-filename {input.reference}  "
         " --filter-event-overlap "
