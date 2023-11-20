@@ -11,13 +11,14 @@ rule svcaller_run:
         bam = outdir + "/svs/svcaller/{sample}-{events}.bam",
     params: 
         tmpdir = os.path.join(params['scratch'], 
-                                "svcaller-run-{}".format(str(uuid.uuid4()))),
+                                "svcaller-run-{}".format(str(uuid.uuid4())))
     threads: params['svcaller']['threads']
     container: containers['svcaller']
     log:
         outdir + "/logs/svs/svcaller-{sample}-{events}.log"
     shell:
         "source activate svcallerenv  && "
+        "mkdir {params.tmpdir} && "
         "svcaller run-all --tmp-dir {params.tmpdir} --event-type {wildcards.events} "
         " --fasta-filename {input.reference}  "
         " --filter-event-overlap "

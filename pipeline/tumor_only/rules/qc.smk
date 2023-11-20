@@ -38,7 +38,6 @@ rule picard_collectinsertsize:
             "H=/dev/null "
             "I={input.bam} "
             "O={output.metrics} 2> {log}"
-            " && rm -rf {params.tmpdir} "
 
 
 rule picard_collectoxog:

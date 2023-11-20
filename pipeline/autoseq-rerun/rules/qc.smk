@@ -9,8 +9,7 @@ rule picard_collectinsertsize:
         metrics = outdir + "/qc/picard/{sample}.picard-insertsize.txt"
     params:
         java_options = params['picard']['collectinsertsize']['java_options'],
-        tmpdir = os.path.join(params['scratch'], 
-                                "picard-isize-{}".format(str(uuid.uuid4())))
+        tmpdir = params['scratch']
     threads: params['picard']['collectinsertsize']['threads']
     log:
         outdir + "/logs/picard/picard_insertsize_{sample}.log"
@@ -20,7 +19,6 @@ rule picard_collectinsertsize:
             "H=/dev/null "
             "I={input.bam} "
             "O={output.metrics} 2> {log}"
-            " && rm -rf {params.tmpdir} " 
 
 
 rule picard_collectoxog:
