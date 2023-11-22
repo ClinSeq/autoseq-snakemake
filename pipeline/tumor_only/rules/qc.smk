@@ -28,7 +28,7 @@ rule picard_collectinsertsize:
         metrics = outdir + "/qc/picard/{sample}.picard-insertsize.txt"
     params:
         java_options = params['picard']['collectinsertsize']['java_options'],
-        tmpdir = params['scratch'],
+        tmpdir = params['scratch']
     threads: params['picard']['collectinsertsize']['threads']
     log:
         outdir + "/logs/picard/picard_insertsize_{sample}.log"
