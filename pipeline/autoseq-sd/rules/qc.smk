@@ -58,7 +58,8 @@ rule picard_collectoxog:
             "CollectOxoGMetrics "
             "I={input.bam} "
             "R={input.reference_genome} "
-            "O={output.metrics} "
+            "O={output.metrics} " 
+            " && rm -rf {params.tmpdir} "
 
 
 rule picard_collecthsmetrics_nodups:
@@ -87,6 +88,7 @@ rule picard_collecthsmetrics_nodups:
             "BI={input.bait_regions} "
             "BAIT_SET_NAME={params.bait_name} "
             "METRIC_ACCUMULATION_LEVEL=LIBRARY 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule picard_collecthsmetrics_clipoverlap:
@@ -115,6 +117,7 @@ rule picard_collecthsmetrics_clipoverlap:
             "BI={input.bait_regions} "
             "BAIT_SET_NAME={params.bait_name} "
             "METRIC_ACCUMULATION_LEVEL=LIBRARY 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule samtools_flagstat:
