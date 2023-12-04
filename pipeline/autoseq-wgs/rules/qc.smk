@@ -34,7 +34,6 @@ rule picard_collectinsertsize:
             "H=/dev/null "
             "I={input.bam} "
             "O={output.metrics} 2> {log}"
-            " && rm -rf {params.tmpdir} "
 
 
 rule picard_collectoxog:
@@ -100,7 +99,8 @@ rule gatk3_contest_cancer:
     output:
         "{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR)
     params:
-        tmpdir = params['scratch'],
+        tmpdir = os.path.join(params['scratch'], 
+                                "gatk3-contest-cancer-{}".format(str(uuid.uuid4()))),
         min_genotype_ratio = params['contest_cancer']['min_genotype_ratio']
     threads: params['contest_cancer']['threads']
     container: containers['gatk3']
@@ -127,7 +127,8 @@ rule gatk3_contest_normal:
     output:
         "{}/contamination/{}.contest.txt".format(outdir, NORMAL_CAPTURE_STR)
     params:
-        tmpdir = params['scratch'],
+        tmpdir = os.path.join(params['scratch'], 
+                                "gatk3-contest-normal-{}".format(str(uuid.uuid4()))),
         min_genotype_ratio = params['contest_cancer']['min_genotype_ratio']
     threads: params['contest_cancer']['threads']
     container: containers['gatk3']

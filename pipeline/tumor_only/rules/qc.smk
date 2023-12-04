@@ -28,7 +28,7 @@ rule picard_collectinsertsize:
         metrics = outdir + "/qc/picard/{sample}.picard-insertsize.txt"
     params:
         java_options = params['picard']['collectinsertsize']['java_options'],
-        tmpdir = params['scratch'],
+        tmpdir = params['scratch']
     threads: params['picard']['collectinsertsize']['threads']
     log:
         outdir + "/logs/picard/picard_insertsize_{sample}.log"
@@ -38,7 +38,6 @@ rule picard_collectinsertsize:
             "H=/dev/null "
             "I={input.bam} "
             "O={output.metrics} 2> {log}"
-            " && rm -rf {params.tmpdir} "
 
 
 rule picard_collectoxog:
@@ -124,6 +123,7 @@ rule msings:
         msings = msings_output
     params:
         prefix = msings_outdir
+    container: containers['gatk3']
     log:
         "{}/logs/msings-{}.log".format(outdir, CANCER_CAPTURE_STR)
     shell:
