@@ -123,6 +123,7 @@ rule msings:
         msings = msings_output
     params:
         prefix = msings_outdir
+    container: containers['gatk3']
     log:
         "{}/logs/msings-{}.log".format(outdir, CANCER_CAPTURE_STR)
     shell:
