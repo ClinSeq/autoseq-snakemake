@@ -127,6 +127,7 @@ rule msings:
     log:
         "{}/logs/msings-{}.log".format(outdir, CANCER_CAPTURE_STR)
     shell:
+        "source activate gatk_3 && "
         "run_msings.sh -b {input.msings_bed} "
         " -f {input.reference_genome} "
         " -i {input.msings_intervals} "
