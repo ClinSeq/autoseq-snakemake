@@ -332,15 +332,13 @@ def check_targets(chrom, start, end, targets):
     """
     function to filter out SVs using target intervals
     """
-    chromosomes = [entry['CHR'] for chr, intervals in targets.items() for entry in intervals]
-    starts = [entry['START'] for chr, intervals in targets.items() for entry in intervals]
-    ends = [entry['END'] for chr, intervals in targets.items() for entry in intervals]
-    
-    targets_pr = pr.PyRanges(chromosomes=chromosomes, starts=starts, ends=ends)
-    query = pr.PyRanges(chromosomes=[chrom], starts=[int(start) - 150], ends=[int(end) + 150])
+    if chrom not in targets:
+        return False
 
-    if (query.intersect(targets_pr)):
-        return True
+    for i in targets[chrom]:
+        if int(i["START"]) - 150 <= int(start) <= int(i["END"]) + 150 \
+            or int(i["START"]) - 150 <= int(end) <= int(i["END"]) + 150:
+            return True
 
     return False
 
