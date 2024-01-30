@@ -66,19 +66,24 @@ def apply_filters(vcf, name_indexed):
 
     read_names = list()
     for record in vcffile.fetch():
-        rn = set(record.info['BPNAMES'])
+        try:
+            rn = set(record.info['BPNAMES'])
+        except KeyError:
+            logging.error("Need to add BPNAMES to INFO column in vcf file")
+            exit 
+
         read_names.extend(rn)
-        start = set()
+        mpos = set()
         for name in rn:
             try:
                 iterator = name_indexed.find(name)
-                start.update(set([":".join(map(str, [x.reference_name, x.pos]))
+                mpos.update(set([":".join(map(str, [x.reference_name, x.reference_start, x.reference_end]))
                                   for x in iterator if not x.is_supplementary]))
             except KeyError:
                 print(f"Reads could not find: {name}")
                 pass
 
-        if len(start) == 1:
+        if len(mpos) == 1:
             record.filter.add("SAME_START_READS")
         
         tmpvcf.write(record)
