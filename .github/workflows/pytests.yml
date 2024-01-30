@@ -27,5 +27,6 @@ jobs:
       - name: Test with pytest
         env:
           GRIDSS_JAR: '/path/to/gridss.jar'
+          GRIDSS_SCRIPT: '/path/to/gridss-script/'
         run: |
           pytest tests/
