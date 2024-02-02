@@ -121,7 +121,7 @@ class GenerateSymlink():
                               ('sv', 'bam_gridss_tumor', '.*-(T|CFDNA).*nodups.bam.sv.bam$')
                             ])
         else:
-            all_files.extend([('sv', 'bam_cfdna', '.*-CFDNA-.*(svs|targeted.bam.sv).bam$'),
+            all_files.extend([('sv', 'bam_cfdna', '.*-CFDNA-.*(svs|evidence).bam$'),
                               ('sv', 'bam_normal', '^(?:(?!CFDNA).)*(svs|evidence).bam$'),
                               ('snps', 'vep', '.*.all.(somatic|germline).vep.vcf$')
                             ])
