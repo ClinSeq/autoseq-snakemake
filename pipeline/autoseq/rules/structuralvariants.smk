@@ -264,7 +264,8 @@ rule gridss_evidence_bam:
 rule generateIGVnavInput_gridss:
     input:
         normal_vcf = "{}/svs/gridss/{}-gridss.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR),
-        somatic_vcf = "{}/svs/gridss/{}-{}-gridss.filtered.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+        somatic_vcf = "{}/svs/gridss/{}-{}-gridss.filtered.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        tumor_bam = "{}/svs/gridss/{}-gridss.evidence.bam".format(outdir, CANCER_CAPTURE_STR)
     output:
         normal_mut = "{}/svs/igv/{}_normal_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR),
         somatic_mut = "{}/svs/igv/{}_somatic_pass_gridss.mut".format(outdir, CANCER_CAPTURE_STR)
