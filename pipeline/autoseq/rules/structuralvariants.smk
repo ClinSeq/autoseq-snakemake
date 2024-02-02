@@ -249,7 +249,6 @@ rule gridss_evidence_bam:
         tumor_bam = "{}/svs/gridss/{}-gridss.evidence.bam".format(outdir, CANCER_CAPTURE_STR),
         normal_bam = "{}/svs/gridss/{}-gridss.evidence.bam".format(outdir, NORMAL_CAPTURE_STR)
     threads: params["gridss_filter"]["threads"]
-    container: containers['gridss']
     log:
         outdir + "/logs/svs/gridss-evidence-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     shell:
@@ -257,8 +256,8 @@ rule gridss_evidence_bam:
         " --bam {input.tumor_svbam} --filter-vcf "
         " --output {output.tumor_bam} 2> {log} && "
         "generate_evidence_bam.py --vcf {input.normal_vcf}"
-        " --bam {input.tumor_svbam}  "
-        " --output {output.tumor_bam} 2>> {log} "
+        " --bam {input.normal_svbam}  "
+        " --output {output.normal_bam} 2>> {log} "
         
 
 

@@ -72,7 +72,7 @@ class GenerateSymlink():
                 symlinks = (('variants','.vep.vcf'),('bams','nodups.bam'), ('bams','nodups.bam.bai'),
                             ('bams','clipoverlap.bam'), ('bams','clipoverlap.bai'), ('variants','.vep.vcf'), 
                             ('cnv', '.bedGraph'), ('variants', '.bedGraph'), ('svs/igv','.mut'), ('svs','.gtf'), 
-                            ('svs/gridss', 'bam.sv.bam'), ('svs/gridss', 'bam.sv.bam.csi'), 
+                            ('svs/gridss', 'evidence.bam'), ('svs/gridss', 'evidence.bam.bai'), 
                             ('svs','.bam'), ('svs','.bai'), ('', 'igvnav-input.txt')) + args
             
             for each_input in symlinks:
@@ -122,7 +122,7 @@ class GenerateSymlink():
                             ])
         else:
             all_files.extend([('sv', 'bam_cfdna', '.*-CFDNA-.*(svs|targeted.bam.sv).bam$'),
-                              ('sv', 'bam_normal', '^(?:(?!CFDNA).)*(svs|targeted.bam.sv).bam$'),
+                              ('sv', 'bam_normal', '^(?:(?!CFDNA).)*(svs|evidence).bam$'),
                               ('snps', 'vep', '.*.all.(somatic|germline).vep.vcf$')
                             ])
 

@@ -29,8 +29,8 @@ def extract_reads(samfile, name_indexed, read_names, output):
     
     outfile.close()
     pysam.sort(output, '-o', bam_sorted)
-    pysam.index(bam_sorted)
     shutil.move(bam_sorted, output)
+    pysam.index(output)
 
     return 
 
