@@ -18,11 +18,21 @@ def extract_reads(samfile, name_indexed, read_names, output):
     
     outfile = pysam.AlignmentFile(output, "w", template = samfile)
     
-    for name in read_names:
+    for name in set(read_names):
         try:
             iterator = name_indexed.find(name)
+            rmdups = set()
             for x in iterator:
-                outfile.write(x)
+                if x.is_supplementary:
+                    continue
+
+                mpos = ":".join(map(str, [x.reference_name, 
+                                          x.reference_start, 
+                                          x.reference_end]))
+                if mpos not in rmdups:
+                    # print(x, mpos)  
+                    outfile.write(x)
+                    rmdups.update(mpos)
         except KeyError:
             print(f"Reads could not find: {name}")
             pass
