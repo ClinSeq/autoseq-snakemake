@@ -47,7 +47,7 @@ def extract_reads(samfile, name_indexed, read_names, output):
 
 def extract_readnames(vcf):
     """
-    extract readnames from svcaller evidance bam files
+    extract readnames from gridss vcf file
     """
     vcffile = pysam.VariantFile(vcf)
     read_names = list()
