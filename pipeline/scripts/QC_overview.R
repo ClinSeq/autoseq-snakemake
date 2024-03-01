@@ -97,6 +97,11 @@ if (!wgs){
   }
   #fix column class for column sometimes read in as character due to a "?" instead of NA
   HsMetrics$FOLD_80_BASE_PENALTY = as.numeric(HsMetrics$FOLD_80_BASE_PENALTY)
+  HsMetrics$FOLD_ENRICHMENT = as.numeric(HsMetrics$FOLD_ENRICHMENT)
+  HsMetrics$MEAN_TARGET_COVERAGE = as.numeric(HsMetrics$MEAN_TARGET_COVERAGE)
+  HsMetrics$ON_BAIT_BASES = as.numeric(HsMetrics$ON_BAIT_BASES)
+  HsMetrics$PF_BASES_ALIGNED = as.numeric(HsMetrics$PF_BASES_ALIGNED)
+
   if (length(msings_files) != 0) {
     msings = data.frame()
     for (f in msings_files) {

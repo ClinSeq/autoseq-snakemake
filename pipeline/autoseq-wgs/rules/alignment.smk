@@ -31,7 +31,7 @@ rule bwa_mem_alignment_normal:
         "bwa mem -M -v 1 -R  {params.readgroup} -t  {threads}"  
             " {input.bwa_index}  {input.fq1} {input.fq2}  2> {log.bwalog} "
             " | samblaster -M --addMateTags  {params.remove_duplicates} 2> {log.samblasterlog} "
-            " | samtools view -Sb -u - | samtools sort  -T {params.tmpprefix} -@ {threads} "
+            " | samtools view -Sb -u - | samtools sort -T {params.tmpprefix} -@ {threads} -m 2G "
             " -o  {output.bamfile}  -  && samtools index {output.bamfile} && "
             " rm {input.fq1} {input.fq2} "
 
@@ -58,7 +58,7 @@ rule bwa_mem_alignment_tumor:
         "bwa mem -M -v 1 -R  {params.readgroup} -t  {threads}"  
             " {input.bwa_index}  {input.fq1} {input.fq2}  2> {log.bwalog} "
             " | samblaster -M --addMateTags  {params.remove_duplicates} 2> {log.samblasterlog} "
-            " | samtools view -Sb -u - | samtools sort  -T {params.tmpprefix} -@ {threads} "
+            " | samtools view -Sb -u - | samtools sort  -T {params.tmpprefix} -@ {threads} -m 5G "
             " -o  {output.bamfile}  -  && samtools index {output.bamfile} && "
             " rm {input.fq1} {input.fq2} "
 

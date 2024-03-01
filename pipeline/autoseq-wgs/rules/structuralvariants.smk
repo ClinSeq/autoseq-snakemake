@@ -73,6 +73,7 @@ rule gridss_svcalling_somatic:
         "gridss --reference {input.reference} "
         " --jvmheap {params.jvmheap} "
         " --jar {params.gridss_jar} "
+        " -c {params.gridss_config} "
         " --assembly {output.assembly_bam} "
         " --threads {threads} --steps  ALL "
         " --workingdir {params.workdir} "
@@ -109,7 +110,7 @@ rule gridss_svannotation:
         normal_vcf = "{}/svs/gridss/{}-gridss.vcf".format(outdir, NORMAL_CAPTURE_STR)
     output:
         somatic_vcf = "{}/svs/gridss/{}-{}-gridss.filtered.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
-        normal_vcf = "{}/svs/gridss/{}-gridss.svannoated.vcf".format(outdir, NORMAL_CAPTURE_STR)
+        normal_vcf = "{}/svs/gridss/{}-gridss.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR),
     threads: params["gridss_filter"]["threads"]
     container: containers['gridss']
     log:
@@ -144,12 +145,12 @@ rule gridss_evidence_bam:
 rule generateIGVnavInput_gridss:
     input:
         somatic_vcf = "{}/svs/gridss/{}-{}-gridss.filtered.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
-        normal_vcf = "{}/svs/gridss/{}-gridss.svannoated.vcf".format(outdir, NORMAL_CAPTURE_STR)
-    output:
-        somatic_mut = "{}/svs/igv/{}_somatic_pass_gridss.mut".format(outdir, CANCER_CAPTURE_STR),
-        normal_mut = "{}/svs/igv/{}_normal_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR),
+        normal_vcf = "{}/svs/gridss/{}-gridss.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR),
         tumor_bam = "{}/svs/gridss/{}-gridss.evidence.bam".format(outdir, CANCER_CAPTURE_STR),
         normal_bam = "{}/svs/gridss/{}-gridss.evidence.bam".format(outdir, NORMAL_CAPTURE_STR)
+    output:
+        somatic_mut = "{}/svs/igv/{}_somatic_pass_gridss.mut".format(outdir, CANCER_CAPTURE_STR),
+        normal_mut = "{}/svs/igv/{}_normal_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR)
     params:
         nprefix = outdir + "/svs/igv/{}".format(NORMAL_CAPTURE_STR),
         tprefix = outdir + "/svs/igv/{}".format(CANCER_CAPTURE_STR),
