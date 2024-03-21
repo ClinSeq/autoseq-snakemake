@@ -103,7 +103,7 @@ rule gatk3_indelrealigner:
         known_mills_gs = reference["Mills_and_1KG_gold_standard"],
         target_intervals = outdir + "/bams/split_targets/{sample}_{chr}.intervals"
     output:
-        bam = outdir + "/bams/{sample}_realigned.{chr}.bam",
+        bam = outdir + "/bams/split_targets/bam/{sample}_realigned.{chr}.bam",
     params:
         java_options = params['gatk3']['indel_realigner']['java_options'],
         extra = params['gatk3']['indel_realigner']['extra'],
