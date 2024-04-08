@@ -96,7 +96,7 @@ rule gatk3_targetcreator:
 
 rule gatk3_indelrealigner:
     input:
-        bam = outdir + outdir + "/bams/split_targets/bam/{sample}.{chr}.bam",
+        bam = outdir + "/bams/split_targets/bam/{sample}.{chr}.bam",
         reference_genome = reference['reference_genome'],
         target_region = outdir + "/bams/split_targets/target.{chr}.bed",
         known_1kg = reference["1KG"],
