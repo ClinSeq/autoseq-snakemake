@@ -1321,7 +1321,7 @@ if (!t_only) { # normal
 # Read PureCN files -------------------------------------------------------
 purecn_files <- c(opts$purecn_csv, opts$purecn_variants_csv, opts$purecn_genes_csv, opts$purecn_loh_csv)
 purecn_stat <- NULL
-if (all(!is.null(purecn_files))) {
+if (all(!is.null(purecn_files))) try( {
     # files to read (purity/ploidy, mutations and snps, gene copy number and LOH, segmented copy number and LOH)
     purecn_files <- c(opts$purecn_csv, opts$purecn_variants_csv, opts$purecn_genes_csv, opts$purecn_loh_csv)
     # variables to assign to
@@ -1353,7 +1353,7 @@ if (all(!is.null(purecn_files))) {
     }
     purecn_loh <- as.data.table(purecn_loh)
     purecn_loh[,C:=round(C)][,M:=round(M)]
-}
+}, silent=T)
 
 
 
@@ -1932,9 +1932,9 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     )
     stats <- paste0(stats,', SMAF: ', rough_fraction)
 
-    if (!is.null(purecn)) {
+    if (!is.null(purecn)) try( {
         stats <- paste0(stats,', PureCN: ',round(purecn$Ploidy,1),'N, ',100*purecn$Purity,'%')
-    }
+    }, silent=T)
 
     date <- format(Sys.time(), "%a %b %e %Y, %H:%M")
 
