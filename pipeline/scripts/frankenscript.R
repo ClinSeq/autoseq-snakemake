@@ -1932,9 +1932,9 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     )
     stats <- paste0(stats,', SMAF: ', rough_fraction)
 
-    if (!is.null(purecn)) {
+    if (!is.null(purecn)) try( {
         stats <- paste0(stats,', PureCN: ',round(purecn$Ploidy,1),'N, ',100*purecn$Purity,'%')
-    }
+    }, silent=T)
 
     date <- format(Sys.time(), "%a %b %e %Y, %H:%M")
 
