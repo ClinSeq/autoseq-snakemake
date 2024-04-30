@@ -79,6 +79,7 @@ rule gatk3_targetcreator:
         tmpdir = os.path.join(params['scratch'], 
                                 "realignerTC-{}".format(str(uuid.uuid4())))
     threads: params['gatk3']['target_creator']['threads']
+    container: containers['gatk3']
     log:
         outdir + "/logs/gatk_realigner_targetcreator_{sample}_{chr}.log"
     shell:
@@ -110,6 +111,7 @@ rule gatk3_indelrealigner:
         tmpdir = os.path.join(params['scratch'], 
                                 "indelrealigner-{}".format(str(uuid.uuid4())))
     threads: params['gatk3']['indel_realigner']['threads']
+    container: containers['gatk3']
     log:
         outdir + "/logs/gatk_indel_realigner_{sample}_{chr}.log"
     shell:
