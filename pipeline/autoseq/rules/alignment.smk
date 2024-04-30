@@ -97,7 +97,7 @@ rule gatk3_targetcreator:
 
 rule gatk3_indelrealigner:
     input:
-        bam = outdir + outdir + "/bams/split_targets/bam/{sample}.{chr}.bam",
+        bam = outdir + "/bams/split_targets/bam/{sample}.{chr}.bam",
         reference_genome = reference['reference_genome'],
         target_region = outdir + "/bams/split_targets/target.{chr}.bed",
         known_1kg = reference["1KG"],
@@ -131,7 +131,7 @@ rule gatk3_indelrealigner:
 rule samtools_merge_realign:
     input:
         expand(outdir + "/bams/split_targets/bam/{{sample}}_realigned.{chr}.bam", chr = all_chromosomes),
-        outdir + "/bams/split_targets/bam/{sample}_umimapped.nochr.bam"
+        outdir + "/bams/split_targets/bam/{sample}.nochr.bam"
     output:
         outdir + "/bams/{sample}_realigned.bam"
     run:
