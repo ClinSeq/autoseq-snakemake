@@ -293,11 +293,11 @@ def sample_id_valid(sample_id_str):
 
 
 def prep_id_valid(prep_id_str):
-    return re.match("^[A-Z]{2}[0-9]+$", prep_id_str) is not None
+    return re.match("^[A-Z]{2}[0-9_]+$", prep_id_str) is not None
 
 
 def capture_id_valid(capture_id_str):
-    return (re.match("^[A-Z0-9]{2}[0-9]+$", capture_id_str) is not None) or \
+    return (re.match("^[A-Z0-9]{2}[0-9_]+$", capture_id_str) is not None) or \
            (capture_id_str == "WGS")
 
 
