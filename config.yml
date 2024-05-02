@@ -47,7 +47,7 @@ params:
             threads: 2
         indel_realigner:
             java_options: "-Xmx8G -XX:ParallelGCThreads=4"
-            extra: " -allowPotentiallyMisencodedQuals --maxReadsForRealignment 5000000 --maxReadsInMemory 1000000 "
+            extra: " -allowPotentiallyMisencodedQuals --maxReadsForRealignment 100000 --maxReadsInMemory 1000000 "
             wgs: " -allowPotentiallyMisencodedQuals --maxReadsForRealignment 7000 --maxReadsInMemory 1000000 "
             threads: 3
     picard:
