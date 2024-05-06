@@ -72,7 +72,7 @@ rule sage_somatic:
         "{}/logs/variants/{}-{}-sage-somatic.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:
         " source activate gridss-env && "
-        " bedtools merge -s -i {input.panel_bed} > {params.workdir}/targets_nonoverlap.bed 2> {log} && "
+        " bedtools merge -i {input.panel_bed} > {params.workdir}/targets_nonoverlap.bed 2> {log} && "
         " java -Xms4G -Xmx32G -cp {params.jarfile} "
         " com.hartwig.hmftools.sage.SageApplication -threads 16 "
         " -reference {params.normalid} -reference_bam {input.normal_bam}"
