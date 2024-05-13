@@ -10,34 +10,6 @@ import re
 from collections import defaultdict
 
 
-capture_kit_loopkup = {"CS": "clinseq_v3_targets",
-                            "CZ": "clinseq_v4",
-                            "EX": "EXOMEV3",
-                            "EO": "EXOMEV1",
-                            "RF": "fusion_v1",
-                            "CC": "core_design",
-                            "CD": "discovery_coho",
-                            "CB": "big_design",
-                            "AL": "alascca_targets",
-                            "TT": "test-regions",
-                            "CP": "progression",
-                            "CM": "monitor",
-                            "PC": "probio_comprehensive",
-                            "PB": "probio_biomarker_signature",
-                            "PA": "pancancer",
-                            "C2": "probio_comprehensive2",
-                            "C3": "probio_comprehensive3",
-                            "C4": "probio_comprehensive4",
-                            "PN": "pancancer2",
-                            "PE": "pancancer2_enzymatic",
-                            "P2": "probio_biomarkersignature2",
-                            "S2": "probio_snvindel2",
-                            "L2": "probio_baseline2",
-                            "PS": "probio_snvindel",
-                            "S3": "probio_snvindel2"
-                            }
-
-
 class GenerateSymlink():
     "Generates symlinks required for IGVnav inputs"
     
@@ -202,9 +174,6 @@ class GenerateSymlink():
         igv_session_sv_master_str=open(igv_session_sv_master, 'r').read()
         igv_session_files = self.get_all_files(igvnav_dir)
         
-        basename = os.path.basename(self.outputdirname).split("_")
-        
-        capture_id = basename[0].split('-')[6]
         # target_name = capture_kit_loopkup[capture_id[0:2]]
         target_bed = self.targets
 
@@ -227,7 +196,7 @@ class GenerateSymlink():
                          ('asf', 'flank_asf'),
                          ('snps', 'vep')]
 
-        if capture_id[0:2] == 'WG':
+        if self.is_wgs:
             all_snp_files.append(('bam_common', 'bam_nodups'))
 
         for track_type, each_track in all_snp_files:
