@@ -6,7 +6,7 @@ setup(name='autoseq',
       version=version,
       packages=find_packages(exclude=('tests*', 'docs', 'examples')),
       install_requires=[
-          "snakemake==6.2.1",
+          #"snakemake==6.2.1",
           "click",
           "pyyaml",
           "pandas",

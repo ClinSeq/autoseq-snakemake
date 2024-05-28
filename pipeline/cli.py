@@ -236,11 +236,11 @@ def launch(context, ref, samples, outdir, libdir,
     cmd = autoseq.build_cmd()
 
     Log.info(f"Launching autoseq - {pipeline} pipeline ...")
-    # print(cmd) 
-    try:
-        subprocess.run(cmd, shell=True)
-    except Exception as err:
-        Log.error(err)
+    print(cmd) 
+    # try:
+    #     subprocess.run(cmd, shell=True)
+    # except Exception as err:
+    #     Log.error(err)
 
 
 if __name__ == "__main__":
