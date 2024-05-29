@@ -261,7 +261,7 @@ rule gatk4_haplotypecaller_tumor:
         tumor_bam = cancerBam,
         germline_vcf = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR)
     output:
-        vcf = "{}/variants/{}-haplotypecaller.g.vcf".format(outdir, CANCER_CAPTURE_STR)
+        vcf = "{}/variants/{}-haplotypecaller.vcf".format(outdir, CANCER_CAPTURE_STR)
     params:
         tmpdir = params['scratch']
     threads: params['gatk4']['threads']
@@ -281,30 +281,33 @@ rule gatk4_haplotypecaller_genotype_tumor:
         vcf = "{}/variants/{}-haplotypecaller.vcf".format(outdir, CANCER_CAPTURE_STR),
         germline_vcf = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR)
     output:
-        vcf = "{}/variants/{}-haplotypecaller.genotyped.vcf".format(outdir, CANCER_CAPTURE_STR)
+        vcf = "{}/variants/{}-haplotypecaller.genotyped.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
     params:
-        tmpdir = params['scratch']
+        vcf = "{}/variants/{}-haplotypecaller.genotyped.vcf".format(outdir, CANCER_CAPTURE_STR)
     threads: params['gatk4']['threads']
     log: 
         "{}/logs/variants/{}-{}-haplotypecaller-tumor-genotyped.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR) 
     shell:
         "gatk GenotypeGVCFs -R {input.reference} "
         "  -V {input.vcf}  "
-        "  -O {output.vcf} "
-        "  -L {germline_vcf} 2> {log}"
+        "  -O {params.vcf} "
+        "  -L {input.germline_vcf} 2> {log} && "
+        " bgzip {params.vcf} && "
+        " tabix -p vcf {output.vcf} 2>> {log} "
     
 
 rule bcftools_merge:
     input:
         germline_vcf = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR),
-        genotyped_tvcf = "{}/variants/{}-haplotypecaller.genotyped.vcf".format(outdir, CANCER_CAPTURE_STR)
+        genotyped_tvcf = "{}/variants/{}-haplotypecaller.genotyped.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
     output:
-        vcf = "{}/variants/{}-haplotypecaller.genotyped.vcf".format(outdir, CANCER_CAPTURE_STR)
+        vcf = "{}/variants/{}-{}-haplotype-tumor-af.for_germline_variants.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     params:
-        tmpdir = params['scratch']
+        gvcf = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR)
     threads: params['gatk4']['threads']
     log:
        "{}/logs/variants/{}-{}-bcftools-merge.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)  
     shell:
-        "bcftools merge {input.germline_vcf} {input.genotyped_tvcf} "
+        "bgzip -c {input.germline_vcf} > {params.gvcf} && "
+        "bcftools merge {input.gvcf} {input.genotyped_tvcf} "
         " -O v -o {output.vcf} 2> {log} "
