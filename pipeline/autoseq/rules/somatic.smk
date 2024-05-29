@@ -303,11 +303,12 @@ rule bcftools_merge:
     output:
         vcf = "{}/variants/{}-{}-haplotype-tumor-af.for_germline_variants.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     params:
-        gvcf = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR)
+        gvcf = "{}/variants/{}-all.germline.vep.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
     threads: params['gatk4']['threads']
     log:
        "{}/logs/variants/{}-{}-bcftools-merge.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)  
     shell:
         "bgzip -c {input.germline_vcf} > {params.gvcf} && "
-        "bcftools merge {input.gvcf} {input.genotyped_tvcf} "
-        " -O v -o {output.vcf} 2> {log} "
+        "bcftools merge {params.gvcf} {input.genotyped_tvcf} "
+        " -O v -o {output.vcf} 2> {log} && "
+        " rm {input.germline_vcf} "
