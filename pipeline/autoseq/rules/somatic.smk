@@ -309,6 +309,7 @@ rule bcftools_merge:
        "{}/logs/variants/{}-{}-bcftools-merge.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)  
     shell:
         "bgzip -c {input.germline_vcf} > {params.gvcf} && "
+        "tabix -p vcf {params.gvcf} && "
         "bcftools merge {params.gvcf} {input.genotyped_tvcf} "
         " -O v -o {output.vcf} 2> {log} && "
-        " rm {input.germline_vcf} "
+        " rm {params.gvcf} "
