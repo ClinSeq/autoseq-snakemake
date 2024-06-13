@@ -50,7 +50,7 @@ rule bwa_mem_alignment_tumor:
         remove_duplicates = params['samblaster']['rm_dup'],
         tmpprefix = os.path.join(params['scratch'], 
                                 "samtools-{}".format(str(uuid.uuid4())))
-    threads: params['bwa']['threads']
+    threads: 12
     log:
         bwalog = outdir + "/logs/bwa_{prefix}.log",
         samblasterlog = outdir + "/logs/samblaster_{prefix}.log"
