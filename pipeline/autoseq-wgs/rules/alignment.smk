@@ -48,6 +48,7 @@ rule bwa_mem_alignment_tumor:
     params:
         readgroup = get_readgroup(tumor_barcode),
         remove_duplicates = params['samblaster']['rm_dup'],
+        bwa_bam = outdir + "/bams/" + tumor_barcode + "/tmp_{prefix}.bam",
         tmpprefix = os.path.join(params['scratch'], 
                                 "samtools-{}".format(str(uuid.uuid4())))
     threads: 12
@@ -56,11 +57,12 @@ rule bwa_mem_alignment_tumor:
         samblasterlog = outdir + "/logs/samblaster_{prefix}.log"
     shell:
         "bwa mem -M -v 1 -R  {params.readgroup} -t  {threads}"  
-            " {input.bwa_index}  {input.fq1} {input.fq2}  2> {log.bwalog} "
-            " | samblaster -M --addMateTags  {params.remove_duplicates} 2> {log.samblasterlog} "
-            " | samtools view -Sb -u - | samtools sort  -T {params.tmpprefix} -@ {threads} -m 5G "
-            " -o  {output.bamfile}  -  && samtools index {output.bamfile} && "
-            " rm {input.fq1} {input.fq2} "
+        " {input.bwa_index}  {input.fq1} {input.fq2} "
+        "  | samtools view -bS - > {params.bwa_bam} 2> {log.bwalog} && "
+        "samtools view -h {params.bwa_bam} | samblaster -M --addMateTags  {params.remove_duplicates} 2> {log.samblasterlog} "
+        " | samtools view -Sb -u - | samtools sort  -T {params.tmpprefix} -@ {threads} -m 5G "
+        " -o  {output.bamfile} - && samtools index {output.bamfile} && "
+        " rm {input.fq1} {input.fq2} {params.bwa_bam} "
 
 
 rule samtools_merge_normal:
