@@ -162,7 +162,7 @@ rule gridss_svannotation:
         outdir + "/logs/svs/gridss-svannotation-{}.log".format(CANCER_CAPTURE_STR)
     shell:
         "source activate gridss-env && "
-        "gridss_svannotate.R -v {input.vcf} -o {output.vcf} 2> {log} && "
+        "gridss_svannotate.R -v {input.vcf} -o {output.vcf} 2> {log} "
 
 
 rule gridss_evidence_bam:
@@ -192,7 +192,7 @@ rule generateIGVnavInput_gridss:
     shell:
         "generateIGVnavInput_SV.py --input {input.vcf} "
                 " --sdid {params.sdid} --tool gridss " 
-                " --vcftype tumor --output {params.tprefix} && "
+                " --vcftype tumor --output {params.tprefix} "
 
 
 rule annotate_generateIGVnavInput:
