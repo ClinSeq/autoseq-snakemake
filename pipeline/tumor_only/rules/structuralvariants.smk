@@ -188,7 +188,7 @@ rule generateIGVnavInput_gridss:
         tumor_mut = "{}/svs/igv/{}_tumor_pass_gridss.mut".format(outdir, CANCER_CAPTURE_STR)
     params:
         tprefix = outdir + "/svs/igv/{}".format(CANCER_CAPTURE_STR),
-        sdid = "-".join(NORMAL_CAPTURE_STR.split("-")[1:3])
+        sdid = "-".join(CANCER_CAPTURE_STR.split("-")[1:3])
     shell:
         "generateIGVnavInput_SV.py --input {input.vcf} "
                 " --sdid {params.sdid} --tool gridss " 
