@@ -130,7 +130,7 @@ rule gridss_extract_overlapping_fragments:
         " --targetbed  {input.target_bed} -j {params.gridss_jar} "
         " -o {output.bam} {input.bam} && "
         "samtools index {output.bam} && "
-        "rm -rf  {output.bam}.gridss.working/ "
+        "rm -rf  {output.bam}.gridss.working "
 
 
 rule gridss_svcalling_normal:
@@ -145,7 +145,7 @@ rule gridss_svcalling_normal:
         gridss_jar = os.environ.get('GRIDSS_JAR'),
         jvmheap = '10g',
         basename = "{}-gridss-targeted.bam".format(normal_barcode),
-        gridss_config = os.path.join(os.environ.get('GRIDSS_SCRIPT'), 'gridss.properties'),
+        gridss_config = os.environ.get("GRIDSS_SCRIPT") + "gridss.properties",
         workdir = directory("{}/svs/gridss/{}/".format(outdir, NORMAL_CAPTURE_STR))
     threads: params['gridss']['threads']
     container: containers['gridss']

@@ -1,0 +1,28 @@
+executor: cluster-generic
+cluster-generic-submit-cmd:
+  mkdir -p logs/cluster/ &&
+  sbatch
+    --partition={resources.partition}
+    --cpus-per-task={threads}
+    --job-name=smk-{rule}-{wildcards}
+    --output=logs/cluster/smk.{rule}-{wildcards}-%j.out
+    --parsable
+    $(bash /nfs/TEST/autoseq-snakemake/pipeline/scheduler/parseJobID.sh {dependencies})
+default-resources:
+  - partition=core
+  - mem_mb=0
+restart-times: 1
+max-jobs-per-second: 10
+max-status-checks-per-second: 1
+local-cores: 1
+latency-wait: 60
+jobs: 500
+keep-going: True
+rerun-incomplete: True
+printshellcmds: True
+scheduler: greedy
+use-singularity: True
+jobscript: slurm_jobscript.sh
+use-conda: False
+software-deployment-method: apptainer
+
