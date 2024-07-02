@@ -11,6 +11,7 @@ rule fgbio_fastqtobam:
     params:
         sample = lambda wildcards: compose_sample_str(extract_unique_capture(wildcards.sample)),
         library = lambda wildcards: parse_prep_id(wildcards.sample),
+        read_struct = params['fgbio']['fastqtobam']['read_struct'],
         java_options = params['fgbio']['fastqtobam']['java_options'],
         tmpdir = os.path.join(params['scratch'], 
                     "fgbio_fastqtobam-{}".format(str(uuid.uuid4())))
@@ -22,7 +23,7 @@ rule fgbio_fastqtobam:
             " -o {output.bam} "
             " --sample {params.sample} "
             " --library {params.library} "
-            " -r 3M2S+T 3M2S+T "
+            " -r {params.read_struct} "
             " -s true 2> {log} "
             " && rm -rf {params.tmpdir} "
 
