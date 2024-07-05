@@ -3,14 +3,90 @@
 Installation
 -------------
 
-Dependencies:
+###### Software Requirements:
+
+**Required Dependencies:**
 
 ```
 * python =3.8.12
 * Singularity > 3.0 
 * conda (package manager)
 ```
-To install singularity follow this [link](https://sylabs.io/guides/3.0/user-guide/installation.html)
+
+
+**Optional Dependencies:**
+
+```
+* slurm
+```
+
+This document covers only the installation procedure for required dependencies.
+
+###### Installing Singularity
+
+First, we need to download all the prerequisites using the following command.
+
+```
+sudo apt-get update
+sudo apt-get install -y build-essential libssl-dev uuid-dev libgpgme11-dev \
+    squashfs-tools libseccomp-dev wget pkg-config git cryptsetup debootstrap \
+    libglib2.0-dev runc
+```
+
+The above command will download all the prerequisites to install singularity. We can install singularity only through GO. Hence, to install GO we need to first ensure that GO is not already installed in our system. We can delete the pre-existing GO with the following command.
+
+```
+rm -rf /usr/local/go
+```
+
+Then, download and install GO with the following command.
+
+```
+wget https://go.dev/dl/go1.20.5.linux-amd64.tar.gz
+sudo tar --directory=/usr/local -xzvf go1.20.5.linux-amd64.tar.gz
+export PATH=/usr/local/go/bin:$PATH
+```
+
+Then you can download the latest version of singularity from [singularity download page](https://github.com/sylabs/singularity/releases). Install it with the following set of command.
+
+```
+wget https://github.com/sylabs/singularity/releases/download/v3.11.4/singularity-ce-3.11.4.tar.gz  # paste the latest singularity link here
+tar -xzvf singularity-ce-3.11.4.tar.gz  # Change the singularity version according to the version you have downloaded.
+
+cd singularity-ce-3.11.4  # Change directory name as per your downloaded version.
+./mconfig && sudo make -C builddir && sudo make -C builddir install
+```
+
+To check if singularity is installed correctly, type the following command. If singularity is installed correctly, it should print help page of singularity
+
+```
+singularity --help
+```
+
+To know more about singularity installation, you can visit [Singularity's Installation Page](https://sylabs.io/guides/3.0/user-guide/installation.html)
+
+###### Installing Miniconda
+
+To install miniconda, download the latest version of conda specific to your system from [this link](https://docs.anaconda.com/miniconda/)
+
+Download and install miniconda with the following set of commands.
+
+```
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+# Accept the licencing agreement and select the default directory for installing miniconda when asked for it.
+```
+
+To ensure conda is installed successfully, type the following command which should list conda help page.
+
+```
+conda --help
+```
+
+To know more about conda installation, visit [Conda Home Page](https://docs.anaconda.com/miniconda/#quick-command-line-install)
+
+
+#### Autoseq Pipeline Installation
 
 Download and install autoseq-snakemake and the requirements using pip.
 
@@ -71,13 +147,13 @@ $ autoseq launch -r autoseq-genome/autoseq-genome.json --samples /path/to/sample
 
 ```
 
-While running the autoseq, if you get an error stating ModuleNotFoundError in line 4 of /path/to/autoseq-snakemake/pipeline/utils/utils.py:  No module named 'pipeline', add the following lines
+While running the autoseq pipeline, if you get an error stating `ModuleNotFoundError in line 4 of /path/to/autoseq-snakemake/pipeline/utils/utils.py:  No module named 'pipeline'`, add the following lines
 
 ```sh
 
 # In autoseq-snakemake/pipeline/cli.py file, add the following line in line no 17 (just after importing all the packages)
 
-os.environ["AUTOSEQ_BASE_PATH"] = os.paht.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.environ["AUTOSEQ_BASE_PATH"] = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Then in autoseq-snakemake/pipeline/utils/utils.py file, add the following line in line no 7 (just after importing all the packages)
 
