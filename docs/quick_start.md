@@ -3,7 +3,7 @@
 Installation
 -------------
 
-###### Software Requirements:
+### Software Requirements:
 
 **Required Dependencies:**
 
@@ -22,7 +22,7 @@ Installation
 
 This document covers only the installation procedure for required dependencies.
 
-###### Installing Singularity
+#### Installing Singularity
 
 First, we need to download all the prerequisites using the following command.
 
@@ -65,7 +65,7 @@ singularity --help
 
 To know more about singularity installation, you can visit [Singularity's Installation Page](https://sylabs.io/guides/3.0/user-guide/installation.html)
 
-###### Installing Miniconda
+#### Installing Miniconda
 
 To install miniconda, download the latest version of conda specific to your system from [this link](https://docs.anaconda.com/miniconda/)
 
@@ -86,7 +86,7 @@ conda --help
 To know more about conda installation, visit [Conda Home Page](https://docs.anaconda.com/miniconda/#quick-command-line-install)
 
 
-#### Autoseq Pipeline Installation
+### Autoseq Pipeline Installation
 
 Download and install autoseq-snakemake and the requirements using pip.
 
