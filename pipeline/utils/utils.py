@@ -20,7 +20,7 @@ def extract_bam(sample, libdir, umi = False):
         sample_capture_str = compose_lib_capture_str(extract_unique_capture(sample))
         pattern_bam = libdir + "/" + sample_capture_str + "*nodups.bam"
     
-    if project in ["PB", "LB"]:
+    if project in ["PB", "LB", "PSFF", "iPCM"]:
         pattern_bam = libdir + "/" + sample + "*nodups.bam"
         pattern_umibam = libdir + "/" + sample + "*clipoverlap.bam"
         pattern_umibai = libdir + "/" + sample + "*clipoverlap.bai"
