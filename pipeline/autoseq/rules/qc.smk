@@ -9,17 +9,21 @@ rule fastqc:
         libdir + "/{sample}/"
     output:
         directory(outdir + "/qc/fastqc/{sample}")
+    params:
+        fq_files = reduce(lambda r1, r2: r1 + r2, 
+                          find_fastqs(wildcards.sample, libdir))
     threads: params['fastqc']['threads']
     log:
         outdir + "/logs/fastqc/fastqc_{sample}.log"
-    run:
-        fq_files = reduce(lambda r1, r2: r1 + r2, 
-                          find_fastqs(wildcards.sample, libdir))
+    shell:
+        """
+        mkdir -p {output} && 
+        fq_files={input.fq_files}
+        for fq in ${fq_files[@]}; do
+            fastqc -o {output} -t {threads} --nogroup $fq
+        done
+        """
         
-        shell("mkdir -p {output}")
-        for fq in fq_files:
-            shell("fastqc -o {output} -t {threads} --nogroup {fq}")
-
 
 rule picard_collectinsertsize:
     input:
