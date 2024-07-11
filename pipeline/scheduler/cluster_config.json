@@ -1,7 +1,7 @@
 {
     "__default__": {
         "time": "100:00:00",
-        "output": "logs/cluster/{rule}.out",
+        "output": "logs/cluster/{rule}-%j.out",
         "error": "logs/cluster/{rule}.err",
         "partition": "core",
         "mem": 0
