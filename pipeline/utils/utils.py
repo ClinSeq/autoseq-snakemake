@@ -2,7 +2,7 @@ import os, re
 import glob
 from pipeline.utils.clinseq_barcodes import parse_prep_id, compose_sample_str, \
     extract_unique_capture, find_fastqs, compose_lib_capture_str
-
+sys.path.append(os.environ.get("AUTOSEQ_BASE_PATH"))
 
 def extract_bam(sample, libdir, umi = False):
     """

@@ -101,16 +101,6 @@ $ pip install -e autoseq-snakemake/
 
 $ cd autoseq-snakemake
 
-$ pip install "setuptools<58" --upgrade
-
-$ pip install wheel
-
-$ pip uninstall pyvcf
-
-$ pip install pyvcf==0.6.8  # If any error occurs at this stage, you need to resolve them manually.
-
-$ pip3 install pulp==2.7.0
-
 $ nano env/base.yml
 
 # Comment out the first line "#name: base". Because we are installing all the packages in the same environment.
