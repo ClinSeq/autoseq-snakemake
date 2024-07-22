@@ -254,6 +254,7 @@ if (! is_rerun) {
         idx = which(InsertSize_histogram$DIR == d & InsertSize_histogram$SAMP == s)
         InsertSize_histogram$count_norm[idx] = InsertSize_histogram$All_Reads.fr_count[idx]/tot_reads
       }
+    }
   }
 }
 
