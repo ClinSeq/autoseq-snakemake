@@ -4,22 +4,29 @@ from os.path import dirname
 from functools import reduce
 
 
+def get_fastqs(wildcards):
+    """
+    helper function to get all fq files 
+    """
+    r1, r2 = find_fastqs(wildcards.sample, libdir)
+    return r1 + r2
+
+
 rule fastqc:
     input:
         libdir + "/{sample}/"
     output:
         directory(outdir + "/qc/fastqc/{sample}")
     params:
-        fq_files = reduce(lambda r1, r2: r1 + r2, 
-                          find_fastqs(wildcards.sample, libdir))
+        fq_files = lambda wildcards: get_fastqs(wildcards)
     threads: params['fastqc']['threads']
     log:
         outdir + "/logs/fastqc/fastqc_{sample}.log"
     shell:
         """
         mkdir -p {output} && 
-        fq_files={input.fq_files}
-        for fq in ${fq_files[@]}; do
+        fq_files=({params.fq_files})
+        for fq in ${{fq_files[@]}}; do
             fastqc -o {output} -t {threads} --nogroup $fq
         done
         """

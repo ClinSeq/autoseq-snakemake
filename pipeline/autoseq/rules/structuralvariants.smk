@@ -206,7 +206,7 @@ rule gridss_somatic_filter:
     container: containers['gridss']
     shell:
         "source activate gridss-env && "
-        "Rscript {params.script_dir}gridss_somatic_filter -p {params.pondir} "
+        "Rscript $GRIDSS_SCRIPT/gridss_somatic_filter -p {params.pondir} "
         " -i {input.vcf} "
         " -o {params.outvcf} "
         " -s $GRIDSS_SCRIPT --paneldata && "

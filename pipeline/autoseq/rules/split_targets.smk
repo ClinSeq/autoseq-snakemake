@@ -25,16 +25,18 @@ rule splitbam_umimapped_1:
         expand(outdir + "/bams/split_targets/bam/{{sample}}_umimapped.{chr}.bam", chr = all_chromosomes),
         outdir + "/bams/split_targets/bam/{sample}_umimapped.nochr.bam"
     params:
-        output_dir = outdir + "/bams/split_targets/bam/"
+        output_dir = outdir + "/bams/split_targets/bam/",
+        all_chrom = all_chromosomes
     threads: 8
     shell:
         """
         prefix=$(basename {input.mapped} .bam)
-        no_chr={params.output_dir}/${prefix}.nochr.bam
-        samtools view -@ {threads} -L {input.nochr} -o $no_chr {input.mapped}
-        for chr in ${all_chromosomes[@]}; do
-            samtools view -@ {threads} -b {input.mapped} $chr > {params.output_dir}/${prefix}.${chr}.bam
-            samtools index {params.output_dir}/${prefix}.${chr}.bam
+        no_chr={params.output_dir}/${{prefix}}.nochr.bam
+        all_chrom=({params.all_chrom})
+        samtools view -@ {threads} -L {input.nochr} -o ${{no_chr}} {input.mapped}
+        for chr in ${{all_chrom[@]}}; do
+            samtools view -@ {threads} -b {input.mapped} ${{chr}} > {params.output_dir}/${{prefix}}.${{chr}}.bam
+            samtools index {params.output_dir}/${{prefix}}.${{chr}}.bam
         done
         """
 
@@ -47,16 +49,18 @@ rule splitbam_umimapped_2:
         expand(outdir + "/bams/split_targets/bam/{{sample}}_umimapped-2.{chr}.bam", chr = all_chromosomes),
         outdir + "/bams/split_targets/bam/{sample}_umimapped-2.nochr.bam"
     params:
-        output_dir = outdir + "/bams/split_targets/bam/"
+        output_dir = outdir + "/bams/split_targets/bam/",
+        all_chrom = all_chromosomes
     threads: 8
     shell:
         """
         prefix=$(basename {input.mapped} .bam)
-        no_chr={params.output_dir}/${prefix}.nochr.bam
-        samtools view -@ {threads} -L {input.nochr} -o $no_chr {input.mapped}
-        for chr in ${all_chromosomes[@]}; do
-            samtools view -@ {threads} -b {input.mapped} $chr > {params.output_dir}/${prefix}.${chr}.bam
-            samtools index {params.output_dir}/${prefix}.${chr}.bam
+        no_chr={params.output_dir}/${{prefix}}.nochr.bam
+        all_chrom=({params.all_chrom})
+        samtools view -@ {threads} -L {input.nochr} -o ${{no_chr}} {input.mapped}
+        for chr in ${{all_chrom[@]}}; do
+            samtools view -@ {threads} -b {input.mapped} ${{chr}} > {params.output_dir}/${{prefix}}.${{chr}}.bam
+            samtools index {params.output_dir}/${{prefix}}.${{chr}}.bam
         done
         """
 
@@ -71,8 +75,8 @@ rule samtools_merge_realign_1:
     shell:
         """
         InputBams={input}
-        bamfiles=${InputBams[*]}
-        samtools merge -c -p {output.bam} $bamfiles
+        bamfiles=${{InputBams[*]}}
+        samtools merge -c -p {output.bam} ${{bamfiles}}
         samtools index {output.bam}
         rm $bamfiles
         """        
@@ -88,8 +92,8 @@ rule samtools_merge_realign_2:
     shell:
         """
         InputBams={input}
-        bamfiles=${InputBams[*]}
-        samtools merge -c -p {output.bam} $bamfiles
+        bamfiles=${{InputBams[*]}}
+        samtools merge -c -p {output.bam} ${{bamfiles}}
         samtools index {output.bam}
-        rm $bamfiles
+        rm ${{bamfiles}}
         """        
