@@ -18,12 +18,13 @@
 #long, short(NA), argmask, datatype, desc
 #argmask 0=no arg, 1=req, 2=optional
 args <- rbind(
-    c("frankenplot_Rmd", NA, 1, "character", "path to frankenplot.Rmd script"), # added
-    c("output", NA, 1, "character", "output html file including directory"),    # added
-    c("tumor_cnr", NA, 1, "character", "tumor bin file from CNVkit"),
-    c("tumor_cns", NA, 1, "character", "tumor segment file from CNVkit"),
-    c("normal_cnr", NA, 2, "character", "normal bin file from CNVkit"),
-    c("normal_cns", NA, 2, "character", "normal segment file from CNVkit"),
+    c("frankenplot_Rmd", NA, 1, "character", "path to frankenplot.Rmd script"),
+    c("output", NA, 1, "character", "output html file including FULL path"),   
+    c("output_hrd", NA, 2, "character", "output HRD text file including FULL path"),    # added
+    c("tumor_cnr", NA, 1, "character", "tumor bin file from Jumble or CNVkit"),
+    c("tumor_cns", NA, 1, "character", "tumor segment file from Jumble or CNVkit"),
+    c("normal_cnr", NA, 2, "character", "normal bin file from Jumble or CNVkit"),
+    c("normal_cns", NA, 2, "character", "normal segment file from Jumble or CNVkit"),
     c("het_snps_vcf", NA, 1, "character", "heterozygous SNPs .vcf file"),
     c("purecn_csv", NA, 2, "character", "PureCN result .csv file"),
     c("purecn_genes_csv", NA, 2, "character", "PureCN result _genes.csv"),
@@ -38,12 +39,7 @@ args <- rbind(
     c("svcaller_N_INV", NA, 2, "character", "Normal SV caller INV-events.gtf"),
     c("svcaller_N_TRA", NA, 2, "character", "Normal SV caller TRA-events.gtf"),
     c("germline_mut_vcf", NA, 2, "character", "germline mutation vcf file"),
-    c("somatic_mut_vcf", NA, 1, "character", "somatic mutation vcf file")#,
-    # c("plot_png", NA, 1, "character", "plot .png file name"),                   # removed
-    # c("plot_png_normal", NA, 1, "character", "normal CNV plot .png file name"), # removed
-    # c("cna_json", NA, 1, "character", "CNA output json file name"),             # removed
-    # c("purity_json", NA, 1, "character", "purity output json file name"),       # removed
-    # c("gene_track", NA, 1, "character", "gene_track csv file name")             # removed
+    c("somatic_mut_vcf", NA, 1, "character", "somatic mutation vcf file")
 )
 
 
@@ -801,9 +797,31 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes[,start:=start-1e3][,end
 
 {
     vcf <- readVcf(opts$het_snps_vcf,genome = "GRCh37")
-
-    if (t_only) if (ncol(vcf)>1) vcf <- vcf[,2]   # using second "sample" if t_only
-
+    
+    
+    # identify the tumor sample
+    names <- colnames(vcf)
+    n <- str_detect(string = names,pattern = '-N-')
+    t <- str_detect(string = names,pattern = '-T-')
+    cfdna <- str_detect(string = names,pattern = '-CFDNA-')
+    matching_t <- str_detect(opts$tumor_cnr,names)
+    
+    if (sum(matching_t)==1) {
+        tix <- which(matching_t)
+    } else if (sum(n)==1) {
+        tix <- which(n!=T)
+    } else if (sum(cfdna)==1) {
+        tix <- which(cfdna)
+    } else if (sum(t)==1) {
+        tix <- which(t)
+    } else {
+        tix <- length(names)
+    }
+    
+    nix <- ifelse(tix==2,1,2)
+    
+    if (t_only) vcf <- vcf[,tix]   # using second "sample" if t_only
+    
     g <- geno(vcf)
     r <- rowRanges(vcf)
     chr <- as.character(seqnames(r))
@@ -813,32 +831,32 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes[,start:=start-1e3][,end
         alf <- data.table(chromosome=chr, start=pos$start, end=pos$end, stringsAsFactors = F)
         alf$pos <- alf$start
     }
-
+    
     if (!is.null(alf)) if( !all(is.na(alf$chromosome)) ) {
-
-
+        
+        
         if (!t_only) {
-            alf$t <- as.numeric(sapply(g$AD[,2], "[", 2))/as.numeric(g$DP[,2])
+            alf$t <- as.numeric(sapply(g$AD[,tix], "[", 2))/as.numeric(g$DP[,tix])
             alf$t[is.nan(alf$t)]=NA # allele freq becomes NaN if cov=0. Then set to NA
-            alf$n <- as.numeric(sapply(g$AD[,1], "[", 2))/as.numeric(g$DP[,1])
+            alf$n <- as.numeric(sapply(g$AD[,nix], "[", 2))/as.numeric(g$DP[,nix])
             alf$n[is.nan(alf$n)]=NA # allele freq becomes NaN if cov=0. Then set to NA
-            alf$td <- as.numeric(g$DP[,2])
-            alf$nd <- as.numeric(g$DP[,1])
-
+            alf$td <- as.numeric(g$DP[,tix])
+            alf$nd <- as.numeric(g$DP[,nix])
+            
             # stored for use with VEP-annotated
             all_alf <- alf
-
+            
             # filter unwanted for SNP allele ratio <- this removes things needed for germline variant plotting...
-            #alf <- alf[width(vcf)==1 & str_detect(names(vcf),'rs')]
-            #alf <- alf[chromosome %in% c(1:22,'X','Y')]
-            #alf <- alf[nd > 15 & td > 30 & nd*n>5 & nd*(1-n)>5][td > 30 & td*t>5 & td*(1-t)>5]
-            #
-
+            alf <- alf[width(vcf)==1 & str_detect(names(vcf),'rs')]
+            alf <- alf[chromosome %in% c(1:22,'X','Y')]
+            alf <- alf[nd > 30 & nd*n>5 & nd*(1-n)>5][td > 30 & td*t>5 & td*(1-t)>5]
+            
+            
             # tumor table
             alf[,allele_ratio:=t]
             alf[,depth:=td]
             alf[,maf:=abs(allele_ratio-.5)+.5]
-
+            
             # normal table
             alf_n <- copy(alf)
             alf_n[,allele_ratio:=n]
@@ -849,32 +867,32 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes[,start:=start-1e3][,end
             alf$t <- as.numeric(sapply(g$AD[,1], "[", 2))/as.numeric(g$DP[,1])
             alf$t[is.nan(alf$t)]=NA # allele freq becomes NaN if cov=0. Then set to NA
             alf$td <- as.numeric(g$DP[,1])
-
+            
             alf[,n:=NA][,nd:=NA]
-
+            
             # stored for use with VEP-annotated
             all_alf <- alf
-
-            # # filter unwanted for SNP allele ratio
-            # alf <- alf[width(vcf)==1 & str_detect(names(vcf),'rs')]
-            # alf <- alf[chromosome %in% c(1:22,'X','Y')]
-            # alf <- alf[td > 30 & td*t>5 & td*(1-t)>5]
-            # #
-
+            
+            # filter unwanted for SNP allele ratio
+            alf <- alf[width(vcf)==1 & str_detect(names(vcf),'rs')]
+            alf <- alf[chromosome %in% c(1:22,'X','Y')]
+            alf <- alf[td > 30 & td*t>5 & td*(1-t)>5]
+            #
+            
             # tumor table
             alf[,allele_ratio:=t]
             alf[,depth:=td]
             alf[,maf:=abs(allele_ratio-.5)+.5]
-
+            
             # normal table
             alf_n <- NULL
             # alf_n[,allele_ratio:=n]
             # alf_n[,depth:=nd]
             # alf_n[,maf:=abs(allele_ratio-.5)+.5]
         }
-
-
-
+        
+        
+        
     }
 }
 
@@ -886,9 +904,9 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes[,start:=start-1e3][,end
     vcf <- readVcf(opts$somatic_mut_vcf,genome = "GRCh37")
     vcf <- vcf[rowRanges(vcf)$FILTER %in% c('PASS','LowQual')]
     if (length(vcf)>50000) vcf <- vcf[rowRanges(vcf)$FILTER %in% c('PASS')]
-
+    
     salf <- NULL
-
+    
     g <- geno(vcf)
     r=rowRanges(vcf)
     if (length(vcf)>0) { # if there are any somatic mutations...
@@ -903,10 +921,10 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes[,start:=start-1e3][,end
         #   ix <- which(salf$chromosome == chr)
         #   salf$cumpos[ix] <- salf$pos[ix] + chrsizes$cumstart[chrsizes$chr==chr]
         # }
-
+        
         salf$FILTER <- fixed(vcf)$FILTER
-
-
+        
+        
         salf$AF.T <- as.numeric(g$VAF[,2])
         if (nrow(salf)>1) {
             salf$AO.T <- as.numeric(apply(g$DP4[,2,3:4],1,sum))  # sum alt forward and alt reverse
@@ -918,20 +936,20 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes[,start:=start-1e3][,end
             salf$AO.T <- tab[V2!='NORMAL'&V3 %in% 3:4,sum(value)]  # sum alt forward and alt reverse
             salf$DP.T <- tab[V2!='NORMAL',sum(value)]  # sum ref forward, ref reverse, alt forward and alt reverse
         }
-
+        
         salf$type='other'
         salf$type[isSNV(vcf)]='snv'
         salf$type[isDeletion(vcf)]='del'
         salf$type[isInsertion(vcf)]='ins'
-
-
+        
+        
         header=info(header(vcf))$Description
         ix=grep('Consequence annotations from Ensembl',header)
         header=strsplit(header[ix],'\\|')[[1]]
         header[1]='Allele'
-
+        
         vep=info(vcf)$CSQ
-
+        
         ## This loop creates a new "table" with all mutation effects.
         rowspermut=unlist(lapply(vep,length))
         table=#data.frame(
@@ -947,26 +965,26 @@ cancergeneranges <- makeGRangesFromDataFrame(cancergenes[,start:=start-1e3][,end
                 table[thisrow,1:length(t2)]=t2
             }
         }
-
+        
         table <- as.data.table(table)
         table[,N:=as.integer(N)]
         salf=merge(salf,table,by='N',all=T)
-
-
+        
+        
         # Remove low-support variants
         salf <- salf[AO.T >= 5]# & (!str_detect(Existing_variation,'rs') | str_detect(Existing_variation,'COSM'))][MAX_AF<.01]
-
+        
         salf <- (salf[,-1])
-
+        
         salf[,'point mutation':=type]
-
-
+        
+        
     } #end somatic mutations
     #¡”¥¢‰¶\{}≠¿``^’*°°˝◊∑∆É⁄ˇÇ«»¯“ØÆ˚∏ŒˆÜ˜‡É˝˝°◊∑∆⁄≥ˇ
 }
 
 
-
+#save.image('ws.Rdata')
 
 # Read germline point mutations -------------------------------------------
 
@@ -976,29 +994,34 @@ galf_n <- NULL
 
 if (!t_only) {
     vcf <- readVcf(opts$germline_mut_vcf,genome = "GRCh37")
-
+    
+    second_vcf <- NULL; if (ncol(vcf)>1) { 
+        second_vcf <- vcf[,2]
+        vcf <- vcf[,1]
+    }
+    
     csq <- as.data.table(info(vcf)$CSQ)
     ix <- unique(csq[str_detect(value,'HIGH') | str_detect(value,'pathogenic'),group])
-
-    vcf <- expand(vcf[ix])
+    
+    vcf <- expand(vcf)[ix]
     g <- geno(vcf)
     r=rowRanges(vcf)
     f <- fixed(vcf)
-    if (length(g)>0) { # if there are any mutations...
+    if (length(vcf)>0) { # if there are any mutations...
         chr=as.character(seqnames(r))
         pos=data.frame(ranges(r))
         galf <- data.table(N=1:length(chr),chromosome=chr,start=as.double(pos$start), end=as.double(pos$end),stringsAsFactors = F)
         rownames(galf)=names(r)
         #galf$cumpos <- NA
-        galf$REF <- as.character(f$REF)
-        galf$ALT <- as.character(f$ALT)
+        galf$REF <- as.character(r$REF)
+        galf$ALT <- as.character(r$ALT)
         # for(chr in chrsizes$chr){
         #   ix <- which(galf$chromosome == chr)
         #   galf$cumpos[ix] <- galf$pos[ix] + chrsizes$cumstart[chrsizes$chr==chr]
         # }
 
-        #galf$AF <- g$AD[,1,2]/g$DP[,1]
-        #galf$AF_n <- g$AD[,2,2]/g$DP[,2]    # <----- this should be the normal sample allele ratio.
+        galf$AF <- g$AD[,1,2]/g$DP[,1]
+        #galf$AF_t <- g$AD[,2,2]/g$DP[,2]    # <----- this should be the tumor sample allele ratio.
         galf$AO <- g$AD[,1,2]
         galf$DP <- g$DP[,1]
         #
@@ -1006,22 +1029,22 @@ if (!t_only) {
         galf$type[isSNV(vcf)]='snv'
         galf$type[isDeletion(vcf)]='del'
         galf$type[isInsertion(vcf)]='ins'
-
-
+        
+        
         header=info(header(vcf))$Description
         ix=grep('Consequence annotations from Ensembl',header)
         header=strsplit(header[ix],'\\|')[[1]]
         header[1]='Allele'
-
+        
         vep=info(vcf)$CSQ
-
+        
         ## This loop creates a new "table" with all mutation effects.
         rowspermut=unlist(lapply(vep,length))
-        table=#data.frame(
-            matrix('',nrow = sum(rowspermut),ncol = length(header)+1)#,stringsAsFactors = F)
+        table <- 
+            matrix('',nrow = sum(rowspermut),ncol = length(header)+1)
         colnames(table)=c('N',header)  # blir detta fel ibland?????
         for (i in 1:length(vep)) {
-            for (j in 1:length(vep[[i]])) { # for each effect
+            if (length(vep[[i]])>0) for (j in 1:length(vep[[i]])) { # for each effect
                 t2=vep[[i]][j]
                 t2=strsplit(t2,'[|]')[[1]] # pipe separated line with one effect of the mutation
                 t2=c((i),t2)
@@ -1029,34 +1052,29 @@ if (!t_only) {
                 table[thisrow,1:length(t2)]=t2
             }
         }
-
+        
         table <- as.data.table(table)
-
+        
         table <- table[,-'AF']  # remove AF col from vep data to not confuse with AF from galf
-
-
+        
+        
         table[,N:=as.integer(N)]
         galf=merge(galf,table,by='N',all=T)
-
-
+        
+        
     } #end germline mutations
     galf$gnomAD_AF=as.numeric(galf$gnomAD_AF)  # Make gnom_AD numerical so it can be used
+    galf[is.na(gnomAD_AF),gnomAD_AF:=0]
     galf[,N:=NULL]
     galf[,'point mutation':=type]
-
-    ## Merge with SNP table for tumor/normal AF etc.
-    #new <- merge(all_alf,galf,by=c('chromosome','start','end'))
-
+    
     # normal sample variants with allele ratio
     galf_n <- galf[gnomAD_AF < .01 & SYMBOL %in% cancergenes$gene]
     galf_n[,allele_ratio:=AO/DP]
-
-    # tumor sample variants with tumor allele ratio if one exists, else 0
+    
+    # tumor sample variants with tumor allele ratio if one exists, else the same
     galf_t <- galf[gnomAD_AF < .01 & SYMBOL %in% cancergenes$gene]
-    galf_t[,allele_ratio:=0]
-    ix <- match(galf_t[,paste(chromosome,start,end)],all_alf[,paste(chromosome,start,end)])
-    if (any(!is.na(ix))) if (length(ix)>0) galf_t[,allele_ratio:=all_alf[ix]$t]
-    galf_t[is.na(allele_ratio),allele_ratio:=0]
+    galf_t[,allele_ratio:=AO/DP]
 }
 
 
@@ -1069,7 +1087,7 @@ if (!t_only) {
     bins <- fread(opts$tumor_cnr)
     bins[,bin:=1:.N]
     bins[gene=='Antitarget',gene:='Background']
-
+    
     # add gc if needed
     if (is.null(bins$gc)) {
         ucsc_ranges <- makeGRangesFromDataFrame(bins[gene!='Background' & chromosome!=17]) # cnvkit bug...
@@ -1077,14 +1095,14 @@ if (!t_only) {
         bins[,gc:=as.double(NA)]
         bins[gene!='Background' & chromosome!=17,gc:=gcContentCalc(ucsc_ranges , organism=Hsapiens)]
     }
-
+    
     # fix outliers
     bins[2^log2 < .05,log2:= log2(.05)]
     bins[2^log2 > 100,log2:= log2(100)]
-
+    
     # smooth
     bins[,smooth_log2:=runmed(log2,k=25)]
-
+    
     # check tiled
     d <- bins[,(end+start+1)/2]
     d <- abs(diff(d))
@@ -1094,7 +1112,7 @@ if (!t_only) {
     bins[d$min<4e2]$`target type` <- 'tiled'
     bins[d$min<4e2]$`target type` <- 'exon'
     bins[gene=='Background']$`target type` <- 'background'
-
+    
     # segments + match
     segments_t <- fread(opts$tumor_cns)
     segments_t[,start_pos:=start][,end_pos:=end]
@@ -1105,19 +1123,20 @@ if (!t_only) {
     ends <- overlap[,max(subjectHits),by=queryHits]
     segments_t[,start:=NA][starts$queryHits,start:=starts$V1]
     segments_t[,end:=NA][ends$queryHits,end:=ends$V1]
-
+    bins[overlap$subjectHits,segment:=overlap$queryHits]
+    
     # match with SNPs
     binranges <- makeGRangesFromDataFrame(bins[,.(chromosome,start=start-50,end=end+50)])
     snpranges <- makeGRangesFromDataFrame(alf[,.(chromosome,start,end)])
     overlap <- findOverlaps(snpranges,binranges)
     alf[queryHits(overlap),bin:=bins[subjectHits(overlap)]$bin]
-
+    
     bins[,allele_ratio:=as.numeric(NA)]
     bins[alf[!is.na(allele_ratio)]$bin,allele_ratio:=alf[!is.na(allele_ratio)]$allele_ratio]
     bins[,maf:=as.numeric(NA)]
     bins[alf[!is.na(maf)]$bin,maf:=alf[!is.na(maf)]$maf]
-
-
+    
+    
     # match with mutations
     if (!is.null(salf)) if (nrow(salf)>0) {
         binranges <- makeGRangesFromDataFrame(bins[,.(chromosome,start=start-50,end=end+50)])
@@ -1125,7 +1144,7 @@ if (!t_only) {
         overlap <- findOverlaps(mutranges,binranges)
         salf[queryHits(overlap),bin:=bins[subjectHits(overlap)]$bin]
     }
-
+    
     # match with germline mutations
     if (!t_only) if (!is.null(galf_t)) if (nrow(galf_t)>0) {
         binranges <- makeGRangesFromDataFrame(bins[,.(chromosome,start=start-50,end=end+50)])
@@ -1133,7 +1152,9 @@ if (!t_only) {
         overlap <- findOverlaps(mutranges,binranges)
         galf_t[queryHits(overlap),bin:=bins[subjectHits(overlap)]$bin]
     }
-
+    
+    bins_t <- bins
+    
     # and with genes/exons
     # ucsc_ranges <- makeGRangesFromDataFrame(bins[gene!='Background',.(chromosome,start,end)])
     # seqlevelsStyle(ucsc_ranges) <- "UCSC"
@@ -1150,7 +1171,7 @@ if (!t_only) { # normal
     bins_n <- fread(opts$normal_cnr)
     bins_n[,bin:=1:.N]
     bins_n[gene=='Antitarget',gene:='Background']
-
+    
     # add gc if needed
     if (is.null(bins_n$gc)) {
         ucsc_ranges <- makeGRangesFromDataFrame(bins_n[gene!='Background' & chromosome!=17]) # cnvkit bug...
@@ -1158,14 +1179,14 @@ if (!t_only) { # normal
         bins_n[,gc:=as.double(NA)]
         bins_n[gene!='Background' & chromosome!=17,gc:=gcContentCalc(ucsc_ranges , organism=Hsapiens)]
     }
-
+    
     # fix outliers
     bins_n[2^log2 < .05,log2:= log2(.05)]
     bins_n[2^log2 > 100,log2:= log2(100)]
-
+    
     # smooth
     bins_n[,smooth_log2:=runmed(log2,k=25)]
-
+    
     # segments + match
     segments_n <- fread(opts$normal_cns)
     segments_n[,start_pos:=start][,end_pos:=end]
@@ -1176,26 +1197,27 @@ if (!t_only) { # normal
     ends <- overlap[,max(subjectHits),by=queryHits]
     segments_n[,start:=NA][starts$queryHits,start:=starts$V1]
     segments_n[,end:=NA][ends$queryHits,end:=ends$V1]
-
+    bins_n[overlap$subjectHits,segment:=overlap$queryHits]
+    
     # match with SNPs
     binranges <- makeGRangesFromDataFrame(bins_n[,.(chromosome,start=start-50,end=end+50)])
     snpranges <- makeGRangesFromDataFrame(alf_n[,.(chromosome,start,end)])
     overlap <- findOverlaps(snpranges,binranges)
     alf_n[queryHits(overlap),bin:=bins_n[subjectHits(overlap)]$bin]
-
-
+    
+    
     bins_n[,allele_ratio:=as.numeric(NA)]
     bins_n[alf_n[!is.na(allele_ratio)]$bin,allele_ratio:=alf_n[!is.na(allele_ratio)]$allele_ratio]
     bins_n[,maf:=as.numeric(NA)]
     bins_n[alf_n[!is.na(maf)]$bin,maf:=alf_n[!is.na(maf)]$maf]
-
+    
     # set tumor maf to NA where normal indicates nondiploid state.
     deviating <- bins_n[maf > .58 | smooth_log2 > .15 | smooth_log2 < -.15,paste(chromosome,start,end)]
     deviation <- (bins_n$allele_ratio-.5)^2
     deviation <- frollapply(deviation,10,sum)
     bins[paste(chromosome,start,end) %in% deviating, maf:=NA]
-
-
+    
+    
     # match with germline mutations
     if (!is.null(galf_n)) if (nrow(galf_n)>0) {
         binranges <- makeGRangesFromDataFrame(bins_n[,.(chromosome,start=start-50,end=end+50)])
@@ -1203,8 +1225,8 @@ if (!t_only) { # normal
         overlap <- findOverlaps(mutranges,binranges)
         galf_n[queryHits(overlap),bin:=bins_n[subjectHits(overlap)]$bin]
     }
-
-
+    
+    
     # # and with genes/exons
     # ucsc_ranges <- makeGRangesFromDataFrame(bins_n[gene!='Background',.(chromosome,start,end)])
     # seqlevelsStyle(ucsc_ranges) <- "UCSC"
@@ -1214,7 +1236,7 @@ if (!t_only) { # normal
     # exonic <- str_detect(d$overlap,'.*E$') | str_detect(d$overlap,'.*E,')
     # #data.table(gene=d$overlap,exonic)[gene!=''][str_detect(gene,',')]
     # bins_n[gene!='Background',exonic:=exonic]
-
+    
 }
 
 # Read structural variant files -------------------------------------------
@@ -1365,19 +1387,309 @@ if (all(!is.null(purecn_files))) try( {
 # bins[queryHits(overlap),M:=purecn_loh[subjectHits(overlap)]$M]
 #
 
+#save.image('ws_.Rdata')
+
+
+
+
+
+# Purity estimate ---------------------------------------------------------
+
+
+
+
+# HRD metric ---------------------------------------------------------
+
+
+
+# Hard-coded prediction function
+gis_model <- function(feats=NULL) {
+    coefficients <- list(`(Intercept)` = 2.63187808497402, focal_gain = -0.851910778439913, 
+                         local_cnv = 1.79873839268124, loh = 2.72722833695396)
+    # coefficients <- list(`(Intercept)` = -0.230019926361434, long_cnv = 0.759032446838158, 
+    #                      focal_gain = -1.43461565226207, local_cnv = 1.36121379637664, 
+    #                      loh = 0.42513824929285)
+    # coefficients = list(`(Intercept)` = -1.0847372883196, 
+    #                     long_cnv = 0.84385761166014, focal_gain = -1.50216379051664, 
+    #                     local_cnv = 1.44453796183184, loh = 0.51484502013803)
+    if (is.null(feats)) return(coefficients)
+    # Calculate predicted GIS
+    predicted_GIS <- 
+        coefficients$`(Intercept)` + 
+        #coefficients$long_cnv * feats$long_cnv +     # <-------  MODEL SPEC!!!
+        coefficients$focal_gain * feats$focal_gain +   
+        coefficients$local_cnv * feats$local_cnv + 
+        coefficients$loh * feats$loh
+    return(predicted_GIS)
+}
+
+# Template
+{
+    binlength <- 5e6
+    chroms <- 
+        data.table(
+            chromosome = c("1", "1", "2", "2", "3", "3", "4", 
+                           "4", "5", "5", "6", "6", "7", "7", "8", "8", "9", "9", "10", 
+                           "10", "11", "11", "12", "12", "13", "13", "14", "14", "15", "15", 
+                           "16", "16", "17", "17", "18", "18", "19", "19", "20", "20", "21", 
+                           "21", "22", "22", "X", "X"), 
+            arm = c("1p", "1q", "2p", "2q", 
+                    "3p", "3q", "4p", "4q", "5p", "5q", "6p", "6q", "7p", "7q", "8p", 
+                    "8q", "9p", "9q", "10p", "10q", "11p", "11q", "12p", "12q", "13p", 
+                    "13q", "14p", "14q", "15p", "15q", "16p", "16q", "17p", "17q", 
+                    "18p", "18q", "19p", "19q", "20p", "20q", "21p", "21q", "22p", 
+                    "22q", "Xp", "Xq"), 
+            start = c(0, 1.25e+08, 0, 93300000, 0, 9.1e+07, 
+                      0, 50400000, 0, 48400000, 0, 6.1e+07, 0, 59900000, 0, 45600000, 
+                      0, 4.9e+07, 0, 40200000, 0, 53700000, 0, 35800000, 0, 17900000, 
+                      0, 17600000, 0, 1.9e+07, 0, 36600000, 0, 2.4e+07, 0, 17200000, 
+                      0, 26500000, 0, 27500000, 0, 13200000, 0, 14700000, 0, 60600000
+            ), 
+            end = c(1.25e+08, 249250621, 93300000, 243199373, 9.1e+07, 
+                    198022430, 50400000, 191154276, 48400000, 180915260, 6.1e+07, 
+                    171115067, 59900000, 159138663, 45600000, 146364022, 4.9e+07, 
+                    141213431, 40200000, 135534747, 53700000, 135006516, 35800000, 
+                    133851895, 17900000, 115169878, 17600000, 107349540, 1.9e+07, 
+                    102531392, 36600000, 90354753, 2.4e+07, 81195210, 17200000, 78077248, 
+                    26500000, 59128983, 27500000, 63025520, 13200000, 48129895, 14700000, 
+                    51304566, 60600000, 155270560
+            )
+        )
+    
+    chroms[,length:=end-start]
+    
+    
+    binning <- NULL; for (i in 1:nrow(chroms)) {
+        bins <- data.table(sample='',
+                           chromosome=chroms[i]$chromosome,
+                           arm=chroms[i]$arm,
+                           start=seq(chroms[i]$start,chroms[i]$end-binlength,binlength))
+        bins[,end:=start+binlength]
+        bins[,telomeric:=0][,centromeric:=0]
+        if (str_detect(chroms[i]$arm,'p')) bins[1,telomeric:=1][.N,centromeric:=1]
+        if (str_detect(chroms[i]$arm,'q')) bins[.N,telomeric:=1][1,centromeric:=1]
+        binning[[i]] <- bins
+    }
+    
+    binning <- rbindlist(binning)[centromeric==0]
+    
+    binranges <- makeGRangesFromDataFrame(binning)
+}
+
+
+# prepare data
+{
+    # parse logratio
+    targets <- bins_t[chromosome %in% c(1:22,'X') & !is.na(log2)]
+    targetranges <- makeGRangesFromDataFrame(targets)
+    
+    # parse snps
+    snps <- bins_t[chromosome %in% c(1:22,'X')][allele_ratio>.02 & allele_ratio<.98]
+    median_depth <- median(snps$DP)
+    snps <- snps[chromosome %in% c(1:22,'X')][,.(chromosome,start,end,allele_ratio)]
+    snps[,maf:=.5+abs(allele_ratio-.5)]
+    snpranges <- makeGRangesFromDataFrame(snps)
+    
+    # parse mutations
+    small <- salf
+    
+    # Set maf per target
+    overlap=as.data.table(findOverlaps(snpranges,targetranges))
+    maf <- snps[overlap$queryHits]$maf
+    targets[overlap$subjectHits,maf:=maf]
+    
+    targets_ <- copy(targets)
+    snps <- copy(snps)
+    
+    
+    # Let all positions be megabase
+    targets[,start:=round((start+end)/2e6)*1e6]
+    targets[,end:=start]
+    targets[,pos:=paste0(chromosome,':',start/1e6)]
+    
+    # Allow one log2 / maf value in each MB
+    targets[,log2:=median(log2,na.rm = T),by=pos]
+    targets[,maf:=median(maf,na.rm=T),by=pos]
+    
+    # Allow only one segment for each MB
+    targets[,segment:=round(median(segment,na.rm = T)),by=pos]
+    
+    # Allow only one data point per MB
+    targets <- unique(targets[,.(chromosome,start,end,pos,log2,maf,segment)])
+    
+    # Set segmented log2 + maf value
+    targets[,log2:=median(log2,na.rm = T),by=segment] 
+    targets[,maf:=median(maf,na.rm = T),by=segment]
+    
+    
+    # m <- median(targets[chromosome %in% 1:22]$log2,na.rm=T)
+    # targets[,log2:=log2-m]
+    # targets_[,log2:=log2-m]
+    
+    
+    
+    targetranges <- makeGRangesFromDataFrame(targets)
+    overlap=as.data.table(findOverlaps(binranges,targetranges))
+    
+    # values to bins
+    bins <- copy(binning)
+    #bins[,sample:=hrd[i]$sample]
+    bins[,log2:=as.numeric(NA)][,maf:=as.numeric(NA)]
+    for (j in 1:nrow(bins)) {
+        bins[j,log2:=median(targets[overlap[queryHits==j]$subjectHits]$log2,na.rm=T)]
+        #bins[j,maxlog2:=max(targets[overlap[queryHits==j]$subjectHits]$log2,na.rm=T)]
+        #bins[j,minlog2:=min(targets[overlap[queryHits==j]$subjectHits]$log2,na.rm=T)]
+        bins[j,maf:=median(targets[overlap[queryHits==j]$subjectHits]$maf,na.rm=T)]
+    }
+    
+    # only non NA bins
+    bins <- bins[!is.na(log2) & !is.na(maf)]
+    
+    bins <- bins[!is.na(log2)]
+    bins[,armbins:=.N,by=arm]
+    
+    # assign chrom wise and long medians
+    bins[,arm_median:=median(log2),by=arm]
+    bins[,chr_upper:=quantile(log2,.75),by=arm]
+    bins[,chr_lower:=quantile(log2,.25),by=arm]
+    bins[,arm_maf:=median(maf,na.rm = T),by=arm]
+    bins[,long_median:=runmed(log2,5),by=chromosome]
+}
+
+
+# by fraction function
+tfr <- .6 # for tests 
+compute_gis <- function(tfr) {
+    {
+        threshold <- ifelse(is.na(tfr),.05,tfr/3)
+        if (threshold<.05) threshold <- .05
+        threshold <- log2(1+threshold)   
+        
+        
+        # copy number transitions
+        transitions <- function(data,threshold) {
+            d <- which(abs(diff(data))>threshold)
+            trans <- rep(0,length(data))
+            trans[d] <- 1
+            trans[d+1] <- 1
+            return(trans)
+        }
+        
+        bins[,transitions:=transitions(log2,threshold = threshold),by=chromosome]
+        
+        # loss of het
+        loh <- function(log2,maf,tfr) {
+            loh <- rep(0,length(log2))
+            
+            copyratio <- 1+1*((2^log2-1) / tfr)
+            dnaratio <- copyratio*tfr / (copyratio*tfr + 1*(1-tfr))
+            thr <- dnaratio*.8
+            thr_maf <- .5+thr*.5
+            thr_maf[thr_maf<.55] <- .55
+            
+            loh[which(maf > thr_maf)] <- 1
+            return(loh)
+        }
+        
+        bins[,loh:=loh(log2,maf,tfr)]
+        #bins[,arm_loh:=sum(loh),by=arm]
+        bins[,loh:=runmed(loh,5),by=arm]
+        bins[,arm_loh:=sum(loh==1),by=arm]
+        bins[,arm_noloh:=sum(loh==0),by=arm]
+        
+        # allelic imbalance
+        thr <- .6 #+ max(.05,tfr/5)
+        bins[runmed(maf,5)> thr,imbalance:=1][is.na(imbalance),imbalance:=0]
+        bins[,arm_imbalance:=sum(imbalance),by=arm]
+        
+        # use arm wise medians
+        bins[,long_cnv:=0][abs(long_median-arm_median)>threshold,long_cnv:=1]
+        bins[,local_gain:=0][log2-arm_median > threshold,local_gain:=1]
+        bins[,local_loss:=0][log2-arm_median < -threshold,local_loss:=1]
+        bins[,focal_gain:=0][log2-long_median > threshold & log2-arm_median > threshold,focal_gain:=1]
+        bins[,focal_loss:=0][log2-long_median < -threshold & log2-arm_median < -threshold,focal_loss:=1]
+        
+        
+        # results
+        result <- data.table(fraction=tfr)
+        result$transitions <- round(sum(bins$transitions))
+        result$long_cnv <- length(unique(bins[long_cnv==1]$arm))
+        result$local_cnv <- length(unique(bins[local_gain==1 | local_loss==1]$arm))
+        result$local_gain <- length(unique(bins[local_gain==1]$arm))
+        result$local_loss <- length(unique(bins[local_loss==1]$arm))
+        result$focal_gain <- length(unique(bins[focal_gain==1]$arm))
+        result$focal_loss <- length(unique(bins[focal_loss==1]$arm))
+        
+        #result$loh <- length(unique(bins[arm_loh>=5]$arm))
+        result$loh <- length(unique(bins[arm_loh>3 & arm_noloh>3]$arm))
+        result$tai <- length(unique(bins[imbalance==1 & telomeric==1]$arm))
+        
+        result$noise <- median(abs(diff(targets$log2)),na.rm = T)
+        #result$focal_ratio <- max(log2(sum(bins$focal_gain)/sum(bins$focal_loss)),8)
+        
+    }
+    
+    feats <- result
+    #feats[,local_cnv:=local_gain+local_loss]
+    feats[,predicted_gis:=round(gis_model(feats))]
+    return(feats)
+}
+
+
+# compute all GIS
+hrdtable <- NULL
+tfr <- 1:100/100
+for (i in 1:length(tfr)) hrdtable[[i]] <- compute_gis(tfr[i])
+hrdtable <- rbindlist(hrdtable)
+
+hrdtable <- melt(hrdtable, id.vars = "fraction", variable.name = "feature", value.name = "value")
+hrdtable[,sample:=basename(str_remove(opts$tumor_cnr,'.cnr'))]
+
+
+# for QC (later also for Curator)
+if (!is.null(opts$output_hrd)) fwrite(hrdtable,opts$output_hrd)
+
+# Minimal cancer fraction to display
+hrdtable <- hrdtable[fraction>=.2]
+
+
+# HRD plot function ---------------------------------------------------------
+hrdplot <- function(hrdtable,p) {
+    if (!exists('estimated_fraction')) estimated_fraction <- .5
+    
+    
+    plot <- ggplot() +
+        geom_line(data=hrdtable[feature=='predicted_gis'],aes(x=fraction,y=value),size=2) +
+        geom_line(data=hrdtable[feature %in% c('local_cnv','focal_gain','loh')],
+                  aes(x=fraction,y=value,col=feature),lty=1,size=1) +
+        scale_x_continuous(name = 'Tumor DNA fraction',
+                           breaks = seq(0,1,.05),minor_breaks = seq(0,1,.01),
+                           labels=seq(0,100,5)) +
+        scale_y_continuous(name = 'GMCK GIS score',limits=c(0,100),
+                           breaks = seq(0,100,5),minor_breaks = seq(0,100,1),
+                           sec.axis = sec_axis(~., breaks = seq(0, 100, 5))) +
+        geom_hline(yintercept = 42,lty=1,col='#00000050',size=2,lty=2)
+    
+    pa <- plot_annotation(
+        title = paste(basename(name)),
+    )
+    
+    print(p$nogrid + plot + pa)
+    
+}
 
 
 # Genome plot function ---------------------------------------------------------
 
 genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NULL, strvs=NULL, purecn=NULL) {
-
+    
     # if all targets > 500, assume WGS.
     wgs <- all(targets$end-targets$start > 500)
-    targets[,smooth_log2:=runmed(log2,k = 7)]
-    if (wgs) targets[,smooth_log2:=runmed(log2,k = 7)]
-
-
-
+    targets[,smooth_log2:=runmed(log2,k = 7),by=chromosome]
+    if (wgs) targets[,smooth_log2:=runmed(log2,k = 7),by=chromosome]
+    
+    
+    
     ## purity from point mutations -----------
     rough_fraction <- NA
     if (wgs) try( {
@@ -1395,36 +1707,48 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                                    FILTER=='PASS' & !str_detect(Existing_variation,'rs')]$AF.T)
         if (peak>.025) rough_fraction <- round(peak,2)
     }, silent=T)
-
-
+    
+    
     p <- NULL
-    alpha <- .6
+    alpha <- .4
     if (wgs) alpha <- .1
-
-    ylims <- c(.4,2)
-    ylims[1] <- min(ylims[1],min(2^targets[chromosome!='Y']$smooth_log2*.9))
-    ylims[2] <- max(ylims[2],max(2^targets[chromosome!='Y']$smooth_log2*1.1))
-
+    
+    
+    ylims <- c(
+        min(.4,min(2^targets[chromosome!='Y']$smooth_log2,na.rm = T)),
+        max(3,max(2^targets$smooth_log2,na.rm = T))
+    )
+    ybreaks <- c(.5,.75,1,1.5,2,3,4,6,8)
+    ybreaks <- ybreaks[ybreaks >= ylims[1] & ybreaks<=ylims[2]]
+    yminorbreaks <- c(1.25,1.75)
+    
+    
+    
     # depth adjust based on SNPs.
-    targets[gene!='Background',depth:=depth/(median(depth,na.rm = T)/median(snps$depth,na.rm = T))]
-
+    #targets[gene!='Background',depth:=depth/(median(depth,na.rm = T)/median(snps$depth,na.rm = T))]
+    
     # if theres no type for exonic or background, add it
     if (is.null(targets$type)) targets[,type:='target'][gene=='Background',type:='background']
-
+    
     ## genelabels ---------------------------------------------------------
-
-    label_genes <- c("ABL1", "AKT1", "ALK", "APC", "AR", "ARAF", "ATM", "BAP1", "BIRC7",
-                     "BRAF", "BRCA1", "BRCA2", "CBFB", "CCND1", "CCND2", "CCND3","CHD1",
-                     "CCNE1", "CD274", "CDK12", "CDK4", "CDK6", "CDKN2A", "CEBPA", "DCC",
-                     "DNMT3A", "EGFR", "ERBB2", "ERBB4", "ERCC2", "ERG", "ESR1", "EWSR1",
-                     "FGF3", "FGFR1", "FGFR2", "FGFR3", "FLT3", "GATA2", "IDH1", "IDH2",
-                     "JAK2", "KIT", "KRAS", "LRP1B", "MAP2K1", "MET", "MLH1", "MTOR", "MYC",
-                     "NOTCH1", "NPM1", "NRAS", "NT5C2", "PAX8", "PDGFRA", "PIK3CA",
-                     "PML", "PRKACA", "PTEN", "RAC1", "RB1", "RET", "ROS1", "RUNX1",
-                     "SF3B1", "TMPRSS2", "TP53", "U2AF1", "VHL", "WT1")
+    
+    label_genes <- c("ABL1", "AKT1", "ALK", "APC", "AR", "ARAF", "ATM", "BAP1", 
+                     "BIRC7", "BRAF", "BRCA1", "BRCA2", "CBFB", "CCND1", "CCND2", 
+                     "CCND3", "CHD1", "CCNE1", "CD274", "CDK12", "CDK4", "CDK6", "CDKN2A", 
+                     "CEBPA", "DCC", "DNMT3A", "EGFR", "ERBB2", "ERBB4", "ERCC2", 
+                     "ERG", "ESR1", "EWSR1", "FGF3", "FGFR1", "FGFR2", "FGFR3", "FLT3", 
+                     "GATA2", "IDH1", "IDH2", "JAK2", "KIT", "KRAS", "LRP1B", "MAP2K1", 
+                     "MET", "MLH1", "MTOR", "MYC", "NOTCH1", "NPM1", "NRAS", "NT5C2", 
+                     "PAX8", "PDGFRA", "PIK3CA", "PML", "PRKACA", "PTEN", "RAC1", 
+                     "RB1", "RET", "ROS1", "RUNX1", "SF3B1", "TMPRSS2", "TP53", "U2AF1", 
+                     "VHL", "WT1", "NTRK3", "POLE", "MSH3", "ETV6", "BRIP1", "KMT2D", 
+                     "CTNNA1", "MSH2", "KMT2C", "FAT1", "MITF", "KMT2A", "RAF1", "BARD1", 
+                     "CHEK2", "NF1", "CDH1", "COL5A1", "PALB2", "FH", "SPEN", "USP9X", 
+                     "SPTA1", "MGA", "MED12", "ZFHX3", "ATRX", "BMPR1A", "ATR", "CHD3", 
+                     "POLD1", "NOTCH2", "CREBBP", "EP300", "NCOR1", "TAF1")
     cancergenes[,bin:=as.numeric(NA)]
     cancergenes[,depth:=as.numeric(NA)]
-
+    
     targets[,`selected genes`:=as.character(NA)]
     for (g in label_genes) {
         targets[type!='background' & str_detect(gene,paste0('^',g,'$')),`selected genes`:=g]
@@ -1439,9 +1763,9 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     cancergenes_here[depth==0,depth:=NA]
     cancergenes_here[,`selected genes`:=factor(gene)]
     targets[,`selected genes`:=factor(`selected genes`,levels=levels(cancergenes_here$`selected genes`))]
-
+    
     ## chroms and gpos  ---------------------------------------------------------
-
+    
     # chroms object by genomic pos
     #chroms <- data.table(chromosome=names(reference$chromlength),length=reference$chromlength)
     chroms <- targets[,max(end),by=chromosome]
@@ -1478,89 +1802,92 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         }
         if (!is.null(germline)) if (nrow(germline)>0) germline[chromosome==chr,gpos:=gpos+toadd]
     }
-
+    
     cancergenes_here[,gpos:=targets[cancergenes_here$bin]$gpos]
     cancergenes_here[,log2:=targets[cancergenes_here$bin]$smooth_log2]
     cancergenes_here <- cancergenes_here[order(bin)][,gene:=factor(gene,levels=unique(gene),ordered=T)]
-
+    
     # strvs[,gpos:=targets[strvs$bin]$gpos]
     # strvs[,log2:=targets[strvs$bin]$smooth_log2]
-
+    
     # snp cancergenes
     #snps[,`selected genes`:=as.character(NA)]
     snps[,`selected genes`:=targets[snps$bin]$`selected genes`]
-
-
+    
+    
     ## grid ---------------------------------------------------------
-
-    targets[,smooth_log2:=runmed(log2,k = 25)]
-    if (wgs) targets[,smooth_log2:=runmed(log2,k = 25)]
+    
+    targets[,smooth_log2:=runmed(log2,k = 51)]
+    if (wgs) targets[,smooth_log2:=runmed(log2,k = 51)]
     gridsnps <- snps[!is.na(bin) & !is.na(maf)]
     gridsnps[,log2:=targets[gridsnps$bin]$log2]
     gridsnps[,smooth_log2:=targets[gridsnps$bin]$smooth_log2]
     if (wgs) gridsnps <- gridsnps[targets[gridsnps$bin]$gene!='-']
+    
+    gridsnps[,smooth_maf:=runmed(maf,21,na.action = 'na.omit')]
+    if (wgs) gridsnps[,smooth_maf:=runmed(maf,21,na.action = 'na.omit')]
+    
     set.seed(25)
     if (nrow(gridsnps)>20e3)
         gridsnps <- gridsnps[!is.na(`selected genes`) | runif(n = nrow(gridsnps))< (20e3/nrow(gridsnps))]
-    gridsnps[,smooth_maf:=runmed(maf,9)]
-    if (wgs) gridsnps[,smooth_maf:=runmed(maf,21)]
+    
     gridsnps <- unique(gridsnps[,.(chromosome,`selected genes`,smooth_log2,smooth_maf)])
-
+    
     #baseline <- median(abs((rbinom(n = median(snps$depth,na.rm=T),size=1000,p=.51)/1000)-.5))+.5
-
+    
     # snp (grid) smooth-to-allele-ratio plot
-    p$grid <- ggplot(gridsnps) + ylim(c(0.5,1)) +
-        scale_x_continuous(limits=c(.3,2),breaks=c(.5,1,1.5,2),labels=c('0.5','1','1.5','2')) +
+    p$grid <- ggplot(gridsnps) + 
+        scale_y_continuous(
+            limits=c(.5,1),
+            breaks = seq(0.5, .9, by = 0.1),
+            labels = c('0.5','0.6','0.7','0.8','0.9')
+        ) +
+        scale_x_continuous(limits=c(.2,1.8),breaks=c(.5,1,1.5,2),labels=c('0.5','1','1.5','2')) +
         xlab('Corrected depth (smooth)') + ylab('Major allele ratio (smooth)') +
         #geom_hline(yintercept = baseline,lty=3) +
         geom_vline(xintercept = 1,lty=3) +
-        geom_point(data=gridsnps[,-'chromosome'],aes(x=2^smooth_log2,y=smooth_maf),col='lightgrey',alpha=.2) +
-        geom_point(aes(x=2^smooth_log2,y=smooth_maf),fill='#606060',col='#202020',shape=21,alpha=.3) +
+        geom_point(data=gridsnps[,-'chromosome'],aes(x=2^smooth_log2,y=smooth_maf),col='lightgrey',alpha=.2,size=.5) +
+        geom_point(aes(x=2^smooth_log2,y=smooth_maf),fill='#606060',col='#202020',shape=21,alpha=.3,size=.5) +
         geom_point(data=gridsnps[`selected genes`!=''],aes(x=2^smooth_log2,y=smooth_maf,fill=`selected genes`),
-                   shape=21,col='#000000',size=1,show.legend = F) +
+                   shape=21,col='#000000',size=.8,show.legend = F) +
+        geom_text(data=unique(gridsnps[,.(chromosome)]),mapping = aes(x=.25,y=.95,label=chromosome)) +
         scale_fill_hue(l=70) +
         facet_wrap(facets = vars(factor(chromosome,levels=unique(chromosome),ordered=T)),ncol = 8) +
-        theme(panel.spacing = unit(0, "lines"),strip.text.x = element_text(size = 8))
-
-
-    # targets[,smooth_log2:=runmed(log2,k = 51),by=chromosome]
-    # if (wgs) targets[,smooth_log2:=runmed(log2,k = 51),by=chromosome]
-
-    # gridsnps <- snps[!is.na(bin) & !is.na(maf)]
-    # gridsnps[,log2:=targets[gridsnps$bin]$log2]
-    # gridsnps[,smooth_log2:=targets[gridsnps$bin]$smooth_log2]
-    # gridsnps[,smooth_maf:=runmed(maf,21)]
-    # if (wgs) gridsnps[,smooth_maf:=runmed(maf,501)]
-    # gridsnps <- unique(gridsnps[,.(chromosome,`selected genes`,smooth_log2,smooth_maf)])
-
+        theme(panel.spacing = unit(0, "lines"),strip.background = element_blank(),strip.text.x = element_blank())
+    
+    
+    
     # snp (all) smooth-to-allele-ratio plot
-    #temp <- targets[!is.na(`selected genes`),median(smooth_log2),by=`selected genes`]
-    p$nogrid <- ggplot(gridsnps) + ylim(c(.5,1)) +
-        scale_x_continuous(limits=c(.3,2),breaks=c(.5,1,1.5,2),labels=c('0.5','1','1.5','2')) +
-        #geom_hline(yintercept = baseline,lty=3) +
+    p$nogrid <- ggplot(gridsnps) + 
+        scale_y_continuous(
+            limits = c(.5, 1),
+            sec.axis = sec_axis(
+                ~ 2 * (. - 0.5),
+                name = "Homozygous DNA fraction",
+                breaks = seq(0, 1, by = 0.1),  # set breaks for secondary axis
+                labels = c('0.0','0.1','0.2','0.3','0.4','0.5','0.6','0.7','0.8','0.9','1.0')  # set labels for secondary axis
+            )
+        ) +
+        scale_x_continuous(limits=c(0,2),breaks=c(.5,1,1.5,2),labels=c('0.5','1','1.5','2')) +
         geom_vline(xintercept = 1,lty=3) +
         xlab('Corrected depth (smooth)') + ylab('Major allele ratio (smooth)') +
-        geom_point(aes(x=2^smooth_log2,y=smooth_maf),fill='#60606060',col='#20202060',shape=21) #+
-    # geom_point(data=gridsnps[`selected genes`!=''],aes(x=2^smooth_log2,y=smooth_maf,fill=`selected genes`),
-    #            shape=21,col='#00000050',size=1,show.legend = F) +
-    # scale_fill_hue(l=70)
-    #geom_point(data=temp,mapping=aes(x=2^V1,y=1,fill=`selected genes`),size=2,shape=25,show.legend=F)
-
-
-
+        geom_point(aes(x=2^smooth_log2,y=smooth_maf),fill='#AAAAAA',col='#202020',shape=21,size=.7,alpha=.4) #+
+    
+    
+    
     ## downsample ---------------------------------------------------------
-
+    
     # downsample large (>300k) target table.
     alltargets <- targets
     set.seed(25)
     if (nrow(targets)>3e5) targets <- targets[!is.na(`selected genes`) | runif(n = nrow(targets))< (3e5/nrow(targets))]
-
-
+    
+    
     ## by pos ---------------------------------------------------------
-
-
+    
+    
     ### logR ---------------------------------------------------------
-
+    
     # logR by pos + segments + SVs
     p$pos_log2 <- ggplot(targets) + xlab('Genomic position') + ylab('Corrected depth') +
         geom_point(data=cancergenes_here, #  <<--- this is a dummy for colors to work out.
@@ -1572,26 +1899,19 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                      mapping = aes(x=gstart,xend=gstop,y=2^log2,yend=2^log2)) +
         scale_fill_hue(l=70) + scale_y_log10(limits=ylims) +
         scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
-                           limits=c(0,max(targets$gpos)),
+                           limits=c(0,max(targets$gpos+5e6)),
                            expand = c(.01,.01),labels = chroms$chromosome) +
+        scale_y_log10(limits=ylims, breaks=ybreaks, minor_breaks=yminorbreaks) +
         theme(panel.grid.major.x = element_blank(),
               panel.grid.minor.y = element_line(),
               panel.grid.minor.x = element_line(color = 'black'),
               axis.line = element_line(),
               axis.ticks = element_line())
-    # if (any(!is.na(strvs$cancergene))) {
-    #     p$pos_log2 <- p$pos_log2 +geom_label_repel(data = unique(strvs[!is.na(cancergene),.(cancergene,type,bin,gpos,log2)]),
-    #                      mapping = aes(x=gpos,y=log2,label=cancergene,fill=cancergene),
-    #                      nudge_y=-1,
-    #                      angle=0,size=1.8,show.legend = F,
-    #                      segment.color = '#BBBBBBFF',
-    #                      box.padding = .1,
-    #                      label.padding = .1,
-    #                      point.padding = .1)
-    #}
-
+    
+    
+    
     ### depth ---------------------------------------------------------
-
+    
     # depth by pos
     m <- median(targets[type!='background' & chromosome %in% 1:22]$depth,na.rm = T)
     cancergenes_here[,nudge:= .3]
@@ -1603,13 +1923,14 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     if (wgs) depthlimits <- c(m/3,m*2)
     if (max(cancergenes_here$depth*1.1,na.rm = T)>depthlimits[2]) depthlimits[2] <- max(cancergenes_here$depth,na.rm = T)*1.1
     if (min(cancergenes_here$depth*.9,na.rm = T)<depthlimits[1]) depthlimits[1] <- min(cancergenes_here$depth,na.rm = T)*.9
-    p$pos_rawdepth <- ggplot(targets) + xlab('Genomic position') + ylab('Sequence depth') +
+    p$pos_rawdepth <- ggplot(targets) + xlab('Genomic position') + ylab('Fragments') +
         geom_point(data=targets[is.na(`selected genes`)],mapping = aes(x=gpos,y=depth),fill='#606060',col='#202020',size=1,shape=21,alpha=alpha) +
         geom_point(data=targets[!is.na(`selected genes`)],mapping = aes(x=gpos,y=depth,fill=`selected genes`),
                    show.legend = F,shape=21,col='#00000050',size=1) +
-        scale_fill_hue(l=70) + scale_y_log10(limits=depthlimits) +
+        scale_fill_hue(l=70) + 
+        scale_y_log10(limits=depthlimits,minor_breaks=NULL) +
         scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
-                           limits=c(0,max(targets$gpos)),
+                           limits=c(0,max(targets$gpos+5e6)),
                            expand = c(.01,.01),labels = chroms$chromosome) +
         theme(panel.grid.major.x = element_blank(),
               panel.grid.minor.y = element_line(),
@@ -1624,10 +1945,10 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                          box.padding = .1,
                          label.padding = .1,
                          point.padding = .1)
-
-
+    
+    
     ### alleleratio ---------------------------------------------------------
-
+    
     # allele ratio by pos
     set.seed(25)
     snps[,plot:=T]; if (nrow(snps)>300e3) snps[,plot:=runif(.N)<(300e3/.N)]
@@ -1644,7 +1965,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
             geom_point(data=somatic,mapping = aes(x=gpos,y=AF.T,shape=`point mutation`,col=`point mutation`),fill='red',size=ifelse(wgs,.9,1.2),show.legend = F) +
             scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22)) +
             scale_color_manual(values = c('snv'='darkred','ins'='red','del'='red','other'='darkred'))
-
+        
         labels <- somatic[SYMBOL %in% cancergenes$gene & CANONICAL=='YES' & IMPACT %in% c('MODERATE','HIGH')]
         if (nrow(labels)>0) {
             labels[,ppos:=str_extract(Protein_position,'[0-9]*')]
@@ -1655,7 +1976,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
             labels[str_detect(Consequence,'splice'),aa:='sp']
             labels[,label:=paste0(SYMBOL,':',ppos,aa)]
             labels[,nudge:=-.5][AF.T>.1,nudge:=.1]
-
+            
             p$pos_alleleratio <- p$pos_alleleratio +
                 geom_label_repel(data = labels,mapping = aes(x=gpos,y=AF.T,label=label),
                                  show.legend = F,
@@ -1676,7 +1997,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         p$pos_alleleratio <- p$pos_alleleratio +
             geom_point(data=germline,mapping = aes(x=gpos,y=allele_ratio,shape=`point mutation`),col='grey',fill='blue',size=ifelse(wgs,.9,1.2),show.legend = F) +
             scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22))
-
+        
         labels <- germline[SYMBOL %in% cancergenes$gene & CANONICAL=='YES' & IMPACT %in% c('MODERATE','HIGH')]
         if (nrow(labels)>0) {
             labels[,ppos:=str_extract(Protein_position,'[0-9]*')]
@@ -1687,7 +2008,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
             labels[str_detect(Consequence,'splice'),aa:='sp']
             labels[,label:=paste0(SYMBOL,':',ppos,aa)]
             labels[,nudge:=-.5][allele_ratio>.1,nudge:=.1]
-
+            
             p$pos_alleleratio <- p$pos_alleleratio +
                 geom_label_repel(data = labels,mapping = aes(x=gpos,y=allele_ratio,label=label),
                                  show.legend = F,
@@ -1702,12 +2023,12 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                                  segment.size = 0.5,
                                  segment.color = 'blue')
         }
-
+        
     }
     # last few items
     p$pos_alleleratio <- p$pos_alleleratio +
         scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
-                           limits=c(0,max(targets$gpos)),
+                           limits=c(0,max(targets$gpos+5e6)),
                            expand = c(.01,.01),labels = chroms$chromosome) +
         scale_y_continuous(breaks = c(0,.2,.4,.6,.8,1),
                            minor_breaks = c(.1,.3,.5,.7,.9),
@@ -1717,9 +2038,9 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
               panel.grid.minor.x = element_line(color = 'black'),
               axis.line = element_line(),
               axis.ticks = element_line())
-
+    
     ## by order ---------------------------------------------------------
-
+    
     # chroms object by order
     chroms=data.table(chromosome=unique(targets$chromosome),
                       start=0,
@@ -1730,9 +2051,9 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         chroms$end[chr==chroms$chromosome]=targets[chromosome==chr,max(bin)]
         chroms$mid[chr==chroms$chromosome]=targets[chromosome==chr,mean(bin)]
     }
-
+    
     ### logR ---------------------------------------------------------
-
+    
     # logR by order
     p$order_log2 <- ggplot(targets) + xlab('Order of genomic position') + ylab('Corrected depth') +
         geom_point(data=cancergenes_here, #  <<--- this is a dummy for colors to work out.
@@ -1747,26 +2068,30 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
                            limits=c(0,max(targets$bin)),
                            expand = c(.01,.01),labels = chroms$chromosome) +
+        scale_y_log10(limits=ylims, breaks=ybreaks, minor_breaks=yminorbreaks) +
         theme(panel.grid.major.x = element_blank(),
               panel.grid.minor.y = element_line(),
               panel.grid.minor.x = element_line(color = 'black'),
               axis.line = element_line(),
               axis.ticks = element_line())
-
+    
     ### logR-gc ---------------------------------------------------------
-
+    
     # logR vs gc
-    p$gc_log2 <- ggplot(targets) + xlab('GC content') + ylab('Corrected depth') +
-        geom_point(data=targets,mapping = aes(x=gc,y=2^log2),fill='#606060',col='#202020',shape=21,size=.6,alpha=alpha) + # fill='#60606040'
-        # geom_density_2d(data=targets,color='grey',
-        #                 mapping = aes(x=gc,y=2^log2)) +
-        # geom_smooth(data=targets[!is.na(`selected genes`)],
-        #             mapping = aes(x=gc,y=2^log2,col=`selected genes`),size=.5,se=F,show.legend = F,method = 'loess') +
-        scale_fill_hue(l=70) + scale_y_log10(limits=ylims)
+    p$gc_log2 <- ggplot(targets[type!='background']) + xlab('GC content') + ylab('Corrected depth') +
+        geom_point(mapping = aes(x=gc,y=2^log2),fill='#606060',col='#202020',shape=21,size=.3,alpha=.2) + 
+        facet_wrap(facets = vars(type),nrow = 1) +
+        geom_text(data=unique(targets[type!='background',.(type)]),
+                  mapping=aes(label = type, x = 0.26, y = Inf), hjust = 0, vjust = 1.5) +
+        theme(panel.spacing = unit(0, "lines"),strip.background = element_blank(),strip.text.x = element_blank()) +
+        scale_x_continuous(limits=c(.2,.8), breaks=c(.3,.5,.7), minor_breaks=NULL) +
+        scale_y_log10(limits=ylims, breaks=ybreaks, minor_breaks=yminorbreaks) +
+        scale_fill_hue(l=70)
     m <- targets[gene!='Background',median(depth)]
-
+    
+    
     ### alleleratio ---------------------------------------------------------
-
+    
     # allele ratio by order
     p$order_alleleratio <- ggplot(snps) + xlab('Order of genomic position') + ylab('Allele ratio') +
         geom_point(data=cancergenes_here, #  <<--- this is a dummy for colors to work out.
@@ -1781,7 +2106,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
             geom_point(data=somatic,mapping = aes(x=bin,y=AF.T,shape=`point mutation`,col=`point mutation`),fill='red',size=ifelse(wgs,.9,1.2),show.legend = F) +
             scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22)) +
             scale_color_manual(values = c('snv'='darkred','ins'='red','del'='red','other'='darkred'))
-
+        
         labels <- somatic[SYMBOL %in% cancergenes$gene & CANONICAL=='YES' & IMPACT %in% c('MODERATE','HIGH')]
         if (nrow(labels)>0) {
             labels[,ppos:=str_extract(Protein_position,'[0-9]*')]
@@ -1792,7 +2117,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
             labels[str_detect(Consequence,'splice'),aa:='sp']
             labels[,label:=paste0(SYMBOL,':',ppos,aa)]
             labels[,nudge:=-.5][AF.T>.1,nudge:=.1]
-
+            
             p$order_alleleratio <- p$order_alleleratio +
                 geom_label_repel(data = labels,mapping = aes(x=bin,y=AF.T,label=label),
                                  show.legend = F,
@@ -1813,7 +2138,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         p$order_alleleratio <- p$order_alleleratio +
             geom_point(data=germline,mapping = aes(x=bin,y=allele_ratio,shape=`point mutation`),col='grey',fill='blue',size=ifelse(wgs,.9,1.2),show.legend = F) +
             scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22))
-
+        
         labels <- germline[SYMBOL %in% cancergenes$gene & CANONICAL=='YES' & IMPACT %in% c('MODERATE','HIGH')]
         if (nrow(labels)>0) {
             labels[,ppos:=str_extract(Protein_position,'[0-9]*')]
@@ -1824,7 +2149,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
             labels[str_detect(Consequence,'splice'),aa:='sp']
             labels[,label:=paste0(SYMBOL,':',ppos,aa)]
             labels[,nudge:=-.5][allele_ratio>.1,nudge:=.1]
-
+            
             p$order_alleleratio <- p$order_alleleratio +
                 geom_label_repel(data = labels,mapping = aes(x=bin,y=allele_ratio,label=label),
                                  show.legend = F,
@@ -1839,7 +2164,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                                  segment.size = 0.5,
                                  segment.color = 'blue')
         }
-
+        
     }
     # last few items
     p$order_alleleratio <- p$order_alleleratio +
@@ -1854,9 +2179,9 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
               panel.grid.minor.x = element_line(color = 'black'),
               axis.line = element_line(),
               axis.ticks = element_line())
-
+    
     ### alleleratio-logR ---------------------------------------------------------
-
+    
     # allele ratio vs depth/log2
     p$depth_alleleratio <- ggplot(targets) + xlab('Corrected depth') + ylab('Allele ratio') +
         geom_point(data=targets,
@@ -1869,27 +2194,30 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         scale_y_continuous(breaks = c(0,.2,.4,.6,.8,1),
                            minor_breaks = c(.1,.3,.5,.7,.9),
                            limits = 0:1)
-
-
-
+    
+    
+    
     if (!is.null(somatic)) if (nrow(somatic)>0) p$depth_alleleratio <- p$depth_alleleratio +
         geom_point(data=somatic,mapping = aes(x=2^somatic$log2,y=AF.T,shape=`point mutation`,col=`point mutation`),
                    fill='red',size=ifelse(wgs,.6,.9),show.legend = F) +
         scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22)) +
         scale_color_manual(values = c('snv'='darkred','ins'='red','del'='red','other'='darkred'))
-
+    
     if (!is.na(rough_fraction)) p$depth_alleleratio <- p$depth_alleleratio +
         geom_hline(yintercept = rough_fraction,lty=3)
-
+    
     ### depth ---------------------------------------------------------
-
+    
     # depth by order
-    p$order_rawdepth <- ggplot(targets) + xlab('Order of genomic position') + ylab('Sequence depth') +
+    p$order_rawdepth <- ggplot(targets) + xlab('Order of genomic position') + ylab('Fragments') +
+        geom_point(data=cancergenes_here, #  <<--- this is a dummy for colors to work out.
+                   mapping = aes(x=bin,y=.5,fill=`selected genes`),shape=1,col='#FFFFFF',size=.1,show.legend = F) +
         geom_point(data=targets[type!='background'],mapping = aes(x=bin,y=depth),
                    fill='#606060',col='#202020',size=1,shape=21,alpha=alpha) +
         geom_point(data=targets[!is.na(`selected genes`)],mapping = aes(x=bin,y=depth,fill=`selected genes`),
                    show.legend = F,shape=21,col='#00000050',size=1) +
-        scale_fill_hue(l=70) + scale_y_log10(limits=depthlimits) +
+        scale_fill_hue(l=70) + 
+        scale_y_log10(limits=depthlimits,minor_breaks=NULL) +
         scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
                            limits=c(0,max(targets$bin)),
                            expand = c(.01,.01),labels = chroms$chromosome) +
@@ -1906,51 +2234,54 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                          box.padding = .1,
                          label.padding = .1,
                          point.padding = .1)
-
-
+    
+    
     ### depth-gc ---------------------------------------------------------
-
+    
     # depth vs GC
-    p$gc_rawdepth <- ggplot(targets) + xlab('GC content') + ylab('Sequence depth') +
-        geom_point(data=targets[type!='background'],mapping = aes(x=gc,y=depth),fill='#606060',col='#202020',shape=21,size=.6,alpha=alpha) + #
-        # geom_density_2d(data=targets,color='grey',
-        #                 mapping = aes(x=gc,y=depth)) +
-        # geom_smooth(data=targets[!is.na(`selected genes`) & !is.na(log2)],
-        #             mapping = aes(x=gc,y=depth,col=`selected genes`),size=.5,se=F,show.legend = F,method = 'loess') +
-        scale_fill_hue(l=70) + scale_y_log10(limits=depthlimits)
-
+    p$gc_rawdepth <- ggplot(targets[type!='background']) + xlab('GC content') + ylab('Fragments') +
+        geom_point(mapping = aes(x=gc,y=depth),fill='#606060',col='#202020',shape=21,size=.3,alpha=.2) + 
+        facet_wrap(facets = vars(type),nrow = 1) +
+        geom_text(data=unique(targets[type!='background',.(type)]),
+                  mapping=aes(label = type, x = 0.26, y = Inf), hjust = 0, vjust = 1.5) +
+        theme(panel.spacing = unit(0, "lines"),strip.background = element_blank(),strip.text.x = element_blank()) +
+        scale_x_continuous(limits=c(.2,.8), breaks=c(.3,.5,.7), minor_breaks=NULL) +
+        scale_y_log10(limits=depthlimits,minor_breaks=NULL) +
+        scale_fill_hue(l=70)
+    
+    
     ## finalize ---------------------------------------------------------
-
+    
     for (i in 1:length(p)) p[[i]] <- p[[i]] +
         guides(fill=guide_legend(override.aes=list(shape=21,size=2))) +
         guides(shape=guide_legend(override.aes=list(size=2)))
-
+    
     stats <- paste0('Coverage: ',
                     paste(round(quantile(snps$depth,c(.1,.9),na.rm=T)),collapse = '-'),
                     ', Noise: ',
                     noise(targets[gene!='Background']$log2),'%'
     )
     stats <- paste0(stats,', SMAF: ', rough_fraction)
-
+    
     if (!is.null(purecn)) try( {
         stats <- paste0(stats,', PureCN: ',round(purecn$Ploidy,1),'N, ',100*purecn$Purity,'%')
     }, silent=T)
-
+    
     date <- format(Sys.time(), "%a %b %e %Y, %H:%M")
-
+    
     pa <- plot_annotation(
         title = paste(basename(name),'  ',date,'  ',stats),
         caption = paste('Frankenplot 2.0 on',date, '')
     )
-
+    
     if (!wgs) { # Targeted:
-        layout <-  "ABBBB
-                CDDDD
-                EFFFF
-                GGGGG
-                HHHHH
-                IJJJJ
-                IJJJJ"
+        layout <-  "AABBBBBB
+                CCDDDDDD
+                EEFFFFFF
+                GGGGGGGG
+                HHHHHHHH
+                IIJJJJJJ
+                IIJJJJJJ"
         fig <-
             p$gc_rawdepth+p$order_rawdepth+
             p$gc_log2+p$order_log2+
@@ -1971,27 +2302,29 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
             p$nogrid+p$grid+
             plot_layout(design = layout,guides = 'collect')
     }
-
-
+    
+    
     print(fig+pa)
-
+    
+    return(p)
+    
 }
 
 
 # Chromosome plot function ---------------------------------------------------------
 
 chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline=NULL) {
-
+    
     # if all targets > 500 bases, assume WGS.
     wgs <- all(targets$end-targets$start > 500)
-
+    
     alpha <- .8
     if (wgs) alpha <- .2
-
+    
     targets[gene=='AR_enhancer',gene:='enh_AR']
-
+    
     targets[,smooth_log2:=runmed(log2,k=7),by=chromosome]
-
+    
     # match bins with cancer genes
     binranges <- makeGRangesFromDataFrame(targets[,.(chromosome,start,end)])
     overlap <- findOverlaps(cancergeneranges,binranges)
@@ -2013,30 +2346,35 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
     cancergenes_here[mean>.3,nudge:=-.2]
     if (wgs) cancergenes_here[,nudge:=nudge*(2/3)]
     cancergenes_here[,`selected genes`:=factor(gene)]
-
+    
     cancergenes_here[,label:=paste0(symbol,"^\'",type,"\'")]
-
+    
     # SVs
-
-
-
+    
+    
+    
     p <- NULL
     #targets[,smooth_log2:=runmed(log2,k=25),by=chromosome]
     #snps[,smooth_log2:=targets$smooth_log2[bin]]
-    ylims <- c(.4,2)
-    ylims[1] <- min(ylims[1],min(2^targets[chromosome==chr]$smooth_log2*.7))
-    ylims[2] <- max(ylims[2],max(2^targets[chromosome==chr]$smooth_log2*1.5))
-
+    
+    ylims <- c(
+        min(0,min(2^targets[chromosome=chr]$smooth_log2,na.rm = T)),
+        max(20,max(2^targets[chromosome=chr]$smooth_log2,na.rm = T))
+    )
+    ybreaks <- c(.1,.25,.5,.75,1,1.5,2,3,4,6,10,15,20)
+    ybreaks <- ybreaks[ybreaks >= ylims[1] & ybreaks<=ylims[2]]
+    yminorbreaks <- c(1.25,1.75)
+    
     y_nudge <- -.38 # where to put gene labels
     m <- median(targets[chromosome==chr]$log2,na.rm=T)
     if (m< -(.7)) y_nudge <- .2
-
+    
     # het_snps <- snps
     # targets[,allele_ratio:=as.numeric(NA)]
     # targets[het_snps$bin,allele_ratio:=het_snps$allele_ratio]
     #
     ## genelabels ---------------------------------------------------------
-
+    
     label_genes <- cancergenes_here$`selected genes`
     # if (any(!is.na(targets[chromosome==chr & gene!='Background']$cancergene))) label_genes <-
     #     as.data.table(targets[chromosome==chr & gene!='Background',table(cancergene)])[N>=1]$cancergene
@@ -2048,16 +2386,71 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
         targets[str_detect(gene,paste0('^',g,',')),`selected genes`:=g]
         targets[str_detect(gene,paste0(',',g,',')),`selected genes`:=g]
     }
-
+    
     # snp cancergenes
     #snps[,`selected genes`:=as.character(NA)]
     snps[,`selected genes`:=targets[snps$bin]$`selected genes`]
-
+    
+    
+    ## scatterplots ---------------------------------------------------------
+    
+    ### maf-logR -------------------------------
+    gridsnps <- snps[!is.na(bin) & !is.na(maf)]
+    gridsnps$log2 <- targets[gridsnps$bin]$log2
+    gridsnps$type <- targets[gridsnps$bin]$type
+    
+    p$scatter <- ggplot(gridsnps) +
+        geom_point(data=cancergenes_here[chromosome==chr], #  <<--- this is a dummy for colors to work out.
+                   mapping = aes(x=.5,y=1,fill=`selected genes`),shape=1,col='#FFFFFF',size=.1,show.legend = F) +
+        geom_point(data=gridsnps[sample(x=1:.N,size=min(.N,20e3))],
+                   mapping=aes(x=2^log2,y=maf),
+                   fill='#DDDDDD',col='#BBBBBB',shape=21,size=1,alpha=alpha) +
+        geom_point(data=gridsnps[chromosome==chr & is.na(`selected genes`)],
+                   mapping=aes(x=2^log2,y=maf),
+                   fill='#606060',col='#202020',shape=21,size=1,alpha=alpha) +
+        geom_point(data=gridsnps[chromosome==chr & !is.na(`selected genes`)],
+                   mapping = aes(x=2^log2,y=maf,fill=`selected genes`),shape=21,col='#00000050',size=1,show.legend = F) +
+        geom_point(data=gridsnps[chromosome==chr & !is.na(`selected genes`) & type=='exonic'],
+                   mapping = aes(x=2^log2,y=maf,fill=`selected genes`),shape=23,col='#000000FF',size=1.5,show.legend = F) +
+        scale_fill_hue(l=70) +
+        scale_y_continuous(
+            limits = c(.5, 1),
+            sec.axis = sec_axis(
+                ~ 2 * (. - 0.5),
+                name = "Homozygous DNA fraction",
+                breaks = seq(0, 1, by = 0.1),  # set breaks for secondary axis
+                labels = c('0.0','0.1','0.2','0.3','0.4','0.5','0.6','0.7','0.8','0.9','1.0')  # set labels for secondary axis
+            )
+        ) +
+        scale_x_continuous(limits=c(.3,2),breaks=c(.5,1,1.5,2),labels=c('0.5','1','1.5','2')) +
+        xlab('Corrected depth') + ylab('Major allele ratio')
+    
+    
+    
+    
+    ### logR-GC ---------------------------------------------------------
+    
+    p$gc_log2 <- ggplot(targets[chromosome==chr]) + xlab(paste('GC content')) + ylab('Corrected depth') +
+        geom_point(data=cancergenes_here[chromosome==chr], #  <<--- this is a dummy for colors to work out.
+                   mapping = aes(x=.5,y=1,fill=`selected genes`),shape=1,col='#FFFFFF',size=.1,show.legend = F) +
+        geom_point(data=targets[sample(x=1:.N,size=min(.N,20e3))],
+                   mapping = aes(x=gc,y=2^log2),fill='#DDDDDD',col='#BBBBBB',shape=21,size=1,alpha=alpha) +
+        geom_point(data=targets[chromosome==chr & is.na(`selected genes`)],
+                   mapping = aes(x=gc,y=2^log2),fill='#606060',col='#202020',shape=21,size=1,alpha=alpha) +
+        geom_point(data=targets[chromosome==chr & !is.na(`selected genes`)],
+                   mapping = aes(x=gc,y=2^log2,fill=`selected genes`),shape=21,col='#00000050',size=1,show.legend = F) +
+        geom_point(data=targets[chromosome==chr & !is.na(`selected genes`) & type=='exonic'],
+                   mapping = aes(x=gc,y=2^log2,fill=`selected genes`),shape=23,col='#000000FF',size=1.5,show.legend = F) +
+        scale_fill_hue(l=70) +
+        scale_y_log10(limits=ylims, breaks=ybreaks, minor_breaks=yminorbreaks)
+    
+    
+    
     ## by pos ---------------------------------------------------------
-
+    
     ### logR ---------------------------------------------------------
     if (is.null(targets$type)) targets[,type:='target'][gene=='Background',type:='background']
-
+    
     # logR by pos + segments
     p$pos_log2 <- ggplot(targets[chromosome==chr]) + xlab(paste('Chromosome',chr,'position')) + ylab('Corrected depth') +
         geom_point(data=cancergenes_here[chromosome==chr], #  <<--- this is a dummy for colors to work out.
@@ -2078,14 +2471,12 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
                    mapping = aes(x=end_pos,y=2^log2)) +
         scale_fill_hue(l=70) +
         scale_x_continuous(breaks = seq(0,max(targets[chromosome==chr]$end+10e6),10e6),
-                           #minor_breaks = seq(0,max(targets[chromosome==chr]$end+10e6),1e6),
                            expand = c(.01,.01),
                            limits = c(0,max(targets[chromosome==chr]$end+10e6)),
                            labels = c(0,paste0(seq(10,max(targets[chromosome==chr]$end/1e6)+10,10),'M'))) +
-        scale_y_log10(limits=ylims) +
+        scale_y_log10(limits=ylims, breaks=ybreaks, minor_breaks=yminorbreaks) +
         theme(panel.grid.major.x = element_line(),
               panel.grid.minor.y = element_line(),
-              #panel.grid.minor.x = element_line(color = 'lightgrey'),
               axis.line = element_line(),
               axis.ticks = element_blank(),
               plot.margin = margin(6, 6, 6, 6, "pt"))
@@ -2105,9 +2496,11 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
                          segment.size = 0.5,
                          # Draw an arrow from the label to the data point.
                          arrow = arrow(length = unit(0.01, 'npc')))
-
+    
+    
+    
     ### alleleratio ---------------------------------------------------------
-
+    
     # allele ratio by pos
     p$pos_alleleratio <- ggplot(snps[chromosome==chr]) + xlab(paste('Chromosome',chr,'position')) + ylab('Allele ratio') +
         geom_point(data=cancergenes_here[chromosome==chr], #  <<--- this is a dummy for colors to work out.
@@ -2121,7 +2514,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
             geom_point(data=somatic[chromosome==chr],mapping = aes(x=start,y=AF.T,shape=`point mutation`,col=`point mutation`),fill='red',size=1.2,show.legend = F) +
             scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22)) +
             scale_color_manual(values = c('snv'='darkred','ins'='red','del'='red','other'='darkred'))
-
+        
         labels <- somatic[chromosome==chr & SYMBOL %in% cancergenes$gene & CANONICAL=='YES' & IMPACT %in% c('MODERATE','HIGH')]
         if (nrow(labels)>0) {
             labels[,ppos:=str_extract(Protein_position,'[0-9]*')]
@@ -2132,7 +2525,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
             labels[str_detect(Consequence,'splice'),aa:='sp']
             labels[,label:=paste0(SYMBOL,':',ppos,aa)]
             labels[,nudge:=-.5][AF.T>.1,nudge:=.1]
-
+            
             p$pos_alleleratio <- p$pos_alleleratio +
                 geom_label_repel(data = labels[chromosome==chr],mapping = aes(x=start,y=AF.T,label=label),
                                  show.legend = F,
@@ -2153,7 +2546,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
         p$pos_alleleratio <- p$pos_alleleratio +
             geom_point(data=germline,mapping = aes(x=start,y=allele_ratio,shape=`point mutation`),col='grey',fill='blue',size=1.2,show.legend = F) +
             scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22))
-
+        
         labels <- germline[SYMBOL %in% cancergenes$gene & CANONICAL=='YES' & IMPACT %in% c('MODERATE','HIGH')]
         if (nrow(labels[chromosome==chr])>0) {
             labels[,ppos:=str_extract(Protein_position,'[0-9]*')]
@@ -2164,7 +2557,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
             labels[str_detect(Consequence,'splice'),aa:='sp']
             labels[,label:=paste0(SYMBOL,':',ppos,aa)]
             labels[,nudge:=-.5][allele_ratio>.1,nudge:=.1]
-
+            
             p$pos_alleleratio <- p$pos_alleleratio +
                 geom_label_repel(data = labels[chromosome==chr],mapping = aes(x=start,y=allele_ratio,label=label),
                                  show.legend = F,
@@ -2179,7 +2572,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
                                  segment.size = 0.5,
                                  segment.color = 'blue')
         }
-
+        
     }
     # last few items
     p$pos_alleleratio <- p$pos_alleleratio +
@@ -2197,11 +2590,11 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
               axis.line = element_line(),
               axis.ticks = element_line(),
               plot.margin = margin(6, 6, 6, 6, "pt"))
-
+    
     ## by order ---------------------------------------------------------
-
+    
     ### logR ---------------------------------------------------------
-
+    
     # logR by order
     p$order_log2 <- ggplot(targets[chromosome==chr]) + xlab(paste('Chromosome',chr,'order')) + ylab('Corrected depth') +
         geom_point(data=cancergenes_here[chromosome==chr], #  <<--- this is a dummy for colors to work out.
@@ -2220,7 +2613,8 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
                    mapping = aes(x=start,y=2^log2)) +
         geom_point(data=segments[chromosome==chr],col='green',size=.4,shape=18,
                    mapping = aes(x=end,y=2^log2)) +
-        scale_fill_hue(l=70) + scale_y_log10(limits=ylims) +
+        scale_fill_hue(l=70) + 
+        scale_y_log10(limits=ylims, breaks=ybreaks, minor_breaks=yminorbreaks) +
         scale_x_continuous(expand = c(.01,.01),
                            limits = c(min(targets[chromosome==chr]$bin),
                                       max(targets[chromosome==chr]$bin))) +
@@ -2246,9 +2640,9 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
                          segment.size = 0.5,
                          # Draw an arrow from the label to the data point.
                          arrow = arrow(length = unit(0.01, 'npc')))
-
+    
     ### alleleratio ---------------------------------------------------------
-
+    
     # allele ratio by order
     p$order_alleleratio <- ggplot(snps[chromosome==chr]) + xlab(paste('Chromosome',chr,' order')) + ylab('Allele ratio') +
         geom_point(data=cancergenes_here[chromosome==chr], #  <<--- this is a dummy for colors to work out.
@@ -2262,7 +2656,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
             geom_point(data=somatic[chromosome==chr],mapping = aes(x=bin,y=AF.T,shape=`point mutation`,col=`point mutation`),fill='red',size=1.2,show.legend = F) +
             scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22)) +
             scale_color_manual(values = c('snv'='darkred','ins'='red','del'='red','other'='darkred'))
-
+        
         labels <- somatic[chromosome==chr & SYMBOL %in% cancergenes$gene & CANONICAL=='YES' & IMPACT %in% c('MODERATE','HIGH')]
         if (nrow(labels)>0) {
             labels[,ppos:=str_extract(Protein_position,'[0-9]*')]
@@ -2273,7 +2667,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
             labels[str_detect(Consequence,'splice'),aa:='sp']
             labels[,label:=paste0(SYMBOL,':',ppos,aa)]
             labels[,nudge:=-.5][AF.T>.1,nudge:=.1]
-
+            
             p$order_alleleratio <- p$order_alleleratio +
                 geom_label_repel(data = labels[chromosome==chr],mapping = aes(x=bin,y=AF.T,label=label),
                                  show.legend = F,
@@ -2294,7 +2688,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
         p$order_alleleratio <- p$order_alleleratio +
             geom_point(data=germline,mapping = aes(x=bin,y=allele_ratio,shape=`point mutation`),col='grey',fill='blue',size=1.2,show.legend = F) +
             scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22))
-
+        
         labels <- germline[SYMBOL %in% cancergenes$gene & CANONICAL=='YES' & IMPACT %in% c('MODERATE','HIGH')]
         if (nrow(labels[chromosome==chr])>0) {
             labels[,ppos:=str_extract(Protein_position,'[0-9]*')]
@@ -2305,7 +2699,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
             labels[str_detect(Consequence,'splice'),aa:='sp']
             labels[,label:=paste0(SYMBOL,':',ppos,aa)]
             labels[,nudge:=-.5][allele_ratio>.1,nudge:=.1]
-
+            
             p$order_alleleratio <- p$order_alleleratio +
                 geom_label_repel(data = labels[chromosome==chr],mapping = aes(x=bin,y=allele_ratio,label=label),
                                  show.legend = F,
@@ -2320,7 +2714,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
                                  segment.size = 0.5,
                                  segment.color = 'blue')
         }
-
+        
     }
     # last few items
     p$order_alleleratio <- p$order_alleleratio +
@@ -2336,42 +2730,49 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
               axis.line = element_blank(),
               axis.ticks = element_blank(),
               plot.margin = margin(6, 6, 6, 6, "pt"))
-
-
-
+    
+    
+    
     ## finalize ---------------------------------------------------------
-
+    
     for (i in 1:length(p)) p[[i]] <- p[[i]] +
         guides(fill=guide_legend(override.aes=list(shape=21,size=2))) +
         guides(shape=guide_legend(override.aes=list(size=2)))
-
+    
     pa <- plot_annotation(
         title = paste(basename(name),'       Chromosome',chr),
     )
-
+    
     if (!wgs) {
-        layout <-  "AAAAA
-                BBBBB
-                CCCCC
-                DDDDD"
+        layout <-  "AABB
+                    AABB
+                CCCC
+                DDDD
+                EEEE
+                FFFF"
         fig <-
+            p$gc_log2+
+            p$scatter+
             p$order_log2+
             p$order_alleleratio+
             p$pos_log2+
             p$pos_alleleratio+
             plot_layout(design = layout,guides = 'collect')
     } else {
-        layout <-  "AAAAA
-                BBBBB"
+        layout <-  "AABB
+                CCCC
+                DDDD"
         fig <-
+            p$gc_log2+
+            p$scatter+
             p$pos_log2+
             p$pos_alleleratio+
             plot_layout(design = layout,guides = 'collect')
     }
-
+    
     print(fig+pa)
-
-
+    
+    
 }
 
 
@@ -2387,7 +2788,7 @@ file.copy(opts$frankenplot_Rmd, temp_rmd_path)
 
 
 
-rmarkdown::render(
+if (T) rmarkdown::render(
     input = temp_rmd_path,
     output_file = opts$output,
     envir = parent.frame()
