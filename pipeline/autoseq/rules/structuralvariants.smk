@@ -182,7 +182,7 @@ rule gridss_svcalling_somatic:
         "source activate gridss-env && "
         "gridss --reference {input.reference} "
         " --jvmheap {params.jvmheap} "
-        " --jar $GRIDSS_JAR, "
+        " --jar $GRIDSS_JAR "
         " -c $GRIDSS_SCRIPT/gridss.properties "
         " --assembly {output.assembly_bam} "
         " --threads {threads} --steps  ALL "

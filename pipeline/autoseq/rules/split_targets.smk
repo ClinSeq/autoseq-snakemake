@@ -74,7 +74,7 @@ rule samtools_merge_realign_1:
         bai = outdir + "/bams/{sample}_realigned-1.bam.bai",
     shell:
         """
-        InputBams={input}
+        InputBams=({input})
         bamfiles=${{InputBams[*]}}
         samtools merge -c -p {output.bam} ${{bamfiles}}
         samtools index {output.bam}
@@ -91,7 +91,7 @@ rule samtools_merge_realign_2:
         bai = outdir + "/bams/{sample}_realigned-2.bam.bai",
     shell:
         """
-        InputBams={input}
+        InputBams=({input})
         bamfiles=${{InputBams[*]}}
         samtools merge -c -p {output.bam} ${{bamfiles}}
         samtools index {output.bam}
