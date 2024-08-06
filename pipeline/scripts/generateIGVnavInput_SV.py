@@ -275,7 +275,7 @@ def combine_mut(input_dir, output_dir):
             cmd.append("awk -F'\\t' 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $6,\"svcaller\", $4, \"" + vcftype + "\", $7, $8}' " \
                         + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
         elif 'gridss.mut' in file:
-            vcftype = 'somatic' if 'somatic' in filebase else 'germline'            
+            vcftype = 'somatic' if 'somatic' in filebase else 'tumor' if 'tumor' in filebase else 'germline'            
             cmd.append("awk -F'\\t' 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $6,\"gridss\", $4, \"" + vcftype + "\", $7, $8}' " \
                         + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
 
@@ -430,13 +430,14 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
                 if list(filter(None, cgcann)) != []:
                     curator = "YES"
             else:
-                if check_targets(chrom_a, start_a, end_a, targets) or \
+                curator = "NO"
+                if svtype == 'TRA': 
+                    if check_targets(chrom_a, start_a, end_a, targets) or \
                         check_targets(chrom_b, start_b, end_b, targets):
-                    curator = "YES"
+                        curator = "YES"
                 else:
-                    curator = "NO"
-            
-                
+                    if check_targets(chrom_a, start_a, end_b, targets):
+                        curator = "YES"
 
             if tool == 'gridss' and chrom_b == 'NA':
                 svlength = abs(int(end_a)-int(start_a))
@@ -444,7 +445,7 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
                 if svtype == "INS":
                     alt_seq = ''.join(list(filter(str.isalpha, alt)))
                     svlength = len(alt_seq)
-
+    
             gene_a_b = [gene_a, gene_b]
             gene_a_b.sort()
             gene_a_b_sorted = ",".join(gene_a_b)

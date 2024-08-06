@@ -28,7 +28,7 @@ rule picard_collectinsertsize:
         metrics = outdir + "/qc/picard/{sample}.picard-insertsize.txt"
     params:
         java_options = params['picard']['collectinsertsize']['java_options'],
-        tmpdir = params['scratch'],
+        tmpdir = params['scratch']
     threads: params['picard']['collectinsertsize']['threads']
     log:
         outdir + "/logs/picard/picard_insertsize_{sample}.log"
@@ -59,6 +59,7 @@ rule picard_collectoxog:
             "I={input.bam} "
             "R={input.reference_genome} "
             "O={output.metrics} 2> {log} "
+            " && rm -rf {params.tmpdir} " 
 
 
 rule picard_collecthsmetrics:
@@ -89,6 +90,7 @@ rule picard_collecthsmetrics:
             "BI={input.bait_regions} "
             "BAIT_SET_NAME={params.bait_name} "
             "METRIC_ACCUMULATION_LEVEL=LIBRARY 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule samtools_flagstat:
@@ -132,7 +134,8 @@ rule gatk3_contest_cancer:
     output:
         "{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR)
     params:
-        tmpdir = params['scratch'],
+        tmpdir = os.path.join(params['scratch'], 
+                                "gatk3-contest-cancer-{}".format(str(uuid.uuid4()))),
         min_genotype_ratio = params['contest_cancer']['min_genotype_ratio']
     threads: params['contest_cancer']['threads']
     container: containers['gatk3']
@@ -147,6 +150,7 @@ rule gatk3_contest_cancer:
             "--popfile {input.popvcf}  "
             "--min_genotype_ratio {params.min_genotype_ratio}  "
             " -o {output} 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule gatk3_contest_normal:
@@ -158,7 +162,8 @@ rule gatk3_contest_normal:
     output:
         "{}/contamination/{}.contest.txt".format(outdir, NORMAL_CAPTURE_STR)
     params:
-        tmpdir = params['scratch'],
+        tmpdir = os.path.join(params['scratch'], 
+                                "gatk3-contest-normal-{}".format(str(uuid.uuid4()))),
         min_genotype_ratio = params['contest_cancer']['min_genotype_ratio']
     threads: params['contest_cancer']['threads']
     container: containers['gatk3']
@@ -173,6 +178,7 @@ rule gatk3_contest_normal:
             "--popfile {input.popvcf}  "
             "--min_genotype_ratio {params.min_genotype_ratio}  "
             " -o {output} 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule contam_caveat:
@@ -270,9 +276,11 @@ rule msings:
         msings = msings_output
     params:
         prefix = msings_outdir
+    container: containers['gatk3']
     log:
         "{}/logs/msings-{}-{}.log".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     shell:
+        "source activate gatk_3 && "
         "run_msings.sh -b {input.msings_bed} "
         " -f {input.reference_genome} "
         " -i {input.msings_intervals} "

@@ -79,6 +79,7 @@ rule gatk3_targetcreator:
         tmpdir = os.path.join(params['scratch'], 
                                 "realignerTC-{}".format(str(uuid.uuid4())))
     threads: params['gatk3']['target_creator']['threads']
+    container: containers['gatk3']
     log:
         outdir + "/logs/gatk_realigner_targetcreator_{sample}_{chr}.log"
     shell:
@@ -96,20 +97,21 @@ rule gatk3_targetcreator:
 
 rule gatk3_indelrealigner:
     input:
-        bam = outdir + outdir + "/bams/split_targets/bam/{sample}.{chr}.bam",
+        bam = outdir + "/bams/split_targets/bam/{sample}.{chr}.bam",
         reference_genome = reference['reference_genome'],
         target_region = outdir + "/bams/split_targets/target.{chr}.bed",
         known_1kg = reference["1KG"],
         known_mills_gs = reference["Mills_and_1KG_gold_standard"],
         target_intervals = outdir + "/bams/split_targets/{sample}_{chr}.intervals"
     output:
-        bam = outdir + "/bams/{sample}_realigned.{chr}.bam",
+        bam = outdir + "/bams/split_targets/bam/{sample}_realigned.{chr}.bam",
     params:
         java_options = params['gatk3']['indel_realigner']['java_options'],
         extra = params['gatk3']['indel_realigner']['extra'],
         tmpdir = os.path.join(params['scratch'], 
                                 "indelrealigner-{}".format(str(uuid.uuid4())))
     threads: params['gatk3']['indel_realigner']['threads']
+    container: containers['gatk3']
     log:
         outdir + "/logs/gatk_indel_realigner_{sample}_{chr}.log"
     shell:
@@ -129,7 +131,7 @@ rule gatk3_indelrealigner:
 rule samtools_merge_realign:
     input:
         expand(outdir + "/bams/split_targets/bam/{{sample}}_realigned.{chr}.bam", chr = all_chromosomes),
-        outdir + "/bams/split_targets/bam/{sample}_umimapped.nochr.bam"
+        outdir + "/bams/split_targets/bam/{sample}.nochr.bam"
     output:
         outdir + "/bams/{sample}_realigned.bam"
     run:

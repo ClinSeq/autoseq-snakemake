@@ -62,7 +62,7 @@ rule liqbiocna_plot:
         tumor_dup = capture_to_results[CANCER_CAPTURE].svs['DUP'],
         tumor_inv = capture_to_results[CANCER_CAPTURE].svs['INV'],
         tumor_tra = capture_to_results[CANCER_CAPTURE].svs['TRA'],
-        purecn_mock = outdir + "qc/purecn_mock.csv"
+        purecn_mock = outdir + "/qc/purecn_mock.csv"
     threads: params['liqbiocna']['threads']
     container: containers['franken']
     log:

@@ -97,11 +97,19 @@ if (!wgs){
   }
   #fix column class for column sometimes read in as character due to a "?" instead of NA
   HsMetrics$FOLD_80_BASE_PENALTY = as.numeric(HsMetrics$FOLD_80_BASE_PENALTY)
+  HsMetrics$FOLD_ENRICHMENT = as.numeric(HsMetrics$FOLD_ENRICHMENT)
+  HsMetrics$MEAN_TARGET_COVERAGE = as.numeric(HsMetrics$MEAN_TARGET_COVERAGE)
+  HsMetrics$ON_BAIT_BASES = as.numeric(HsMetrics$ON_BAIT_BASES)
+  HsMetrics$PF_BASES_ALIGNED = as.numeric(HsMetrics$PF_BASES_ALIGNED)
+
   if (length(msings_files) != 0) {
     msings = data.frame()
     for (f in msings_files) {
       tryCatch({
-        SAMP = sub("_nodups.MSI_Analysis.txt", "", basename(f))
+        SAMP = sub("[_-]nodups.MSI_Analysis.txt", "", basename(f))
+        # if (grepl('nodups.MSI_Analysis.txt', SAMP, fixed = TRUE)) { # For re-run pipeline ALASSCA Project
+        #   SAMP = sub("-nodups.MSI_Analysis.txt", "", basename(f))
+        # }
         DIR = dirname(dirname(dirname(f)))
         msings = rbind(msings, cbind(SAMP, DIR, t(read.table(f, header = FALSE, nrows = 5, sep = "\t", stringsAsFactors = FALSE)))[2,], stringsAsFactors=FALSE)
       }, error = function(err) {
@@ -241,36 +249,41 @@ if (! is_rerun) {
   for (d in unique(InsertSize_histogram$DIR)) {
     for (s in unique(subset(InsertSize_histogram, DIR == d)$SAMP)) {
       tot_reads = MarkDuplicates$READ_PAIRS_EXAMINED[which(MarkDuplicates$DIR == d & MarkDuplicates$SAMP == s)]
-      idx = which(InsertSize_histogram$DIR == d & InsertSize_histogram$SAMP == s)
-      InsertSize_histogram$count_norm[idx] = InsertSize_histogram$All_Reads.fr_count[idx]/tot_reads
+      # quick fix if autoseq-rerun and autoseq output in same outdir 
+      if (length(tot_reads) != 0) {
+        idx = which(InsertSize_histogram$DIR == d & InsertSize_histogram$SAMP == s)
+        InsertSize_histogram$count_norm[idx] = InsertSize_histogram$All_Reads.fr_count[idx]/tot_reads
+      }
     }
   }
 }
 
 
-# convert HsMetrics from long format table to wide format table in case there are samples with metrics for both nodups and clipoverlap bams
-HsMetrics = data.table(HsMetrics)  # convert to data table for convenience 
-HsMetrics[, bamtype := as.character(NA)] # compatible for R data.table latest version
+if (!wgs) {
+  # convert HsMetrics from long format table to wide format table in case there are samples with metrics for both nodups and clipoverlap bams
+  HsMetrics = data.table(HsMetrics)  # convert to data table for convenience 
+  HsMetrics[, bamtype := as.character(NA)] # compatible for R data.table latest version
 
-tmp = HsMetrics[, tstrsplit(SAMP, split = "_")]$V2
-if (! is.null(tmp)){
-  HsMetrics[, bamtype := HsMetrics[, tstrsplit(SAMP, split = "_")]$V2]  # extract bam type (dedup method) from sample name
-  HsMetrics[, SAMP := HsMetrics[, tstrsplit(SAMP, split = "_")]$V1]  # remove bam type (dedup method) from sample name
-}
+  tmp = HsMetrics[, tstrsplit(SAMP, split = "_")]$V2
+  if (! is.null(tmp)){
+    HsMetrics[, bamtype := HsMetrics[, tstrsplit(SAMP, split = "_")]$V2]  # extract bam type (dedup method) from sample name
+    HsMetrics[, SAMP := HsMetrics[, tstrsplit(SAMP, split = "_")]$V1]  # remove bam type (dedup method) from sample name
+  }
 
-HsMetrics[is.na(bamtype), bamtype := "nodups"]  # set bamtype to "nodups" if it's NA (when only one instance of HsMetrics was run for a sample)
-HsMetrics = dcast(HsMetrics, SAMP + DIR + BAIT_SET ~ bamtype, 
-                  value.var = c("MEAN_TARGET_COVERAGE", "FOLD_ENRICHMENT", "FOLD_80_BASE_PENALTY", 
-                                "ON_BAIT_BASES", "PF_BASES_ALIGNED"))  # cast from long to wide format
+  HsMetrics[is.na(bamtype), bamtype := "nodups"]  # set bamtype to "nodups" if it's NA (when only one instance of HsMetrics was run for a sample)
+  HsMetrics = dcast(HsMetrics, SAMP + DIR + BAIT_SET ~ bamtype, 
+                    value.var = c("MEAN_TARGET_COVERAGE", "FOLD_ENRICHMENT", "FOLD_80_BASE_PENALTY", 
+                                  "ON_BAIT_BASES", "PF_BASES_ALIGNED"))  # cast from long to wide format
 
-# fix HsMetrics column names
-if (isTRUE(is_sd)) {
-  # clarify that clipoverlap data is for snv/indel regions and nodups data is for baseline regions, in small design pipeline
-  names(HsMetrics) <- sub("_nodups", "_baseline_regions", names(HsMetrics))
-  names(HsMetrics) <- sub("_clipoverlap", "_snv_indel_regions", names(HsMetrics))
-} else {
-  # removing _nodups from column names of HsMetrics, To have minimal changes in the codebase
-  names(HsMetrics) <- sub("*_nodups", "", names(HsMetrics))
+  # fix HsMetrics column names
+  if (isTRUE(is_sd)) {
+    # clarify that clipoverlap data is for snv/indel regions and nodups data is for baseline regions, in small design pipeline
+    names(HsMetrics) <- sub("_nodups", "_baseline_regions", names(HsMetrics))
+    names(HsMetrics) <- sub("_clipoverlap", "_snv_indel_regions", names(HsMetrics))
+  } else {
+    # removing _nodups from column names of HsMetrics, To have minimal changes in the codebase
+    names(HsMetrics) <- sub("*_nodups", "", names(HsMetrics))
+  }
 }
 
 
