@@ -107,10 +107,6 @@ rule generateIGVnavInput_svcaller:
                         " --output {params.igvout} "
 
 
-envvars:
-    "GRIDSS_JAR"
-
-
 rule gridss_extract_overlapping_fragments:
     input:
         bam = outdir + "/bams/{sample}_nodups.bam",
@@ -118,7 +114,6 @@ rule gridss_extract_overlapping_fragments:
     output:
         bam = outdir + "/svs/gridss/{sample}-gridss-targeted.bam"
     params:
-        gridss_jar = os.environ.get('GRIDSS_JAR'),
         workdir = directory("{}/svs/gridss/".format(outdir))
     threads: params['gridss']['threads']
     container: containers['gridss']
@@ -127,7 +122,7 @@ rule gridss_extract_overlapping_fragments:
     shell:
         "source activate gridss-env && "
         "gridss_extract_overlapping_fragments -w {params.workdir} "
-        " --targetbed  {input.target_bed} -j {params.gridss_jar} "
+        " --targetbed  {input.target_bed} -j $GRIDSS_JAR "
         " -o {output.bam} {input.bam} && "
         "samtools index {output.bam} && "
         "rm -rf  {output.bam}.gridss.working/ "
@@ -142,7 +137,6 @@ rule gridss_svcalling_normal:
         vcf = "{}/svs/gridss/{}-gridss.vcf".format(outdir, NORMAL_CAPTURE_STR),
         svbam = "{}/svs/gridss/{}-gridss.sv.bam".format(outdir, NORMAL_CAPTURE_STR)
     params:
-        gridss_jar = os.environ.get('GRIDSS_JAR'),
         jvmheap = '10g',
         basename = "{}-gridss-targeted.bam".format(normal_barcode),
         gridss_config = os.path.join(os.environ.get('GRIDSS_SCRIPT'), 'gridss.properties'),
@@ -155,7 +149,7 @@ rule gridss_svcalling_normal:
         "source activate gridss-env && "
         "gridss --reference {input.reference} "
         " --jvmheap {params.jvmheap} "
-        " --jar {params.gridss_jar} "
+        " --jar $GRIDSS_JAR "
         " -c {params.gridss_config} "
         " --assembly {output.assembly_bam} "
         " --threads {threads} --steps  ALL "
@@ -177,10 +171,8 @@ rule gridss_svcalling_somatic:
         vcf = "{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         svbam = "{}/svs/gridss/{}-gridss.sv.bam".format(outdir, CANCER_CAPTURE_STR)
     params:
-        gridss_jar = os.environ.get('GRIDSS_JAR'),
         jvmheap = '10g',
         basename = "{}-gridss-targeted.bam".format(tumor_barcode),
-        gridss_config = os.path.join(os.environ.get('GRIDSS_SCRIPT'), 'gridss.properties'),
         workdir = directory("{}/svs/gridss/{}/".format(outdir, CANCER_CAPTURE_STR))
     threads: params['gridss']['threads']
     container: containers['gridss']
@@ -190,8 +182,8 @@ rule gridss_svcalling_somatic:
         "source activate gridss-env && "
         "gridss --reference {input.reference} "
         " --jvmheap {params.jvmheap} "
-        " --jar {params.gridss_jar} "
-        " -c {params.gridss_config} "
+        " --jar $GRIDSS_JAR "
+        " -c $GRIDSS_SCRIPT/gridss.properties "
         " --assembly {output.assembly_bam} "
         " --threads {threads} --steps  ALL "
         " --workingdir {params.workdir} "
@@ -208,17 +200,16 @@ rule gridss_somatic_filter:
         vcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
         pondir = reference["pondir"],
-        script_dir = os.environ.get('GRIDSS_SCRIPT'),
         plotdir = "{}/svs/gridss/".format(outdir),
         outvcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     threads: params["gridss_filter"]["threads"]
     container: containers['gridss']
     shell:
         "source activate gridss-env && "
-        "Rscript {params.script_dir}gridss_somatic_filter -p {params.pondir} "
+        "Rscript $GRIDSS_SCRIPT/gridss_somatic_filter -p {params.pondir} "
         " -i {input.vcf} "
         " -o {params.outvcf} "
-        " -s {params.script_dir} --paneldata && "
+        " -s $GRIDSS_SCRIPT --paneldata && "
         "bgzip -d {output.vcf}.bgz"
 
 
