@@ -41,19 +41,21 @@ rule splitbam_umimapped_1:
     output:
         expand(outdir + "/bams/split_targets/bam/{{sample}}_umimapped.{chr}.bam", chr = all_chromosomes),
         outdir + "/bams/split_targets/bam/{sample}_umimapped.nochr.bam"
+    params:
+        output_dir = outdir + "/bams/split_targets/bam/",
+        all_chrom = all_chromosomes
     threads: 8
-    run:
-        output_dir = outdir + "/bams/split_targets/bam/"
-        bam = input.mapped
-        prefix = os.path.basename(bam).split('.bam')[0]
-        no_chr = output_dir + "/{}.nochr.bam".format(prefix)
-        cmd = "samtools view  -L {} -o {} {} ".format(input.nochr, no_chr, bam)
-        shell(cmd)
-        for chr in all_chromosomes:
-            run_cmd = "samtools view -b {} {} ".format(bam, chr) + \
-                        " > {}/{}.{}.bam && ".format(output_dir, prefix, chr) + \
-                        " samtools index {}/{}.{}.bam ".format(output_dir, prefix, chr)
-            shell(run_cmd)
+    shell:
+        """
+        prefix=$(basename {input.mapped} .bam)
+        no_chr={params.output_dir}/${{prefix}}.nochr.bam
+        all_chrom=({params.all_chrom})
+        samtools view -@ {threads} -L {input.nochr} -o ${{no_chr}} {input.mapped}
+        for chr in ${{all_chrom[@]}}; do
+            samtools view -@ {threads} -b {input.mapped} ${{chr}} > {params.output_dir}/${{prefix}}.${{chr}}.bam
+            samtools index {params.output_dir}/${{prefix}}.${{chr}}.bam
+        done
+        """
 
 
 rule splitbam_umimapped_2:
@@ -63,19 +65,21 @@ rule splitbam_umimapped_2:
     output:
         expand(outdir + "/bams/split_targets/bam/{{sample}}_umimapped-2.{chr}.bam", chr = all_chromosomes),
         outdir + "/bams/split_targets/bam/{sample}_umimapped-2.nochr.bam"
+    params:
+        output_dir = outdir + "/bams/split_targets/bam/",
+        all_chrom = all_chromosomes
     threads: 8
-    run:
-        output_dir = outdir + "/bams/split_targets/bam/"
-        bam = input.mapped
-        prefix = os.path.basename(bam).split('.bam')[0]
-        no_chr = output_dir + "/{}.nochr.bam".format(prefix)
-        cmd = "samtools view  -L {} -o {} {} ".format(input.nochr, no_chr, bam)
-        shell(cmd)
-        for chr in all_chromosomes:
-            run_cmd = "samtools view -b {} {} ".format(bam, chr) + \
-                        " > {}/{}.{}.bam && ".format(output_dir, prefix, chr) + \
-                        " samtools index {}/{}.{}.bam ".format(output_dir, prefix, chr)
-            shell(run_cmd)
+    shell:
+        """
+        prefix=$(basename {input.mapped} .bam)
+        no_chr={params.output_dir}/${{prefix}}.nochr.bam
+        all_chrom=({params.all_chrom})
+        samtools view -@ {threads} -L {input.nochr} -o ${{no_chr}} {input.mapped}
+        for chr in ${{all_chrom[@]}}; do
+            samtools view -@ {threads} -b {input.mapped} ${{chr}} > {params.output_dir}/${{prefix}}.${{chr}}.bam
+            samtools index {params.output_dir}/${{prefix}}.${{chr}}.bam
+        done
+        """
 
             
 
@@ -86,11 +90,14 @@ rule samtools_merge_realign_1:
     output:
         bam = outdir + "/bams/{sample}_realigned-1.bam",
         bai = outdir + "/bams/{sample}_realigned-1.bam.bai"
-    run:
-        bamfiles = " ".join(input)
-        shell("samtools merge -c -p {output.bam} {bamfiles}")
-        shell("samtools index {output.bam} ")
-        shell("rm {bamfiles}")        
+    shell:
+        """
+        InputBams=({input})
+        bamfiles=${{InputBams[*]}}
+        samtools merge -c -p {output.bam} ${{bamfiles}}
+        samtools index {output.bam}
+        rm $bamfiles
+        """ 
 
 
 rule samtools_merge_realign_2:
@@ -100,8 +107,11 @@ rule samtools_merge_realign_2:
     output:
         bam = outdir + "/bams/{sample}_realigned-2.bam",
         bai = outdir + "/bams/{sample}_realigned-2.bam.bai"
-    run:
-        bamfiles = " ".join(input)
-        shell("samtools merge -c -p {output.bam} {bamfiles}")
-        shell("samtools index {output.bam} ")
-        shell("rm {bamfiles}")
+    shell:
+        """
+        InputBams=({input})
+        bamfiles=${{InputBams[*]}}
+        samtools merge -c -p {output.bam} ${{bamfiles}}
+        samtools index {output.bam}
+        rm ${{bamfiles}}
+        """   

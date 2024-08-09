@@ -301,7 +301,7 @@ rule bcftools_merge:
         germline_vcf = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR),
         genotyped_tvcf = "{}/variants/{}-haplotypecaller.genotyped.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
     output:
-        vcf = "{}/variants/{}-{}-haplotype-tumor-af.for_germline_variants.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        vcf = "{}/variants/{}-{}.germline_variants_with_taf.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     params:
         gvcf = "{}/variants/{}-all.germline.vep.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
     threads: params['gatk4']['threads']

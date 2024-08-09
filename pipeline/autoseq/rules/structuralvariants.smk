@@ -139,7 +139,6 @@ rule gridss_svcalling_normal:
     params:
         jvmheap = '10g',
         basename = "{}-gridss-targeted.bam".format(normal_barcode),
-        gridss_config = os.path.join(os.environ.get('GRIDSS_SCRIPT'), 'gridss.properties'),
         workdir = directory("{}/svs/gridss/{}/".format(outdir, NORMAL_CAPTURE_STR))
     threads: params['gridss']['threads']
     container: containers['gridss']
@@ -150,7 +149,7 @@ rule gridss_svcalling_normal:
         "gridss --reference {input.reference} "
         " --jvmheap {params.jvmheap} "
         " --jar $GRIDSS_JAR "
-        " -c {params.gridss_config} "
+        " -c $GRIDSS_SCRIPT/gridss.properties "
         " --assembly {output.assembly_bam} "
         " --threads {threads} --steps  ALL "
         " --workingdir {params.workdir} "
