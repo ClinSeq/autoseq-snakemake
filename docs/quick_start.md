@@ -13,6 +13,7 @@ Installation
 | **CPU cores**        |  minimum of 4 CPU cores is required. |
 
 <br>
+
 **Note:** These are the minimum system requirements; however, it varies depending on the input data size.
 ### Software Requirements:
 
@@ -233,6 +234,16 @@ Check if the jobs are submitted successfully with the following command
 squeue -o "%.7i %.4P %a %.60j %.20u %.8T %.10M %.9l %.6D %.6C %.6m %R"
 ```
 
+### Downloading Reference Genome:
+
+```
+wget -c ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/1000G_phase1.indels.b37.vcf.gz
+wget -c ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/Mills_and_1000G_gold_standard.indels.b37.vcf.gz
+ar_regions.bed
+BrcaExchangeClinvar_15Jan2019_v26_hg19.vcf.gz
+human_g1k_v37_decoy.fasta
+
+```
 
 ### Autoseq Pipeline Installation
 

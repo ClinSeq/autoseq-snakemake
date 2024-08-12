@@ -21,6 +21,7 @@ Example output contents: `{"CALL": "OK"}`
 
 ### `generate_allelic_fraction_bedGraph.py`
 
+For each variants in the VCF file, generates allelic fraction. 
 
 ### `generateIGVnavInput.py`
 

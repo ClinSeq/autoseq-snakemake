@@ -24,6 +24,7 @@ Q&A | [Questions & Answers](https://github.com/ClinSeq/autoseq-snakemake/issues)
 Latest Version | [v3.3.1](https://github.com/ClinSeq/autoseq-snakemake/releases/tag/v3.3.1)
 
 <br>
+
 # Content
 
 * [Quick Start](quick_start.md)
