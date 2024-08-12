@@ -11,6 +11,7 @@ rule fgbio_fastqtobam:
     params:
         sample = lambda wildcards: compose_sample_str(extract_unique_capture(wildcards.sample)),
         library = lambda wildcards: parse_prep_id(wildcards.sample),
+        read_struct = params['fgbio']['fastqtobam']['read_struct'],
         java_options = params['fgbio']['fastqtobam']['java_options'],
         tmpdir = os.path.join(params['scratch'], 
                     "fgbio_fastqtobam-{}".format(str(uuid.uuid4())))
@@ -22,7 +23,7 @@ rule fgbio_fastqtobam:
             " -o {output.bam} "
             " --sample {params.sample} "
             " --library {params.library} "
-            " -r 3M2S+T 3M2S+T "
+            " -r {params.read_struct} "
             " -s true 2> {log} "
             " && rm -rf {params.tmpdir} "
 
@@ -82,6 +83,7 @@ rule gatk3_targetcreator_umi_1:
             " -known {input.known_mills_gs} "
             " -I {input.bam} "
             " -o {output.target_intervals} 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule gatk3_indelrealigner_umi_1:
@@ -115,6 +117,7 @@ rule gatk3_indelrealigner_umi_1:
             " -I {input.bam} "
             " -o {output.bam} 2> {log} && "
             "rm  {input.bam} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule fgbio_groupreadsbyumi:
@@ -215,6 +218,7 @@ rule gatk3_targetcreator_umi_2:
             " -known {input.known_mills_gs} "
             " -I {input.bam} "
             " -o {output.target_intervals} 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule gatk3_indelrealigner_umi_2:
@@ -248,6 +252,7 @@ rule gatk3_indelrealigner_umi_2:
             " -I {input.bam} "
             " -o {output.bam} 2> {log} && "
             "rm  {input.bam} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule fgbio_filterconsensus:
@@ -275,6 +280,7 @@ rule fgbio_filterconsensus:
             " {params.extra} "
             " {params.error_rate} "
             " {params.base_quality} 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule fgbio_clipbam:
@@ -299,6 +305,7 @@ rule fgbio_clipbam:
             " -m  {output.metrics_txt} "
             " --ref {input.reference_genome} "
             " --clip-overlapping-reads true 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule picard_markdups:
@@ -325,6 +332,7 @@ rule picard_markdups:
                 " OUTPUT=/dev/stdout REMOVE_DUPLICATES={params.rmdups} "
                 " | samtools sort -@ {threads} -T {params.tmpdir} -o {output.bam} 2> {log} "
                 " && samtools index {output.bam} "
+                " && rm -rf {params.tmpdir} "
 
 
 rule rm_interbamfiles:

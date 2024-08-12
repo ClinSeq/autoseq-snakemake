@@ -55,7 +55,7 @@ all_chromosomes = list(get_chromosomes(targets))
 cancer_sample = [_ for _ in all_clinseq_barcodes if '-T-' in _ or '-CFDNA-' in _]
 
 wildcard_constraints:
-    samples = "|".join(cancer_sample)
+    sample = "|".join(cancer_sample)
 
 OUTPUT = list()
 

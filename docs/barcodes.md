@@ -25,6 +25,9 @@ Each sample+preparation+capture item should have a corresponding barcode with th
 * `UL` = `ULLEN` 
 * `iPCM` = `IPCM` 
 * `CRCR` = `CRC Reflex`
+* `SARC` = `Sarcoma WGS`
+* `CPC` = `Clinical prostate cancer`
+* `BM` = `Benchmarking`
 
 ### Allowed Prep IDs
 

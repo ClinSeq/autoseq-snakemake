@@ -12,18 +12,21 @@ rule svcaller_run:
         gtf = outdir + "/svs/svcaller/{sample}-{events}.gtf",
         bam = outdir + "/svs/svcaller/{sample}-{events}.bam",
     params: 
-        tmpdir = params['scratch']
+        tmpdir = os.path.join(params['scratch'], 
+                                "svcaller-run-{}".format(str(uuid.uuid4())))
     threads: params['svcaller']['threads']
     container: containers['svcaller']
     log:
         outdir + "/logs/svs/svcaller-{sample}-{events}.log"
     shell:
         "source activate svcallerenv  && "
+        "mkdir {params.tmpdir} && "
         "svcaller run-all --tmp-dir {params.tmpdir} --event-type {wildcards.events} "
         " --fasta-filename {input.reference}  "
         " --filter-event-overlap "
         " --events-gtf {output.gtf} "
         " --events-bam {output.bam} {input.bam} && "
+        " rm -rf {params.tmpdir} && "
         "source deactivate"
 
 
@@ -104,10 +107,6 @@ rule generateIGVnavInput_svcaller:
                         " --output {params.igvout} "
 
 
-envvars:
-    "GRIDSS_JAR"
-
-
 rule gridss_extract_overlapping_fragments:
     input:
         bam = outdir + "/bams/{sample}_nodups.bam",
@@ -115,7 +114,6 @@ rule gridss_extract_overlapping_fragments:
     output:
         bam = outdir + "/svs/gridss/{sample}-gridss-targeted.bam"
     params:
-        gridss_jar = os.environ.get('GRIDSS_JAR'),
         workdir = directory("{}/svs/gridss/".format(outdir))
     threads: params['gridss']['threads']
     container: containers['gridss']
@@ -124,9 +122,10 @@ rule gridss_extract_overlapping_fragments:
     shell:
         "source activate gridss-env && "
         "gridss_extract_overlapping_fragments -w {params.workdir} "
-        " --targetbed  {input.target_bed} -j {params.gridss_jar} "
+        " --targetbed  {input.target_bed} -j $GRIDSS_JAR "
         " -o {output.bam} {input.bam} && "
-        "samtools index {output.bam} "
+        "samtools index {output.bam} && "
+        "rm -rf  {output.bam}.gridss.working/ "
 
 
 rule gridss_svcalling_normal:
@@ -135,10 +134,11 @@ rule gridss_svcalling_normal:
         reference = reference["bwaIndex"]
     output:
         assembly_bam = "{}/svs/gridss/{}-assembly.bam".format(outdir, NORMAL_CAPTURE_STR),
-        vcf = "{}/svs/gridss/{}-gridss.vcf".format(outdir, NORMAL_CAPTURE_STR)
+        vcf = "{}/svs/gridss/{}-gridss.vcf".format(outdir, NORMAL_CAPTURE_STR),
+        svbam = "{}/svs/gridss/{}-gridss.sv.bam".format(outdir, NORMAL_CAPTURE_STR)
     params:
-        gridss_jar = os.environ.get('GRIDSS_JAR'),
         jvmheap = '10g',
+        basename = "{}-gridss-targeted.bam".format(normal_barcode),
         workdir = directory("{}/svs/gridss/{}/".format(outdir, NORMAL_CAPTURE_STR))
     threads: params['gridss']['threads']
     container: containers['gridss']
@@ -148,12 +148,16 @@ rule gridss_svcalling_normal:
         "source activate gridss-env && "
         "gridss --reference {input.reference} "
         " --jvmheap {params.jvmheap} "
-        " --jar {params.gridss_jar} "
+        " --jar $GRIDSS_JAR "
+        " -c $GRIDSS_SCRIPT/gridss.properties "
         " --assembly {output.assembly_bam} "
         " --threads {threads} --steps  ALL "
         " --workingdir {params.workdir} "
         " --output {output.vcf}.gz {input.normal_bam} 2> {log} && "
-        " gzip -d {output.vcf}.gz  "
+        "mv {params.workdir}{params.basename}.gridss.working/*sv.bam {output.svbam} && "
+        " samtools index {output.svbam} && "
+        " gzip -d {output.vcf}.gz  && "
+        "rm -rf {params.workdir} "
 
 
 rule gridss_svcalling_somatic:
@@ -163,10 +167,11 @@ rule gridss_svcalling_somatic:
         reference = reference["bwaIndex"]
     output:
         assembly_bam = "{}/svs/gridss/{}-{}-assembly.bam".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
-        vcf = "{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+        vcf = "{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        svbam = "{}/svs/gridss/{}-gridss.sv.bam".format(outdir, CANCER_CAPTURE_STR)
     params:
-        gridss_jar = os.environ.get('GRIDSS_JAR'),
         jvmheap = '10g',
+        basename = "{}-gridss-targeted.bam".format(tumor_barcode),
         workdir = directory("{}/svs/gridss/{}/".format(outdir, CANCER_CAPTURE_STR))
     threads: params['gridss']['threads']
     container: containers['gridss']
@@ -176,11 +181,15 @@ rule gridss_svcalling_somatic:
         "source activate gridss-env && "
         "gridss --reference {input.reference} "
         " --jvmheap {params.jvmheap} "
-        " --jar {params.gridss_jar} "
+        " --jar $GRIDSS_JAR "
+        " -c $GRIDSS_SCRIPT/gridss.properties "
         " --assembly {output.assembly_bam} "
         " --threads {threads} --steps  ALL "
         " --workingdir {params.workdir} "
-        " --output {output.vcf} {input.normal_bam} {input.tumor_bam} "
+        " --output {output.vcf} {input.normal_bam} {input.tumor_bam} 2> {log} && "
+        "mv {params.workdir}{params.basename}.gridss.working/*sv.bam {output.svbam} && "
+        " samtools index {output.svbam} && "
+        "rm -rf {params.workdir} "
         
 
 rule gridss_somatic_filter:
@@ -190,17 +199,16 @@ rule gridss_somatic_filter:
         vcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
         pondir = reference["pondir"],
-        script_dir = os.environ.get('GRIDSS_SCRIPT'),
         plotdir = "{}/svs/gridss/".format(outdir),
         outvcf = "{}/svs/gridss/{}-{}-gridss.filtered.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     threads: params["gridss_filter"]["threads"]
     container: containers['gridss']
     shell:
         "source activate gridss-env && "
-        "Rscript {params.script_dir}gridss_somatic_filter -p {params.pondir} "
+        "Rscript $GRIDSS_SCRIPT/gridss_somatic_filter -p {params.pondir} "
         " -i {input.vcf} "
         " -o {params.outvcf} "
-        " -s {params.script_dir} --paneldata && "
+        " -s $GRIDSS_SCRIPT --paneldata && "
         "bgzip -d {output.vcf}.bgz"
 
 
@@ -221,10 +229,33 @@ rule gridss_svannotation:
         "gridss_svannotate.R -v {input.normal_vcf} -o {output.normal_vcf} 2>> {log} "
 
 
+rule gridss_evidence_bam:
+    input:
+        somatic_vcf = "{}/svs/gridss/{}-{}-gridss.filtered.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        normal_vcf = "{}/svs/gridss/{}-gridss.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR),
+        tumor_svbam = "{}/svs/gridss/{}-gridss.sv.bam".format(outdir, CANCER_CAPTURE_STR),
+        normal_svbam = "{}/svs/gridss/{}-gridss.sv.bam".format(outdir, NORMAL_CAPTURE_STR)
+    output:
+        tumor_bam = "{}/svs/gridss/{}-gridss.evidence.bam".format(outdir, CANCER_CAPTURE_STR),
+        normal_bam = "{}/svs/gridss/{}-gridss.evidence.bam".format(outdir, NORMAL_CAPTURE_STR)
+    threads: params["gridss_filter"]["threads"]
+    log:
+        outdir + "/logs/svs/gridss-evidence-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    shell:
+        "generate_evidence_bam.py --vcf {input.somatic_vcf}"
+        " --bam {input.tumor_svbam} --filter-vcf "
+        " --output {output.tumor_bam} 2> {log} && "
+        "generate_evidence_bam.py --vcf {input.normal_vcf}"
+        " --bam {input.normal_svbam}  "
+        " --output {output.normal_bam} 2>> {log} "
+        
+
+
 rule generateIGVnavInput_gridss:
     input:
         normal_vcf = "{}/svs/gridss/{}-gridss.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR),
-        somatic_vcf = "{}/svs/gridss/{}-{}-gridss.filtered.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+        somatic_vcf = "{}/svs/gridss/{}-{}-gridss.filtered.svannotated.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        tumor_bam = "{}/svs/gridss/{}-gridss.evidence.bam".format(outdir, CANCER_CAPTURE_STR)
     output:
         normal_mut = "{}/svs/igv/{}_normal_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR),
         somatic_mut = "{}/svs/igv/{}_somatic_pass_gridss.mut".format(outdir, CANCER_CAPTURE_STR)

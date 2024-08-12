@@ -20,7 +20,7 @@ def extract_bam(sample, libdir, umi = False):
         sample_capture_str = compose_lib_capture_str(extract_unique_capture(sample))
         pattern_bam = libdir + "/" + sample_capture_str + "*nodups.bam"
     
-    if project in ["PB", "LB"]:
+    if project in ["PB", "LB", "PSFF", "iPCM"]:
         pattern_bam = libdir + "/" + sample + "*nodups.bam"
         pattern_umibam = libdir + "/" + sample + "*clipoverlap.bam"
         pattern_umibai = libdir + "/" + sample + "*clipoverlap.bai"
@@ -387,7 +387,8 @@ def get_capture_name(capture_kit_code):
                             "B2": "probio_biomarkersignature2",
                             "PS": "probio_snvindel",
                             "S3": "probio_biomarkersignature2", # S3 pointed to S2 capture files
-                            "P3": "probio_biomarkersignature2"
+                            "P3": "probio_biomarkersignature2",
+                            "N3": "pancancer3"
                             }
 
     if capture_kit_code == 'WG':

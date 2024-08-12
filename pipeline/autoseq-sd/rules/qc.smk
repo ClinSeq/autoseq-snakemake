@@ -4,21 +4,32 @@ from os.path import dirname
 from functools import reduce
 
 
+def get_fastqs(wildcards):
+    """
+    helper function to get all fq files 
+    """
+    r1, r2 = find_fastqs(wildcards.sample, libdir)
+    return r1 + r2
+
+
 rule fastqc:
     input:
         libdir + "/{sample}/"
     output:
         directory(outdir + "/qc/fastqc/{sample}")
+    params:
+        fq_files = lambda wildcards: get_fastqs(wildcards)
     threads: params['fastqc']['threads']
     log:
         outdir + "/logs/fastqc/fastqc_{sample}.log"
-    run:
-        fq_files = reduce(lambda r1, r2: r1 + r2, 
-                          find_fastqs(wildcards.sample, libdir))
-        
-        shell("mkdir -p {output}")
-        for fq in fq_files:
-            shell("fastqc -o {output} -t 4 --nogroup {fq}")
+    shell:
+        """
+        mkdir -p {output} && 
+        fq_files=({params.fq_files})
+        for fq in ${{fq_files[@]}}; do
+            fastqc -o {output} -t {threads} --nogroup $fq
+        done
+        """
 
 
 rule picard_collectinsertsize:
@@ -58,7 +69,8 @@ rule picard_collectoxog:
             "CollectOxoGMetrics "
             "I={input.bam} "
             "R={input.reference_genome} "
-            "O={output.metrics} "
+            "O={output.metrics} " 
+            " && rm -rf {params.tmpdir} "
 
 
 rule picard_collecthsmetrics_nodups:
@@ -87,6 +99,7 @@ rule picard_collecthsmetrics_nodups:
             "BI={input.bait_regions} "
             "BAIT_SET_NAME={params.bait_name} "
             "METRIC_ACCUMULATION_LEVEL=LIBRARY 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule picard_collecthsmetrics_clipoverlap:
@@ -115,6 +128,7 @@ rule picard_collecthsmetrics_clipoverlap:
             "BI={input.bait_regions} "
             "BAIT_SET_NAME={params.bait_name} "
             "METRIC_ACCUMULATION_LEVEL=LIBRARY 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule samtools_flagstat:

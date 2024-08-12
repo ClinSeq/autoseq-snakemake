@@ -1,3 +1,9 @@
+def get_fastqs(wildcards):
+    """
+    helper function to get all fq files 
+    """
+    r1, r2 = find_fastqs(wildcards.sample, libdir)
+    return r1 + r2
 
 
 rule fastqc:
@@ -5,16 +11,19 @@ rule fastqc:
         libdir + "/{sample}/"
     output:
         directory(outdir + "/qc/fastqc/{sample}")
+    params:
+        fq_files = lambda wildcards: get_fastqs(wildcards)
     threads: params['fastqc']['threads']
     log:
         outdir + "/logs/fastqc/fastqc_{sample}.log"
-    run:
-        fq_files = reduce(lambda r1, r2: r1 + r2, 
-                          find_fastqs(wildcards.sample, libdir))
-        
-        shell("mkdir -p {output}")
-        for fq in fq_files:
-            shell("fastqc -o {output} -t {threads} --nogroup {fq}")
+    shell:
+        """
+        mkdir -p {output} && 
+        fq_files=({params.fq_files})
+        for fq in ${{fq_files[@]}}; do
+            fastqc -o {output} -t {threads} --nogroup $fq
+        done
+        """
 
 
 rule picard_collectinsertsize:
@@ -55,6 +64,7 @@ rule picard_collectoxog:
             "I={input.bam} "
             "R={input.reference_genome} "
             "O={output.metrics} 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule samtools_flagstat:
@@ -98,7 +108,8 @@ rule gatk3_contest_cancer:
     output:
         "{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR)
     params:
-        tmpdir = params['scratch'],
+        tmpdir = os.path.join(params['scratch'], 
+                                "gatk3-contest-cancer-{}".format(str(uuid.uuid4()))),
         min_genotype_ratio = params['contest_cancer']['min_genotype_ratio']
     threads: params['contest_cancer']['threads']
     container: containers['gatk3']
@@ -113,6 +124,7 @@ rule gatk3_contest_cancer:
             "--popfile {input.popvcf}  "
             "--min_genotype_ratio {params.min_genotype_ratio}  "
             " -o {output} 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule gatk3_contest_normal:
@@ -124,7 +136,8 @@ rule gatk3_contest_normal:
     output:
         "{}/contamination/{}.contest.txt".format(outdir, NORMAL_CAPTURE_STR)
     params:
-        tmpdir = params['scratch'],
+        tmpdir = os.path.join(params['scratch'], 
+                                "gatk3-contest-normal-{}".format(str(uuid.uuid4()))),
         min_genotype_ratio = params['contest_cancer']['min_genotype_ratio']
     threads: params['contest_cancer']['threads']
     container: containers['gatk3']
@@ -139,6 +152,7 @@ rule gatk3_contest_normal:
             "--popfile {input.popvcf}  "
             "--min_genotype_ratio {params.min_genotype_ratio}  "
             " -o {output} 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule contam_caveat:

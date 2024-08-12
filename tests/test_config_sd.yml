@@ -69,6 +69,7 @@ params:
     fgbio:
         fastqtobam:
             java_options: " -Xmx10g -XX:+AggressiveOpts -XX:ParallelGCThreads=8 "
+            read_struct: "3M2S+T 3M2S+T"
             threads: 1
         groupreadsbyumi:
             java_options: " -Xmx10g -XX:+AggressiveOpts -XX:ParallelGCThreads=8 "

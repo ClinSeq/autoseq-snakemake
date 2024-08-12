@@ -22,12 +22,14 @@ rule gatk4_mutect2:
     log:
         "{}/logs/variants/{}-{}-gatk4-mutect-somatic.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR) 
     shell:
+        "normalId=`samtools view -H {input.normal_bam} | grep \"^@RG\" | tr \'\\t\' \'\\n\' | grep \'^SM\' | cut -d\':\' -f2 ` && "
+        "tumorId=`samtools view -H {input.tumor_bam} | grep \"^@RG\" |  tr \'\\t\' \'\\n\' | grep \'^SM\' | cut -d\':\' -f2 ` && "
         "gatk --java-options '{params.java_options} -Djava.io.tmpdir={params.tmpdir}' "
         " Mutect2  -R {input.reference} "
         " -I {input.tumor_bam} "
         " -I {input.normal_bam} "
-        " -tumor {params.tumorid}  " 
-        " -normal {params.normalid} " 
+        " -tumor $tumorId  " 
+        " -normal $normalId " 
         " -L {input.interval_list} " 
         " --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter "
         " -bamout {output.bam} -O {output.vcf} 2> {log} && "
@@ -68,7 +70,7 @@ rule sage_somatic:
         "{}/logs/variants/{}-{}-sage-somatic.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:
         " source activate gridss-env && "
-        " bedtools merge -s -i {input.panel_bed} > {params.workdir}/targets_nonoverlap.bed 2> {log} && "
+        " bedtools merge -i {input.panel_bed} > {params.workdir}/targets_nonoverlap.bed 2> {log} && "
         " java -Xms4G -Xmx32G -cp {params.jarfile} "
         " com.hartwig.hmftools.sage.SageApplication -threads 16 "
         " -reference {params.normalid} -reference_bam {input.normal_bam}"
