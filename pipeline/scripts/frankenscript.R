@@ -2357,9 +2357,14 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
     #targets[,smooth_log2:=runmed(log2,k=25),by=chromosome]
     #snps[,smooth_log2:=targets$smooth_log2[bin]]
     
+    # ylims <- c(
+    #     min(.4,min(2^targets[chromosome!='Y']$smooth_log2,na.rm = T)),
+    #     max(3,max(2^targets$smooth_log2,na.rm = T))
+    # )
+    
     ylims <- c(
-        min(0,min(2^targets[chromosome=chr]$smooth_log2,na.rm = T)),
-        max(20,max(2^targets[chromosome=chr]$smooth_log2,na.rm = T))
+        min(.4,min(2^targets[chromosome==chr]$smooth_log2,na.rm = T)),
+        max(3,max(2^targets[chromosome==chr]$smooth_log2,na.rm = T))
     )
     ybreaks <- c(.1,.25,.5,.75,1,1.5,2,3,4,6,10,15,20)
     ybreaks <- ybreaks[ybreaks >= ylims[1] & ybreaks<=ylims[2]]
