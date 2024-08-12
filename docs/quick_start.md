@@ -8,13 +8,13 @@ Installation
 |||
 |----------------------|----------------|
 | **Operating System** |  Ubuntu 22.04  |
-| **RAM**              |  minimum of 64 GB for small dataset. Higher RAM is required for large dataset.|
-| **Disk Space**       |  Depends on input dataset. But, minimum of 500 GB is required exclusively for installation related files.|
+| **RAM**              |  minimum of 64 GB for small dataset. 128G or more RAM is preferred.|
+| **Disk Space**       |  500G is required for complete installation and supported files. But disk space for data is additional.|
 | **CPU cores**        |  minimum of 8 CPU cores is required. |
 
 <br>
 
-**Note:** These are the minimum system requirements; however, it varies depending on the input data size.
+**Note:** These are the minimum system requirements and may vary with pipeline version and size of input files.
 ### Software Requirements:
 
 **Required Dependencies:**
