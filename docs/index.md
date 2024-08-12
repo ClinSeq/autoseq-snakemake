@@ -26,11 +26,10 @@ Latest Version | [v3.3.1](https://github.com/ClinSeq/autoseq-snakemake/releases/
 
 <br>
 
-## [Quick Start](quick_start.md)
-    * [Installation](quick_start.md#installation)
-    * [Command Line Usage](quick_start.md#command-line-usage)
-## [Autoseq Pipeline](autoseq_pipeline.md)
-## [Barcodes](barcodes.md)
-## [Autoseq scripts](scripts.md)
+## GO TO
+### [Quick Start](quick_start.md)
+### [Autoseq Pipeline](autoseq_pipeline.md)
+### [Barcodes](barcodes.md)
+### [Autoseq scripts](scripts.md)
 
 
