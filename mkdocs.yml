@@ -9,7 +9,6 @@ edit_uri: ""
 nav :
   - Autoseq: index.md
   - Quick Start: quick_start.md
-  - Setting up: setting_up.md
   - Autoseq Pipeline: autoseq_pipeline.md
   - Barcodes: barcodes.md
   - Autoseq Scripts: scripts.md
@@ -23,6 +22,7 @@ theme:
 markdown_extensions:
     - toc:
         permalink: 
-    - admonition
     - attr_list
+    - admonition
     - def_list
+    

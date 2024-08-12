@@ -21,9 +21,6 @@ Example output contents: `{"CALL": "OK"}`
 
 ### `generate_allelic_fraction_bedGraph.py`
 
-### `annotate_svaba.py`
-
-Classify the structural variants from BND format into different types like DEL, INS, INV and TRA. 
 
 ### `generateIGVnavInput.py`
 
@@ -48,3 +45,17 @@ Customized script to estimate tumor purity, copy number, and loss of heterozygos
 ### `QC_overview.R`
 
 This is a script creating plots showing the distribution of some QC values, and where the current normal and tumor sample lies within those distributions. QC metrics shown are read count, duplication rate, coverage, fold enrichment, on-bait rate, insert size & contamination
+
+### `frankenscript.R`
+
+### `generate_evidence_bam.py`
+
+### `gridss_svannotate.R`
+
+### `run_msings.sh`
+
+### `vcfsorter.pl`
+
+### `jumble-run.R`
+
+### `msisensor`
