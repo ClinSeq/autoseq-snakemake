@@ -19,7 +19,9 @@ Source code | [GitHub](https://github.com/ClinSeq/autoseq-snakemake/)
 License | [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
 Packages | [Python >3.6](https://www.python.org/downloads/), [Snakemake](https://snakemake.readthedocs.io/en/stable/), [Conda](https://docs.conda.io/en/latest/), [Singularity](https://cloud.sylabs.io/)
+
 Q&A | [Questions & Answers](https://github.com/ClinSeq/autoseq-snakemake/issues)
+
 Latest Version | [v3.3.1](https://github.com/ClinSeq/autoseq-snakemake/releases/tag/v3.3.1)
 
 <br>
