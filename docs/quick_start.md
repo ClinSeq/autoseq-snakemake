@@ -113,8 +113,8 @@ human_g1k_v37_decoy.fasta
 Download and install autoseq-snakemake and the requirements using pip.
 
 ```sh
-conda create --name autoseq_doc python=3.8.12
-conda activate autoseq_doc
+conda create --name autoseq_pipeline python=3.8.12
+conda activate autoseq_pipeline
 
 git clone https://github.com/Clinseq/autoseq-snakemake.git 
 pip install -e autoseq-snakemake/
