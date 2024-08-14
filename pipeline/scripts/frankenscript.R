@@ -2400,23 +2400,35 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
     ## scatterplots ---------------------------------------------------------
     
     ### maf-logR -------------------------------
+    
+    targets[,smooth_log2:=runmed(log2,k = 51)]
+    
     gridsnps <- snps[!is.na(bin) & !is.na(maf)]
     gridsnps$log2 <- targets[gridsnps$bin]$log2
     gridsnps$type <- targets[gridsnps$bin]$type
+    
+    gridsnps[,smooth_log2:=targets[gridsnps$bin]$smooth_log2]
+    if (wgs) gridsnps <- gridsnps[targets[gridsnps$bin]$gene!='-']
+    
+    gridsnps[,smooth_maf:=runmed(maf,21,na.action = 'na.omit')]
+    if (wgs) gridsnps[,smooth_maf:=runmed(maf,21,na.action = 'na.omit')]
+    
+    
+    
     
     p$scatter <- ggplot(gridsnps) +
         geom_point(data=cancergenes_here[chromosome==chr], #  <<--- this is a dummy for colors to work out.
                    mapping = aes(x=.5,y=1,fill=`selected genes`),shape=1,col='#FFFFFF',size=.1,show.legend = F) +
         geom_point(data=gridsnps[sample(x=1:.N,size=min(.N,20e3))],
-                   mapping=aes(x=2^log2,y=maf),
+                   mapping=aes(x=2^smooth_log2,y=smooth_maf),
                    fill='#DDDDDD',col='#BBBBBB',shape=21,size=1,alpha=alpha) +
         geom_point(data=gridsnps[chromosome==chr & is.na(`selected genes`)],
-                   mapping=aes(x=2^log2,y=maf),
+                   mapping=aes(x=2^smooth_log2,y=smooth_maf),
                    fill='#606060',col='#202020',shape=21,size=1,alpha=alpha) +
         geom_point(data=gridsnps[chromosome==chr & !is.na(`selected genes`)],
-                   mapping = aes(x=2^log2,y=maf,fill=`selected genes`),shape=21,col='#00000050',size=1,show.legend = F) +
+                   mapping = aes(x=2^smooth_log2,y=smooth_maf,fill=`selected genes`),shape=21,col='#00000050',size=1,show.legend = F) +
         geom_point(data=gridsnps[chromosome==chr & !is.na(`selected genes`) & type=='exonic'],
-                   mapping = aes(x=2^log2,y=maf,fill=`selected genes`),shape=23,col='#000000FF',size=1.5,show.legend = F) +
+                   mapping = aes(x=2^smooth_log2,y=smooth_maf,fill=`selected genes`),shape=23,col='#000000FF',size=1.5,show.legend = F) +
         scale_fill_hue(l=70) +
         scale_y_continuous(
             limits = c(.5, 1),
