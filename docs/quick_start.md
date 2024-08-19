@@ -174,6 +174,8 @@ Commands:
 Launching autoseq pipeline
 --------------------------
 
+### Launching single sample:
+
 To launch autoseq pipeline, you need to specify different config files for autoseq-genome and input samples. You also need to specify the path to input and output directories, path to singularity containers, number of cores and profile options. 
 
 
@@ -275,3 +277,131 @@ Once you have prepared your config files as mentioned above, you can run autoseq
 ```
 autoseq launch -r autoseq-genome/autoseq-genome.json --samples /path/to/sample.json --outdir /path/to/autoseq-output/ --libdir /path/to/INBOX/ --use-singularity --singularity /path/to/container_dir --umi --cores 8 --profile slurm --smk-opt " --singularity-args '--bind /path/to/autoseq-snakemake/:/path/to/autoseq-snakemake/'"
 ```
+
+### Executing Multiple Samples in Batches:
+
+Autoseq also provides the capability to run samples in batches. To process multiple samples, first ensure that each sample's input directory is correctly formatted as described earlier. For instance, if your input directory follows this structure:
+
+.
+|-- INBOX/
+|   |-- batch_number1/
+|   |   |--DNA-B-X1234-00/
+|   |   |  |-- ABCDEFGH3_DNA-B-X1234-00_S11_L001_R1_001.fastq.gz
+|   |   |  |-- ABCDEFGH3_DNA-B-X1234-00_S11_L001_R2_001.fastq.gz
+|   |   |  |-- ABCDEFGH3_DNA-B-X1234-00_S11_L002_R1_001.fastq.gz
+|   |   |  |-- ABCDEFGH3_DNA-B-X1234-00_S11_L002_R2_001.fastq.gz
+|   |   |--DNA-T-X1234-00/
+|   |   |  |-- ABCDEFGH3_DNA-T-X1234-00_S11_L001_R1_001.fastq.gz
+|   |   |  |-- ABCDEFGH3_DNA-T-X1234-00_S11_L001_R2_001.fastq.gz
+|   |   |  |-- ABCDEFGH3_DNA-T-X1234-00_S11_L002_R1_001.fastq.gz
+|   |   |  |-- ABCDEFGH3_DNA-T-X1234-00_S11_L002_R2_001.fastq.gz
+|   |-- batch_number2/
+|   |   |--DNA-B-Y4321-00/
+|   |   |  |-- HGFEDCBA3_DNA-B-Y4321-00_S11_L001_R1_001.fastq.gz
+|   |   |  |-- HGFEDCBA3_DNA-B-Y4321-00_S11_L001_R2_001.fastq.gz
+|   |   |  |-- HGFEDCBA3_DNA-B-Y4321-00_S11_L002_R1_001.fastq.gz
+|   |   |  |-- HGFEDCBA3_DNA-B-Y4321-00_S11_L002_R2_001.fastq.gz
+|   |   |--DNA-T-Y4321-00/
+|   |   |  |-- HGFEDCBA3_DNA-T-Y4321-00_S11_L001_R1_001.fastq.gz
+|   |   |  |-- HGFEDCBA3_DNA-T-Y4321-00_S11_L001_R2_001.fastq.gz
+|   |   |  |-- HGFEDCBA3_DNA-T-Y4321-00_S11_L002_R1_001.fastq.gz
+|   |   |  |-- HGFEDCBA3_DNA-T-Y4321-00_S11_L002_R2_001.fastq.gz
+
+
+
+You can use the following shell script to create symbolic links to all the input files in a directory with the correct naming convention:
+
+for dpath in /path/to/INBOX/batch_number/DNA-*;do
+    base=`basename $dpath`;
+    sampletype=`echo $base | awk -F "-" '{if ($2 == "B") {print "N"} else {print $2}}'`
+    sdid=`echo $base | awk -F "-" '{if (NF == 4) {print $3$4} else {print $4$5}}' | sed -e "s/WGS//g"` ## Added newly, please check.
+    barcode=`echo SARC-P-$sdid-$sampletype-$sdid-KH$(date '+%Y%m%d')-WG$(date '+%Y%m%d')`  ## added date, please check.
+    mkdir /path/to/INBOX/$barcode
+    ln -s $dpath/* /path/to/INBOX/$barcode/
+    echo $base $barcode
+done
+
+
+
+**NOTE:** If your input files follow a different format, adjustments to the above script may be necessary.
+
+The shell script above will generate symbolic links for your input files in the following structure:
+
+|-- INBOX/
+|   |-- SARC-P-X1234-N-X1234-KH20241026-WG20241026/
+|   |   |-- ABCDEFGH3_DNA-B-X1234-00_S11_L001_R1_001.fastq.gz
+|   |   |-- ABCDEFGH3_DNA-B-X1234-00_S11_L001_R2_001.fastq.gz
+|   |   |-- ABCDEFGH3_DNA-B-X1234-00_S11_L002_R1_001.fastq.gz
+|   |   |-- ABCDEFGH3_DNA-B-X1234-00_S11_L002_R2_001.fastq.gz
+|   |-- SARC-P-X1234-T-X1234-KH20241026-WG20241026/
+|   |   |-- ABCDEFGH3_DNA-T-X1234-00_S11_L001_R1_001.fastq.gz
+|   |   |-- ABCDEFGH3_DNA-T-X1234-00_S11_L001_R2_001.fastq.gz
+|   |   |-- ABCDEFGH3_DNA-T-X1234-00_S11_L002_R1_001.fastq.gz
+|   |   |-- ABCDEFGH3_DNA-T-X1234-00_S11_L002_R2_001.fastq.gz
+|   |-- SARC-P-Y4321-N-Y4321-KH20241026-WG20241026/
+|   |   |-- HGFEDCBA3_DNA-B-Y4321-00_S11_L001_R1_001.fastq.gz
+|   |   |-- HGFEDCBA3_DNA-B-Y4321-00_S11_L001_R2_001.fastq.gz
+|   |   |-- HGFEDCBA3_DNA-B-Y4321-00_S11_L002_R1_001.fastq.gz
+|   |   |-- HGFEDCBA3_DNA-B-Y4321-00_S11_L002_R2_001.fastq.gz
+|   |-- SARC-P-Y4321-T-Y4321-KH20241026-WG20241026/
+|   |   |-- HGFEDCBA3_DNA-T-Y4321-00_S11_L001_R1_001.fastq.gz
+|   |   |-- HGFEDCBA3_DNA-T-Y4321-00_S11_L001_R2_001.fastq.gz
+|   |   |-- HGFEDCBA3_DNA-T-Y4321-00_S11_L002_R1_001.fastq.gz
+|   |   |-- HGFEDCBA3_DNA-T-Y4321-00_S11_L002_R2_001.fastq.gz
+
+
+
+After creating the symbolic links for all your input samples using the script above, you can generate configuration files for each of these samples using the following shell script:
+
+```
+find /path/to/INBOX/ -maxdepth 1 -name "SARC*$(date '+%Y%m%d')" | xargs -I {} basename {} | sort -V > /path/to/sample_lists/clinseqBarcodes_`date "+%Y-%m-%d"`.txt   ## added date, please check.
+mkdir -p /path/to/config/$(date "+%Y-%m-%d")
+/path/to/autoseq-snakemake/autoseq config --outdir /path/to/config/$(date "+%Y-%m-%d") /path/to/sample_lists/clinseqBarcodes_$(date "+%Y-%m-%d").txt
+```
+
+This script will create configuration files for each input sample in the following structure:
+
+|-- config
+|   |-- 2024-10-26/
+|   |   |-- P-X123400.json
+|   |   |-- P-Y432100.json
+
+
+
+The contents of each configuration file will resemble the following format:
+
+# P-X123400.json
+{
+    "sdid": "P-X123400",
+    "T": ["SARC-P-X1234-T-X1234-KH20241026-WG20241026"],
+    "N": ["SARC-P-X1234-N-X1234-KH20241026-WG20241026"],
+    "CFDNA": ""
+}
+
+# P-Y432100.json
+{
+    "sdid": "P-Y432100",
+    "T": ["SARC-P-Y4321-T-Y4321-KH20241026-WG20241026"],
+    "N": ["SARC-P-Y4321-N-Y4321-KH20241026-WG20241026"],
+    "CFDNA": ""
+}
+
+
+
+Once all configuration files have been successfully created, you can launch multiple samples in batches using the following shell script:
+
+ref=/path/to/autoseq-genome/autoseq-genome.json
+libdir=/path/to/INBOX/
+outdir=/path/to/autoseq-output/
+cores=8
+configs=(`find /path/to/config/$(date "+%Y-%m-%d") -name "P-*json" | sort -r`)
+for config in ${configs[@]}; do
+    echo $config
+    sdid=`basename $config |cut -f 1 -d "."`;
+    echo $sdid
+    nohup autoseq launch -r $ref --samples $config --outdir $outdir --cluster-config /path/to/cluster_config/cluster_config_wgs.json --libdir $libdir --scratch /path/to/tmp --cores $cores --pipeline autoseq-wgs --use-singularity --singularity /path/to/containers/ --profile slurm --smk-opt "--latency-wait 30 " >> /path/to/logs/$sdid.nohub.log &
+    sleep 150
+done
+
+This script will submit your jobs to the Slurm cluster sequentially, with a 150-second interval between each job submission.
+

@@ -14,7 +14,11 @@ This pipeline can be broadly classified into 7 major steps. They are
 
 **Pipeline workflow**
 
-![Autoseq workflow](img/autoseq_updated_pipeline.png)
+![Autoseq workflow](img/autoseq_overall_diagram.png)
+
+**Pipeline Detailed Workflow**
+
+![Autoseq Complete Workflow](img/autoseq_detailed_workflow.png)
 
 **Preprocessing and UMI Processing**
 
