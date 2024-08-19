@@ -176,7 +176,7 @@ Launching autoseq pipeline
 
 ### Launching single sample:
 
-To launch autoseq pipeline, you need to specify different config files for autoseq-genome and input samples. You also need to specify the path to input and output directories, path to singularity containers, number of cores and profile options. 
+Autoseq pipeline requires two config files (autoseq-genome and input samples), path to input and output directories and singularity containers, number of cores and profile options. 
 
 
 **Input config file**
