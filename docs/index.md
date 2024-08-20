@@ -25,10 +25,19 @@ Q&A | [Questions & Answers](https://github.com/ClinSeq/autoseq-snakemake/issues)
 Latest Version | [v3.3.1](https://github.com/ClinSeq/autoseq-snakemake/releases/tag/v3.3.1)
 
 -----------------------------------------------
+
 ## GO TO
-### [Quick Start](quick_start.md)
-### [Autoseq Pipeline](autoseq_pipeline.md)
-### [Barcodes](barcodes.md)
-### [Autoseq scripts](scripts.md)
-
-
+* [Quick Start](quick_start.md)
+    * [Installation](quick_start.md/#1-installation)
+    * [Software Requirements](quick_start.md/#2-software-requirements)
+        * [Installing Singularity](quick_start.md/#21-installing-singularity)
+        * [Installing Conda](quick_start.md/#22-installing-conda)
+    * [Autoseq Pipeline Installation](quick_start.md/#3-autoseq-pipeline-installation)
+    * [Launching Autoseq Pipeline](quick_start.md/#4-launching-autoseq-pipeline)
+        * [Launching Single Sample](quick_start.md/#41-launching-single-sample)
+        * [Launching Multiple Samples](quick_start.md/#42-launching-multiple-samples)
+    * [Results](quick_start.md/#5-results)
+    * [Workflow Structure](quick_start.md/#6-workflow-structure)
+* [Autoseq Pipeline](autoseq_pipeline.md)
+* [Barcodes](barcodes.md)
+* [Autoseq scripts](scripts.md)

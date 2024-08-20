@@ -1,7 +1,6 @@
 # Quick start
 
-Installation
--------------
+## 1. Installation
 
 ###### System Recommendation:
 
@@ -13,9 +12,9 @@ Installation
 | **CPU cores**        |  minimum of 8 CPU cores is required. |
 
 <br>
-
 **Note:** These are the minimum system requirements and may vary with pipeline version and size of input files.
-### Software Requirements:
+
+## 2. Software Requirements:
 
 **Required Dependencies:**
 
@@ -31,7 +30,7 @@ Installation
 * slurm
 ```
 
-#### Installing Singularity
+#### 2.1. Installing Singularity
 
 Singularity is a container platform. It allows us to create and run containers that package up pieces of software in a way that is portable and reproducible. To install singularity, first, we need to download all the prerequisites using the following command.
 
@@ -74,7 +73,7 @@ singularity --help
 
 To know more about singularity installation, you can visit [Singularity's Installation Page](https://sylabs.io/guides/3.0/user-guide/installation.html)
 
-#### Installing Conda
+#### 2.2. Installing Conda
 
 Conda offers two distributions: Anaconda and Miniconda. Anaconda is a full-featured installer with numerous data science packages and Anaconda Navigator, while Miniconda is a minimal installer with just the Conda package manager and Python. We will use Miniconda because it consumes less memory and disk space compared to Anaconda.
 
@@ -97,7 +96,7 @@ conda --help
 To know more about conda installation, visit [Conda Home Page](https://docs.anaconda.com/miniconda/#quick-command-line-install)
 
 
-### Downloading Reference Genome:
+#### Downloading Reference Genome:
 
 ```
 wget -c ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/1000G_phase1.indels.b37.vcf.gz
@@ -108,7 +107,7 @@ human_g1k_v37_decoy.fasta
 
 ```
 
-### Autoseq Pipeline Installation
+## 3. Autoseq Pipeline Installation
 
 Download and install autoseq-snakemake and the requirements using pip.
 
@@ -171,13 +170,11 @@ Commands:
 ```
 
 
-Launching autoseq pipeline
---------------------------
+## 4. Launching autoseq pipeline
 
-### Launching single sample:
+#### 4.1. Launching single sample:
 
 Autoseq pipeline requires two config files (autoseq-genome and input samples), path to input and output directories and singularity containers, number of cores and profile options. 
-
 
 **Input config file**
 
@@ -278,10 +275,11 @@ Once you have prepared your config files as mentioned above, you can run autoseq
 autoseq launch -r autoseq-genome/autoseq-genome.json --samples /path/to/sample.json --outdir /path/to/autoseq-output/ --libdir /path/to/INBOX/ --use-singularity --singularity /path/to/container_dir --umi --cores 8 --profile slurm --smk-opt " --singularity-args '--bind /path/to/autoseq-snakemake/:/path/to/autoseq-snakemake/'"
 ```
 
-### Executing Multiple Samples in Batches:
+#### 4.2. Launching multiple samples:
 
 Autoseq also provides the capability to run samples in batches. To process multiple samples, first ensure that each sample's input directory is correctly formatted as described earlier. For instance, if your input directory follows this structure:
 
+```
 .
 |-- INBOX/
 |   |-- batch_number1/
@@ -306,11 +304,11 @@ Autoseq also provides the capability to run samples in batches. To process multi
 |   |   |  |-- HGFEDCBA3_DNA-T-Y4321-00_S11_L001_R2_001.fastq.gz
 |   |   |  |-- HGFEDCBA3_DNA-T-Y4321-00_S11_L002_R1_001.fastq.gz
 |   |   |  |-- HGFEDCBA3_DNA-T-Y4321-00_S11_L002_R2_001.fastq.gz
-
-
+```
 
 You can use the following shell script to create symbolic links to all the input files in a directory with the correct naming convention:
 
+```
 for dpath in /path/to/INBOX/batch_number/DNA-*;do
     base=`basename $dpath`;
     sampletype=`echo $base | awk -F "-" '{if ($2 == "B") {print "N"} else {print $2}}'`
@@ -320,13 +318,14 @@ for dpath in /path/to/INBOX/batch_number/DNA-*;do
     ln -s $dpath/* /path/to/INBOX/$barcode/
     echo $base $barcode
 done
-
-
+```
 
 **NOTE:** If your input files follow a different format, adjustments to the above script may be necessary.
 
 The shell script above will generate symbolic links for your input files in the following structure:
 
+```
+.
 |-- INBOX/
 |   |-- SARC-P-X1234-N-X1234-KH20241026-WG20241026/
 |   |   |-- ABCDEFGH3_DNA-B-X1234-00_S11_L001_R1_001.fastq.gz
@@ -348,7 +347,7 @@ The shell script above will generate symbolic links for your input files in the 
 |   |   |-- HGFEDCBA3_DNA-T-Y4321-00_S11_L001_R2_001.fastq.gz
 |   |   |-- HGFEDCBA3_DNA-T-Y4321-00_S11_L002_R1_001.fastq.gz
 |   |   |-- HGFEDCBA3_DNA-T-Y4321-00_S11_L002_R2_001.fastq.gz
-
+```
 
 
 After creating the symbolic links for all your input samples using the script above, you can generate configuration files for each of these samples using the following shell script:
@@ -361,15 +360,17 @@ mkdir -p /path/to/config/$(date "+%Y-%m-%d")
 
 This script will create configuration files for each input sample in the following structure:
 
+```
+.
 |-- config
 |   |-- 2024-10-26/
 |   |   |-- P-X123400.json
 |   |   |-- P-Y432100.json
-
-
+```
 
 The contents of each configuration file will resemble the following format:
 
+```
 # P-X123400.json
 {
     "sdid": "P-X123400",
@@ -385,11 +386,11 @@ The contents of each configuration file will resemble the following format:
     "N": ["SARC-P-Y4321-N-Y4321-KH20241026-WG20241026"],
     "CFDNA": ""
 }
-
-
+```
 
 Once all configuration files have been successfully created, you can launch multiple samples in batches using the following shell script:
 
+```
 ref=/path/to/autoseq-genome/autoseq-genome.json
 libdir=/path/to/INBOX/
 outdir=/path/to/autoseq-output/
@@ -402,6 +403,306 @@ for config in ${configs[@]}; do
     nohup autoseq launch -r $ref --samples $config --outdir $outdir --cluster-config /path/to/cluster_config/cluster_config_wgs.json --libdir $libdir --scratch /path/to/tmp --cores $cores --pipeline autoseq-wgs --use-singularity --singularity /path/to/containers/ --profile slurm --smk-opt "--latency-wait 30 " >> /path/to/logs/$sdid.nohub.log &
     sleep 150
 done
+```
 
 This script will submit your jobs to the Slurm cluster sequentially, with a 150-second interval between each job submission.
 
+## 5. Results
+
+Once the pipeline gets completed, the resuts folder will appear in the following structure.
+
+```
+.
+|-- analysis_finished
+|-- config_SARC-P-X1234-T-X1234-KH20241026-WG20241026_SARC-P-X1234-N-X1234-KH20241026-WG20241026.yml
+|-- SARC-P-X1234-N-X1234-KH-WG-igvnav-input.txt
+|-- SARC-P-X1234-T-X1234-KH20241026-WG20241026_SARC-P-X1234-N-X1234-KH20241026-WG20241026_jobdb.json
+|-- SARC-P-X1234-T-X1234-KH-WG-SARC-P-X1234-N-X1234-KH-WG-igvnav-input.txt
+|-- fr_N.Rdata
+|-- fr_T.Rdata
+|-- ws.Rdata
+|-- bams
+|-- cnv
+|-- contamination
+|-- IGVnav
+|-- logs
+|-- multiqc
+|-- qc
+|-- svs
+|-- variants
+```
+
+#### Analysis finished file:
+A file named "analysis_finished" will be generated once the pipeline is finished completely. It contains date and time at which the analysis got completed. If any error occurs during any stage of the pipeline, this file will not be generated.
+
+#### Config file:
+Depending on the input parameters for each sample, a configuration file will be generated automatically by modifying `autoseq-snakemake/config.yml` as per the input parameters. The `autoseq-snakemake/config.yml` file contains default information such as additional parameters for each tool, gnomad location etc. On top of this default information additional information such as location of each singularity containers, input and output directory, reference config file, sample config file etc will be added based on the parameters provided by the users. All of these information will be stored in `config_SARC-P-X1234-T-X1234-KH20241026-WG20241026_SARC-P-X1234-N-X1234-KH20241026-WG20241026.yml` file.
+
+#### JobDB file:
+`SARC-P-X1234-T-X1234-KH20241026-WG20241026_SARC-P-X1234-N-X1234-KH20241026-WG20241026_jobdb.json` file will contain ID of each submitted job and their corresponding log file.
+
+#### IGVNavigator input files:
+`SARC-P-X1234-N-X1234-KH-WG-igvnav-input.txt` and `SARC-P-X1234-T-X1234-KH-WG-SARC-P-X1234-N-X1234-KH-WG-igvnav-input.txt` files contains information that can be visualized when using the tool IGVNavigator. IGVNavigator is an add-on tool for IGV Visualizer which can assist in analyzing variants during manual review.
+
+#### Bams:
+This directory contains all the BAM files that were generated during analysis; however, intermediate BAM files will be removed.
+
+#### Cnv
+This directory contains all the files generated by copy number calling tools (JUMBLE).
+
+#### Svs
+This directory contains all the files generated by structural variant callers (svcaller and GRIDSS). 
+
+#### Variants
+This directory contains all the files generated during variant calling stage. 
+
+#### QC
+This directory contains all the files generated by quality check tools such as picard, fastqc, samtools, etc. It also contains QC overview plot and liqbio-cna plot.
+
+#### Multiqc
+This directory contains the results of multiqc tool.
+
+#### Logs
+This directory contains all the log file of each tool that were created while running the pipeline. Log file for alignment process will be stored directly in this directory; however, the log files of skewer, svs, variants, samtools, picard, fastqc, contamination, and cluster will be stored in seperate directory.
+
+## 6. Workflow Structure
+The autoseq-snakemake directory is organized as per the following structure.
+
+```
+.
+├── docs
+│   ├── autoseq_pipeline.md
+│   ├── barcodes.md
+│   ├── img
+│   │   ├── autoseq_detailed_workflow.png
+│   │   ├── autoseq_logo.png
+│   │   ├── autoseq_overall_diagram.png
+│   │   ├── autoseq_pipeline.png
+│   │   ├── autoseq_updated_pipeline.png
+│   │   ├── curator_example.png
+│   │   ├── git_repo.png
+│   │   └── umi_processing.png
+│   ├── index.md
+│   ├── quick_start.md
+│   ├── scripts.md
+│   └── setting_up.md
+├── env
+│   ├── base.yml
+│   ├── ensemblvep.yml
+│   ├── franken.yml
+│   ├── gatk_3.yml
+│   ├── liqbiocna-env.yml
+│   ├── purecn-env.yml
+│   ├── somaticseqenv.yml
+│   └── svcallerenv.yml
+├── mkdocs.yml
+├── pipeline
+│   ├── autoseq
+│   │   ├── rules
+│   │   │   ├── alignment.smk
+│   │   │   ├── cnvcalling.smk
+│   │   │   ├── germline.smk
+│   │   │   ├── __init__.py
+│   │   │   ├── pre_processing.smk
+│   │   │   ├── qc.smk
+│   │   │   ├── somatic.smk
+│   │   │   ├── split_targets.smk
+│   │   │   ├── structuralvariants.smk
+│   │   │   ├── umi_processing.smk
+│   │   │   └── vep.smk
+│   │   └── Snakefile
+│   ├── autoseq-rerun
+│   │   ├── rules
+│   │   │   ├── cnvcalling.smk
+│   │   │   ├── germline.smk
+│   │   │   ├── qc.smk
+│   │   │   ├── somatic.smk
+│   │   │   ├── structuralvariants.smk
+│   │   │   └── vep.smk
+│   │   └── Snakefile
+│   ├── autoseq-sd
+│   │   ├── rules
+│   │   │   ├── qc.smk
+│   │   │   ├── split_targets.smk
+│   │   │   ├── structuralvariants.smk
+│   │   │   ├── umi_processing.smk
+│   │   │   └── variant_calling.smk
+│   │   └── Snakefile
+│   ├── autoseq-wgs
+│   │   ├── rules
+│   │   │   ├── alignment.smk
+│   │   │   ├── cnvcalling.smk
+│   │   │   ├── germline.smk
+│   │   │   ├── pre_processing.smk
+│   │   │   ├── qc.smk
+│   │   │   ├── somatic.smk
+│   │   │   ├── structuralvariants.smk
+│   │   │   └── vep.smk
+│   │   └── Snakefile
+│   ├── cli.py
+│   ├── __init__.py
+│   ├── scheduler
+│   │   ├── cluster_config.anchorage.json
+│   │   ├── cluster_config.json
+│   │   ├── slurm_submit.py
+│   │   └── slurm_utils.py
+│   ├── scripts
+│   │   ├── annotate_svaba.py
+│   │   ├── contest_to_contam_caveat.py
+│   │   ├── create_contest_vcfs.py
+│   │   ├── frankenplot.Rmd
+│   │   ├── frankenscript.R
+│   │   ├── generate_allelic_fraction_bedGraph.py
+│   │   ├── generate_evidence_bam.py
+│   │   ├── generateIGVnavInput.py
+│   │   ├── generateIGVnavInput_SV.py
+│   │   ├── generate_symlinks.py
+│   │   ├── gridss_svannotate.R
+│   │   ├── igv_session_master.xml
+│   │   ├── igv_session_sv_master.xml
+│   │   ├── jumble-run.R
+│   │   ├── liqbioCNA_Interactive_plots.R
+│   │   ├── liqbioCNA_Interactive_plots_WGS.R
+│   │   ├── liqbioCNA.R
+│   │   ├── msisensor
+│   │   ├── PureCN.R
+│   │   ├── QC_overview.R
+│   │   ├── run_msings.sh
+│   │   ├── vcf_add_sample.py
+│   │   └── vcfsorter.pl
+│   ├── settings.py
+│   ├── tumor_only
+│   │   ├── config.yml
+│   │   ├── rules
+│   │   │   ├── cnvcalling.smk
+│   │   │   ├── pre_processing.smk
+│   │   │   ├── qc.smk
+│   │   │   ├── structuralvariants.smk
+│   │   │   ├── variant_calling.smk
+│   │   │   └── vep.smk
+│   │   └── Snakefile
+│   └── utils
+│       ├── bcbio.py
+│       ├── clinseq_barcodes.py
+│       ├── __init__.py
+│       └── utils.py
+├── README.md
+├── setup.py
+└── tests
+    ├── dummy_genome
+    │   ├── bwa
+    │   │   └── human_g1k_v37_decoy.fasta
+    │   ├── dummy_genome.json
+    │   ├── genes
+    │   │   ├── cgcann_filter_v1.txt
+    │   │   ├── Homo_sapiens.GRCh37.75.filtered.genepred
+    │   │   ├── Homo_sapiens.GRCh37.75.filtered.genes-only.gtf
+    │   │   ├── Homo_sapiens.GRCh37.75.filtered.gtf
+    │   │   ├── Homo_sapiens.GRCh37.87.exons-only.gtf
+    │   │   └── human_grch37_87.bed
+    │   ├── gene_track_output.csv
+    │   ├── genome
+    │   │   ├── human_g1k_v37_decoy.chrsizes.txt
+    │   │   ├── human_g1k_v37_decoy.dict
+    │   │   ├── human_g1k_v37_decoy.fasta
+    │   │   ├── human_g1k_v37_decoy_non_chr.bed
+    │   │   └── qdnaseq_background.Rdata
+    │   ├── gnomad.genomes.r2.1.sites.noVEP.vcf.gz
+    │   ├── intervals
+    │   │   ├── ar_regions.bed
+    │   │   ├── fusion_regions.bed
+    │   │   ├── targets
+    │   │   │   ├── comprehensive3_baits_twist.bed.reference.RDS
+    │   │   │   ├── probio_baseline2.bed
+    │   │   │   ├── probio_baseline2.bed.gz
+    │   │   │   ├── probio_baseline2.interval_list
+    │   │   │   ├── probio_biomarkersignature2.bed
+    │   │   │   ├── probio_biomarkersignature2.bed.gz
+    │   │   │   ├── probio_biomarkersignature2.interval_list
+    │   │   │   ├── probio_comprehensive3.interval_list
+    │   │   │   ├── probio_comprehensive3.KAPA_HYPERPREP.CFDNA.cnn
+    │   │   │   ├── probio_comprehensive3.KAPA_HYPERPREP.N.cnn
+    │   │   │   ├── probio_comprehensive3.KAPA_HYPERPREP.T.cnn
+    │   │   │   ├── probio_comprehensive3.msings.baseline
+    │   │   │   ├── probio_comprehensive3.msings.bed
+    │   │   │   ├── probio_comprehensive3.msings.msi_intervals
+    │   │   │   ├── probio_comprehensive3.slopped20.bed
+    │   │   │   ├── probio_comprehensive3.slopped20.bed.gz
+    │   │   │   ├── probio_comprehensive3.slopped20.interval_list
+    │   │   │   ├── probio_comprehensive3.slopped20.msisites.tsv
+    │   │   │   ├── probio_snvindel2.bed
+    │   │   │   ├── probio_snvindel2.bed.gz
+    │   │   │   ├── probio_snvindel2.interval_list
+    │   │   │   └── wgs.reference.RDS
+    │   │   └── ts_regions.bed
+    │   ├── variants
+    │   │   ├── 1000G_phase1.indels.b37.vcf.gz
+    │   │   ├── BrcaExchangeClinvar_15Jan2019_v26_hg19.vcf.gz
+    │   │   ├── clinvar_20160203.vcf.gz
+    │   │   ├── CosmicCodingMuts_v71.vcf.gz
+    │   │   ├── dbsnp142-germline-only.vcf.gz
+    │   │   ├── ExAC.r0.3.1.sites.vep.vcf.gz
+    │   │   ├── icgc_release_20_simple_somatic_mutation.aggregated.vcf.gz
+    │   │   ├── Mills_and_1000G_gold_standard.indels.b37.vcf.gz
+    │   │   ├── OncoKB_6Mar19_v1.9.txt
+    │   │   ├── svfilter_2022-07-11.json
+    │   │   ├── swegen_common_pop.vcf.gz
+    │   │   └── swegen_common.vcf.gz
+    │   ├── vep
+    │   │   └── dummy_vep
+    │   └── wgs
+    │       ├── cnvkit
+    │       │   └── wgs_reference.N.cnn
+    │       ├── hartwig
+    │       │   ├── ActionableCodingPanel.somatic.37.bed.gz
+    │       │   ├── ensembl
+    │       │   │   └── ensembl_gene_data.csv
+    │       │   ├── KnownHotspots.somatic.37.vcf.gz
+    │       │   └── NA12878_GIAB_highconf_IllFB-IllGATKHC-CG-Ion-Solid_ALLCHROM_v3.2.2_highconf.bed.gz
+    │       ├── intervals
+    │       │   └── human_g1k_v37_decoy.00001.interval_list
+    │       └── targets
+    │           └── human_g1k_v37_decoy.00001.bed
+    ├── dummy_normal
+    │   ├── LB-P-NA12877-N-03098850-TD1-C31_clipoverlap.bam
+    │   └── LB-P-NA12877-N-03098850-TD1-C31_nodups.bam
+    ├── libraries
+    │   ├── LB-P-NA12877-CFDNA-03098850-TD1-C31
+    │   │   ├── 1_LB-P-NA12877-CFDNA-03098850-TD1-TT1_1.fastq.gz
+    │   │   ├── 1_LB-P-NA12877-CFDNA-03098850-TD1-TT1_2.fastq.gz
+    │   │   ├── foo_1.fastq.gz
+    │   │   └── foo_2.fastq.gz
+    │   ├── LB-P-NA12877-CFDNA-03098850-TD1-C31_clipoverlap.bam
+    │   ├── LB-P-NA12877-CFDNA-03098850-TD1-C31_nodups.bam
+    │   ├── LB-P-NA12877-CFDNA-03098850-TD1-P21
+    │   │   ├── 1_LB-P-NA12877-CFDNA-03098850-TD1-P21_1.fastq.gz
+    │   │   └── 1_LB-P-NA12877-CFDNA-03098850-TD1-P21_2.fastq.gz
+    │   ├── LB-P-NA12877-N-03098850-TD1-C31
+    │   │   ├── 2_LB-P-NA12877-N-03098850-TD1-TT1_1.fastq.gz
+    │   │   └── 2_LB-P-NA12877-N-03098850-TD1-TT1_2.fastq.gz
+    │   ├── LB-P-NA12877-N-03098850-TD1-C31_clipoverlap.bam
+    │   ├── LB-P-NA12877-N-03098850-TD1-C31_nodups.bam
+    │   └── LB-P-NA12877-N-03098850-TD1-P21
+    │       ├── 1_LB-P-NA12877-N-03098850-TD1-P21_1.fastq.gz
+    │       └── 1_LB-P-NA12877-N-03098850-TD1-P21_2.fastq.gz
+    ├── test_clinseq_barcodes.py
+    ├── test_config_non_umi.yml
+    ├── test_config_sd.yml
+    ├── test_config.yml
+    ├── test_liqbio_sample.json
+    ├── test_liqbio_sd.json
+    ├── test_utils.py
+    └── test_workflow.py
+```
+
+#### docs
+This directory contains all the documentations related to running autoseq.
+
+#### env
+This directory contains all the conda environments associated with running autoseq
+
+#### pipeline
+This directory contains a python code called `cli.py` which acts as a entry point to the pipeline. Depending on the input parameters, this code will run specific pipeline. The source code for all the pipelines will be stored in this directory. Each pipeline is store in a seperate subdirectory which are autoseq, autoseq-rerun, autoseq-sd, autoseq-wgs, tumor_only. Inside each of this directory, there will be a Snakefile and a directory named rule which contains all the associated rules for a specific pipeline. Scripts directory contains all the python, shell, and R codes used in the analysis. Utils directory contains all the basic utilities used in the pipeline.
+
+#### tests
+This directory contains sample dataset and dummy reference genome and associated files to test the pipeline. 
