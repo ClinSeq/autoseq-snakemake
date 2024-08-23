@@ -33,5 +33,5 @@ The repo is organized into four essential compartments -
 NGS-data analysis pipeline written in python for very deep targeted resequencing data from custom panels and works well with targeted or whole-exome data as well. Contains the essential steps (QC, trimming, alignment, realignment, variant calling, prioritization, reporting). Variants from raw VCF file are annotated using VeP! and run through a set of semantic filters to eliminate irrelevant, invalid and non-significant calls. These filters (frequency, functional significance, relevance to type of disease, etc.) have been implemented after elaborate testing with different settings for both data and the callers. 
 The data points in results files are suitable for manual curation in IGV after which they could be exported as a text file or HTML report or a PDF report.
 
-![Autoseq workflow](docs/img/autoseq_pipeline.png)
+![Autoseq workflow](docs/img/autoseq_overall_diagram.png)
 
