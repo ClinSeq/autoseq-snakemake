@@ -69,26 +69,32 @@ rule samtools_merge_normal:
     input:
         expand(outdir + "/bams/" + normal_barcode + "/{prefix}.bam", prefix = nfq_prefix)
     output:
-        outdir + "/bams/{}.bam".format(normal_barcode)
+        bam = outdir + "/bams/{}.bam".format(normal_barcode)
     threads: 8
     run:
-        bamfiles = " ".join(input)
-        shell("samtools merge -@ {threads} -c -p {output} {bamfiles}")
-        shell("samtools index {output} ")
-        shell("rm {bamfiles}")
+        """
+        InputBams=({input})
+        bamfiles=${{InputBams[*]}}
+        samtools merge -@ {threads} -c -p {output.bam} ${{bamfiles}}
+        samtools index {output.bam}
+        rm ${{bamfiles}}
+        """
 
 
 rule samtools_merge_tumor:
     input:
         expand(outdir + "/bams/" + tumor_barcode + "/{prefix}.bam", prefix = tfq_prefix)
     output:
-        outdir + "/bams/{}.bam".format(tumor_barcode)
+        bam = outdir + "/bams/{}.bam".format(tumor_barcode)
     threads: 8
     run:
-        bamfiles = " ".join(input)
-        shell("samtools merge -@ {threads} -c -p {output} {bamfiles}")
-        shell("samtools index {output} ")
-        shell("rm {bamfiles}")
+        """
+        InputBams=({input})
+        bamfiles=${{InputBams[*]}}
+        samtools merge -@ {threads} -c -p {output.bam} ${{bamfiles}}
+        samtools index {output.bam}
+        rm ${{bamfiles}}
+        """
 
 
 rule picard_markdups:

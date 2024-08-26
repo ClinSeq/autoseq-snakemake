@@ -49,19 +49,19 @@ rule splitbam_umimapped_1:
     output:
         expand(outdir + "/bams/split_targets/bam/{{sample}}.{chr}.bam", chr = all_chromosomes),
         outdir + "/bams/split_targets/bam/{sample}.nochr.bam"
-    threads: 8
-    run:
+    params:
         output_dir = outdir + "/bams/split_targets/bam/"
-        bam = input.mapped
-        prefix = os.path.basename(bam).split('.bam')[0]
-        no_chr = output_dir + "/{}.nochr.bam".format(prefix)
-        cmd = "samtools view  -L {} -o {} {} ".format(input.nochr, no_chr, bam)
-        shell(cmd)
-        for chr in all_chromosomes:
-            run_cmd = "samtools view -b {} {} ".format(bam, chr) + \
-                        " > {}/{}.{}.bam && ".format(output_dir, prefix, chr) + \
-                        " samtools index {}/{}.{}.bam ".format(output_dir, prefix, chr)
-            shell(run_cmd)
+    threads: 8
+    shell:
+        """
+        prefix=$(basename {input.mapped} .bam)
+        no_chr={params.output_dir}/${prefix}.nochr.bam
+        samtools view -@ {threads} -L {input.nochr} -o $no_chr {input.mapped}
+        for chr in ${all_chromosomes[@]}; do
+            samtools view -@ {threads} -b {input.mapped} $chr > {params.output_dir}/${prefix}.${chr}.bam
+            samtools index {params.output_dir}/${prefix}.${chr}.bam
+        done
+        """
 
 
 rule gatk3_targetcreator:
@@ -135,11 +135,13 @@ rule samtools_merge_realign:
     output:
         outdir + "/bams/{sample}_realigned.bam"
     run:
-        bamfiles = " ".join(input)
-        shell("samtools merge -c -p {output} {bamfiles}")
-        shell("samtools index {output} ")
-        shell("rm {bamfiles}") 
-
+        """
+        InputBams={input}
+        bamfiles=${InputBams[*]}
+        samtools merge -c -p {output.bam} $bamfiles
+        samtools index {output.bam}
+        rm $bamfiles
+        """  
 
 rule picard_markdups:
     input:
