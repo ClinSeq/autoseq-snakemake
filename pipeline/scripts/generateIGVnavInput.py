@@ -156,7 +156,7 @@ except Exception as e:
 if vcftype == "somatic":
     output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE',  'ENSEMBLID', 'IMPACT', 'CONSEQUENCE', 'TRANSCRIPT', 'HGVSc', 'HGVSp', 'T_DP', 'T_ALT', 'T_VAF', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID', 'gnomAD', 'BRCAEx', 'OncoKB', 'CGC_ANN', 'NUM_TOOLS']) + "\n")
 elif vcftype == "germline":
-    output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'ENSEMBLID', 'IMPACT', 'CONSEQUENCE', 'TRANSCRIPT', 'HGVSc','HGVSp', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID', 'gnomAD', 'BRCAEx', 'OncoKB', 'CGC_ANN']) + "\n")
+    output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', 'GENE', 'ENSEMBLID', 'IMPACT', 'CONSEQUENCE', 'TRANSCRIPT', 'HGVSc','HGVSp', 'N_DP', 'N_ALT', 'N_VAF', 'T_VAF', 'CLIN_SIG', 'RSID', 'gnomAD', 'BRCAEx', 'OncoKB', 'CGC_ANN']) + "\n")
 
 for record in vcf_reader:
     try:
@@ -247,6 +247,13 @@ for record in vcf_reader:
     
     elif vcftype == "germline":
         normal = record.samples[0]
+        tumor_vaf = 0
+        
+        if len(record.samples) > 1 and len(record.ALT) == 1:
+            tumor = record.samples[1]
+            if tumor['AD'] and tumor['DP']:
+                tumor_vaf = float(tumor['AD'][1]) / float(tumor['DP']) \
+                            
 
         if len(record.ALT) == 1 and filter_col == 'PASS' and \
             (impact == 'HIGH' or impact == 'MODERATE' or is_splice_variant) and not wgs:
@@ -260,15 +267,15 @@ for record in vcf_reader:
             if normal['DP'] and normal['AD']:
                 normal_dp = normal['DP']
                 normal_alt = normal['AD'][1]
-                normal_vaf = float(normal_alt)/float(normal_dp)
+                normal_vaf = float(normal_alt) / float(normal_dp)
 
                 output_file.write('\t'.join(map(str, [record.CHROM, record.POS-1, record.POS,
                                                         record.REF, record.ALT, '', '', '', gene, ensembl_id, 
                                                         impact, canonical_trans['Consequence'], 
                                                         canonical_trans['Feature'], canonical_trans['HGVSc'],
                                                         canonical_trans['HGVSp'], normal_dp , normal_alt,
-                                                        round(normal_vaf, 2), clinsig, record.ID, gnomAD,
-                                                        brcaEx, oncogenicity, cgcann])) + "\n")
+                                                        round(normal_vaf, 2), round(tumor_vaf, 2), clinsig, 
+                                                        record.ID, gnomAD, brcaEx, oncogenicity, cgcann])) + "\n")
         
         # WGS filter
         if (wgs and len(record.ALT) == 1 and impact == 'HIGH' and not gene.startswith("HLA")) \
@@ -287,8 +294,8 @@ for record in vcf_reader:
                                                         impact, canonical_trans['Consequence'], 
                                                         canonical_trans['Feature'], canonical_trans['HGVSc'],
                                                         canonical_trans['HGVSp'], normal_dp , normal_alt,
-                                                        round(normal_vaf, 2), clinsig, record.ID, gnomAD,
-                                                        brcaEx, oncogenicity, cgcann])) + "\n")
+                                                        round(normal_vaf, 2), round(tumor_vaf, 2), clinsig, record.ID, 
+                                                        gnomAD, brcaEx, oncogenicity, cgcann])) + "\n")
                 
 
 ## adding vardict indels into IGVNav 
