@@ -26,6 +26,13 @@ Latest Version | [v3.3.1](https://github.com/ClinSeq/autoseq-snakemake/releases/
 
 -----------------------------------------------
 
+## Authors
+* Sarath Kumar Murugan
+* Venkatesh Chellappa Patel
+* Karthick Maniram
+* Rebecka Bergstrom
+* Markus Mayrhofer
+
 ## GO TO
 * [Quick Start](quick_start.md)
     * [Installation](quick_start.md/#1-installation)

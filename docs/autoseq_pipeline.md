@@ -15,10 +15,12 @@ This pipeline can be broadly classified into 7 major steps. They are
 **Pipeline workflow**
 
 ![Autoseq workflow](img/autoseq_overall_diagram.png)
+**Figure 1:** This diagram shows the overall workflow for autoseq pipeline. Here different type of processes are highlighed with different colors. The preprocessing, UMI processing, microsatellite instability, quality check, somatic variant calling, germline variant calling, copy number analysis, structural variant calling and plots are mentioned in grey, orange, plum, blue, dark orange, green, light blue, dark yellow and light orange respectively. 
 
 **Pipeline Detailed Workflow**
 
 ![Autoseq Complete Workflow](img/autoseq_detailed_workflow.png)
+**Figure 2:** Complete DAG diagram for the autoseq pipeline is shown in this diagram. Here, the postprocessing step is highlighted in light yellow. All other color code is similar to the above diagram.
 
 **Preprocessing and UMI Processing**
 
