@@ -51,12 +51,19 @@ This is a script creating plots showing the distribution of some QC values, and 
 
 ### `generate_evidence_bam.py`
 
+This scripts takes gridss variant file and gridss bam file and applies supplementary read filter and SAME_START_READS filter (i.e checks if reads have same chromosome number, start and end position which likely indicates duplicate reads; hence, not a true variant). 
+
 ### `gridss_svannotate.R`
+
+This script adds simple event type annotation (TRA, INV, INS, DEL, DUP) based on the breakend position and orientation to the end of INFO column.
 
 ### `run_msings.sh`
 
+This script takes bed file, reference genome, msi_intervals file, msings baseline file and bam file as input 
+In first step, it uses samtools mpileup to count reads that has depth greater than 6 for each location mentioned in the interval_list file. The results are then passed to varscan which filters reads that has base quality less than 10. It then uses analyser.py script to calculate the count, percentage and distribution of indels within each range mentioned in the bed file. Finally, it uses count_msi_samples to count the MSI locations.
+
 ### `vcfsorter.pl`
 
-### `jumble-run.R`
+This code takes fasta file and vcf file as input and sorts the vcf file based on the chromosome order present in fasta file. 
 
-### `msisensor`
+### `jumble-run.R`

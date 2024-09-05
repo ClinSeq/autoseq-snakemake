@@ -151,8 +151,10 @@ conda env update --file env/base.yml
 
 # Setting Environmental Variable
 GRIDSS_JAR=/path/to/autoseq-snakemake/pipeline/scripts/gridss-2.10.2-gridss-jar-with-dependencies.jar
-GRIDSS_SCRIPT = /path/to/tools/gridss-2.13.2/
-SAGE_JAR = /path/to/tools/sage_v3.2.3.jar
+GRIDSS_SCRIPT=/path/to/tools/gridss-2.13.2/
+SAGE_JAR=/path/to/tools/sage_v3.2.3.jar
+FRANKEN_RMD=/path/to/pipeline/scripts/frankenplot.Rmd
+MSINGSENV=/path/to/tools/msings/msings-env
 ```
 
 Pull singularity containers 
