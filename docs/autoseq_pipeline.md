@@ -1079,22 +1079,16 @@ generateIGVnavInput_SV.py --input /path/to/output/P-00484999/PB-P-00484999-CFDNA
 --output    -->  output tab delimited file for IGVNav
 ```
 
-**Rule :**
+**Rule generate_symlinks:**
+This code iterates through the output directory and creates symbolic link for files such as .vep.vcf,  nodups.bam,  clipoverlap.bam,  bedGraph,  mut, etc in IGVNav directory.
 
 **Command Used:**
 ```
+generate_symlinks.py --targets /path/to/autoseq-genome/intervals/targets/probio_comprehensive4.slopped20.bed --outdir /path/to/autoseq-output/P-00484999/PB-P-00484999-CFDNA-04244462-KH20240806-C420240807_PB-P-00484999-N-04244461-KH20240806-C420240807  2> /path/to/autoseq-output/P-00484999/PB-P-00484999-CFDNA-04244462-KH20240806-C420240807_PB-P-00484999-N-04244461-KH20240806-C420240807/logs/generate_symlinks.log
 ```
 
 **Parameters**
 ```
-```
-
-**Rule :**
-
-**Command Used:**
-```
-```
-
-**Parameters**
-```
+--targets       -->  Target bed file
+--outdir        -->  Output directory
 ```
