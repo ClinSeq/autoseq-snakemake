@@ -29,22 +29,22 @@ Latest Version | [v3.3.1](https://github.com/ClinSeq/autoseq-snakemake/releases/
 ## Authors
 * Sarath Kumar Murugan
 * Venkatesh Chellappa Patel
-* Karthick Maniram
 * Rebecka Bergstrom
 * Markus Mayrhofer
 
 ## GO TO
-* [Quick Start](quick_start.md)
-    * [Installation](quick_start.md/#1-installation)
-    * [Software Requirements](quick_start.md/#2-software-requirements)
-        * [Installing Singularity](quick_start.md/#21-installing-singularity)
-        * [Installing Conda](quick_start.md/#22-installing-conda)
-    * [Autoseq Pipeline Installation](quick_start.md/#3-autoseq-pipeline-installation)
-    * [Launching Autoseq Pipeline](quick_start.md/#4-launching-autoseq-pipeline)
-        * [Launching Single Sample](quick_start.md/#41-launching-single-sample)
-        * [Launching Multiple Samples](quick_start.md/#42-launching-multiple-samples)
-    * [Results](quick_start.md/#5-results)
-    * [Workflow Structure](quick_start.md/#6-workflow-structure)
-* [Autoseq Pipeline](autoseq_pipeline.md)
-* [Barcodes](barcodes.md)
-* [Autoseq scripts](scripts.md)
+* [1 Quick Start](quick_start.md)
+    * [1.1 Requirements](quick_start.md/#11-requirements)
+    * [1.2 Installation](quick_start.md/#12-installation)
+        * [1.2.1 Installing Singularity](quick_start.md/#121-installing-singularity)
+        * [1.2.2 Installing Conda](quick_start.md/#122-installing-conda)
+        * [1.2.3 Autoseq Pipeline Installation](quick_start.md/#123-autoseq-pipeline-installation)
+    * [1.3 Launching Autoseq Pipeline](quick_start.md/#13-launching-autoseq-pipeline)
+        * [1.3.1 Launching Single Sample](quick_start.md/#131-launching-single-sample)
+        * [1.3.2 Launching Multiple Samples](quick_start.md/#132-launching-multiple-samples)
+        * [1.3.3 Relaunching failed samples](quick_start.md/#133-relaunching-failed-samples)
+    * [1.4 Results](quick_start.md/#14-results)
+    * [1.5 Workflow Structure](quick_start.md/#15-workflow-structure)
+* [2 Autoseq Pipeline](autoseq_pipeline.md)
+* [3 Barcodes](barcodes.md)
+* [4 Autoseq scripts](scripts.md)

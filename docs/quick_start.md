@@ -1,6 +1,6 @@
-# Quick start
+# 1 Quick start
 
-## 1. Installation
+## 1.1 Requirements
 
 ###### System Recommendation:
 
@@ -14,7 +14,7 @@
 <br>
 **Note:** These are the minimum system requirements and may vary with pipeline version and size of input files.
 
-## 2. Software Requirements:
+###### Software Requirements:
 
 **Required Dependencies:**
 
@@ -56,8 +56,9 @@
 ```
 * slurm
 ```
+## 1.2 Installation
 
-#### 2.1. Installing Singularity
+#### 1.2.1 Installing Singularity
 
 Singularity is a container platform. It allows us to create and run containers that package up pieces of software in a way that is portable and reproducible. To install singularity, first, we need to download all the prerequisites using the following command.
 
@@ -100,7 +101,7 @@ singularity --help
 
 To know more about singularity installation, you can visit [Singularity's Installation Page](https://sylabs.io/guides/3.0/user-guide/installation.html)
 
-#### 2.2. Installing Conda
+#### 1.2.2 Installing Conda
 
 Conda offers two distributions: Anaconda and Miniconda. Anaconda is a full-featured installer with numerous data science packages and Anaconda Navigator, while Miniconda is a minimal installer with just the Conda package manager and Python. We will use Miniconda because it consumes less memory and disk space compared to Anaconda.
 
@@ -134,7 +135,7 @@ human_g1k_v37_decoy.fasta
 
 ```
 
-## 3. Autoseq Pipeline Installation
+#### 1.2.3 Autoseq Pipeline Installation
 
 Download and install autoseq-snakemake and the requirements using pip.
 
@@ -199,9 +200,9 @@ Commands:
 ```
 
 
-## 4. Launching autoseq pipeline
+## 1.3 Launching autoseq pipeline
 
-#### 4.1. Launching single sample:
+#### 1.3.1 Launching single sample:
 
 Autoseq pipeline requires two config files (autoseq-genome and input samples), path to input and output directories and singularity containers, number of cores and profile options. 
 
@@ -212,8 +213,8 @@ The input config json file has to be in the following format.
 {
     "sdid": "P-NA12877",
     "T": "",
-    "N": ["LB-P-NA12877-N-03098850-TD1-C31"],
-    "CFDNA": ["LB-P-NA12877-CFDNA-03098850-TD1-C31"]
+    "N": ["PB-P-NA12877-N-03098850-TD1-C31"],
+    "CFDNA": ["PB-P-NA12877-CFDNA-03098850-TD1-C31"]
 }
 ```
 
@@ -304,7 +305,7 @@ Once you have prepared your config files as mentioned above, you can run autoseq
 autoseq launch -r autoseq-genome/autoseq-genome.json --samples /path/to/sample.json --outdir /path/to/autoseq-output/ --libdir /path/to/INBOX/ --use-singularity --singularity /path/to/container_dir --umi --cores 8 --profile slurm --smk-opt " --singularity-args '--bind /path/to/autoseq-snakemake/:/path/to/autoseq-snakemake/'"
 ```
 
-#### 4.2. Launching multiple samples:
+#### 1.3.2 Launching multiple samples:
 
 Autoseq also provides the capability to run samples in batches. To process multiple samples, first ensure that each sample's input directory is correctly formatted as described earlier. For instance, if your input directory follows this structure:
 
@@ -341,8 +342,8 @@ You can use the following shell script to create symbolic links to all the input
 for dpath in /path/to/INBOX/batch_number/DNA-*;do
     base=`basename $dpath`;
     sampletype=`echo $base | awk -F "-" '{if ($2 == "B") {print "N"} else {print $2}}'`
-    sdid=`echo $base | awk -F "-" '{if (NF == 4) {print $3$4} else {print $4$5}}' | sed -e "s/WGS//g"` ## Added newly, please check.
-    barcode=`echo SARC-P-$sdid-$sampletype-$sdid-KH$(date '+%Y%m%d')-WG$(date '+%Y%m%d')`  ## added date, please check.
+    sdid=`echo $base | awk -F "-" '{if (NF == 4) {print $3$4} else {print $4$5}}'
+    barcode=`echo PB-P-$sdid-$sampletype-$sdid-KH$(date '+%Y%m%d')-C$(date '+%Y%m%d')`  ## added date, please check.
     mkdir /path/to/INBOX/$barcode
     ln -s $dpath/* /path/to/INBOX/$barcode/
     echo $base $barcode
@@ -356,22 +357,22 @@ The shell script above will generate symbolic links for your input files in the 
 ```
 .
 |-- INBOX/
-|   |-- SARC-P-X1234-N-X1234-KH20241026-WG20241026/
+|   |-- PB-P-X1234-N-X1234-KH20241026-C20241026/
 |   |   |-- ABCDEFGH3_DNA-B-X1234-00_S11_L001_R1_001.fastq.gz
 |   |   |-- ABCDEFGH3_DNA-B-X1234-00_S11_L001_R2_001.fastq.gz
 |   |   |-- ABCDEFGH3_DNA-B-X1234-00_S11_L002_R1_001.fastq.gz
 |   |   |-- ABCDEFGH3_DNA-B-X1234-00_S11_L002_R2_001.fastq.gz
-|   |-- SARC-P-X1234-T-X1234-KH20241026-WG20241026/
+|   |-- PB-P-X1234-T-X1234-KH20241026-C20241026/
 |   |   |-- ABCDEFGH3_DNA-T-X1234-00_S11_L001_R1_001.fastq.gz
 |   |   |-- ABCDEFGH3_DNA-T-X1234-00_S11_L001_R2_001.fastq.gz
 |   |   |-- ABCDEFGH3_DNA-T-X1234-00_S11_L002_R1_001.fastq.gz
 |   |   |-- ABCDEFGH3_DNA-T-X1234-00_S11_L002_R2_001.fastq.gz
-|   |-- SARC-P-Y4321-N-Y4321-KH20241026-WG20241026/
+|   |-- PB-P-Y4321-N-Y4321-KH20241026-C20241026/
 |   |   |-- HGFEDCBA3_DNA-B-Y4321-00_S11_L001_R1_001.fastq.gz
 |   |   |-- HGFEDCBA3_DNA-B-Y4321-00_S11_L001_R2_001.fastq.gz
 |   |   |-- HGFEDCBA3_DNA-B-Y4321-00_S11_L002_R1_001.fastq.gz
 |   |   |-- HGFEDCBA3_DNA-B-Y4321-00_S11_L002_R2_001.fastq.gz
-|   |-- SARC-P-Y4321-T-Y4321-KH20241026-WG20241026/
+|   |-- PB-P-Y4321-T-Y4321-KH20241026-C20241026/
 |   |   |-- HGFEDCBA3_DNA-T-Y4321-00_S11_L001_R1_001.fastq.gz
 |   |   |-- HGFEDCBA3_DNA-T-Y4321-00_S11_L001_R2_001.fastq.gz
 |   |   |-- HGFEDCBA3_DNA-T-Y4321-00_S11_L002_R1_001.fastq.gz
@@ -403,16 +404,16 @@ The contents of each configuration file will resemble the following format:
 # P-X123400.json
 {
     "sdid": "P-X123400",
-    "T": ["SARC-P-X1234-T-X1234-KH20241026-WG20241026"],
-    "N": ["SARC-P-X1234-N-X1234-KH20241026-WG20241026"],
+    "T": ["PB-P-X1234-T-X1234-KH20241026-C20241026"],
+    "N": ["PB-P-X1234-N-X1234-KH20241026-C20241026"],
     "CFDNA": ""
 }
 
 # P-Y432100.json
 {
     "sdid": "P-Y432100",
-    "T": ["SARC-P-Y4321-T-Y4321-KH20241026-WG20241026"],
-    "N": ["SARC-P-Y4321-N-Y4321-KH20241026-WG20241026"],
+    "T": ["PB-P-Y4321-T-Y4321-KH20241026-C20241026"],
+    "N": ["PB-P-Y4321-N-Y4321-KH20241026-C20241026"],
     "CFDNA": ""
 }
 ```
@@ -420,6 +421,8 @@ The contents of each configuration file will resemble the following format:
 Once all configuration files have been successfully created, you can launch multiple samples in batches using the following shell script:
 
 ```
+screen -S autoseq_run
+prod_up
 ref=/path/to/autoseq-genome/autoseq-genome.json
 libdir=/path/to/INBOX/
 outdir=/path/to/autoseq-output/
@@ -429,33 +432,100 @@ for config in ${configs[@]}; do
     echo $config
     sdid=`basename $config |cut -f 1 -d "."`;
     echo $sdid
-    nohup autoseq launch -r $ref --samples $config --outdir $outdir --cluster-config /path/to/cluster_config/cluster_config_wgs.json --libdir $libdir --scratch /path/to/tmp --cores $cores --pipeline autoseq-wgs --use-singularity --singularity /path/to/containers/ --profile slurm --smk-opt "--latency-wait 30 " >> /path/to/logs/$sdid.nohub.log &
-    sleep 150
+    nohup autoseq launch -r $ref --samples $config --outdir $outdir --libdir $libdir \
+        --cluster-config /path/to/autoseq-snakemake/pipeline/scheduler/cluster_config_specific_server.json \
+        --use-singularity --singularity /path/to/containers/ \
+        --scratch /path/to/tmp --umi --cores $cores --profile slurm \
+        --smk-opt "--latency-wait 60 " >> logs/$sdid.nohub.log &
+    sleep 250
 done
 ```
 
-This script will submit your jobs to the Slurm cluster sequentially, with a 150-second interval between each job submission.
+This script will submit your jobs to the Slurm cluster sequentially, with a 250-second interval between each job submission.
 
-## 5. Results
+#### 1.3.3 Relaunching failed samples:
+While running multiple jobs on batch, if any of the job/jobs failed, we can use the following set of command to re-launch the failed samples. Before re-launching the samples, first we need to ensure that there are no background jobs running. You can use the following command to check the same.
+
+```
+ps aux | grep "username"
+```
+
+If there are any background jobs running, you can kill them with the following command.
+
+```
+kill -9 $(ps aux | grep -E "sdid1|sdid2|sdid3|....|sdidN" | grep -v "grep" | awk '{print $2}')
+```
+
+Usually, when snakemake starts to run any sample and if it failes abruptly (due to server crash or any other reason), it usually keeps the output directory locked for the particular sample. To unlock the directory, you can use the following set of command.
+
+```
+screen -r autoseq_run
+prod_up   # run this only if production environment is not active.
+ref=/path/to/autoseq-genome/autoseq-genome.json
+libdir=/path/to/INBOX/
+outdir=/path/to/autoseq-output/
+cores=8
+configs=(/path/to/config/date/sdid1.json /path/to/config/date/sdid2.json /path/to/config/date/sdid3.json ... /path/to/config/date/sdidN.json)  ## Provide the config files for failed samples here.
+
+for config in ${configs[@]}; do
+    echo $config
+    sdid=`basename $config |cut -f 1 -d "."`;
+    echo $sdid
+    nohup autoseq launch -r $ref --samples $config --outdir $outdir --libdir $libdir \
+        --cluster-config /nfs/PIPELINE/autoseq-snakemake/pipeline/scheduler/cluster_config.anchorage.json \
+        --use-singularity --singularity /nfs/PIPELINE/containers/ \
+        --scratch /nfs/KODIAK2/PSFF/re-run/tmp --umi --cores $cores --profile slurm \
+        --smk-opt "--latency-wait 5 --unlock"
+    sleep 10
+done
+```
+
+The above command will unlock all the sample directories mentioned in the configs and we can now re-launch the failed samples with the following command. 
+
+```
+screen -r autoseq_run
+prod_up
+ref=/path/to/autoseq-genome/autoseq-genome.json
+libdir=/path/to/INBOX/
+outdir=/path/to/autoseq-output/
+cores=8
+configs=(/path/to/config/date/sdid1.json /path/to/config/date/sdid2.json /path/to/config/date/sdid3.json ... /path/to/config/date/sdidN.json)  ## Provide the config files for failed samples here.
+
+for config in ${configs[@]}; do
+    echo $config
+    sdid=`basename $config |cut -f 1 -d "."`;
+    echo $sdid
+    nohup autoseq launch -r $ref --samples $config --outdir $outdir --libdir $libdir \
+        --cluster-config /nfs/PIPELINE/autoseq-snakemake/pipeline/scheduler/cluster_config.anchorage.json \
+        --use-singularity --singularity /nfs/PIPELINE/containers/ \
+        --scratch /nfs/KODIAK2/PSFF/re-run/tmp --umi --cores $cores --profile slurm \
+        --smk-opt "--latency-wait 60 --rerun-incomplete"
+    sleep 250
+done
+```
+The above command will re-launch the samples mentioned in config files.
+
+
+## 1.4 Results
 
 Once the pipeline gets completed, the resuts folder will appear in the following structure.
 
 ```
 .
 |-- analysis_finished
-|-- config_SARC-P-X1234-T-X1234-KH20241026-WG20241026_SARC-P-X1234-N-X1234-KH20241026-WG20241026.yml
-|-- SARC-P-X1234-N-X1234-KH-WG-igvnav-input.txt
-|-- SARC-P-X1234-T-X1234-KH20241026-WG20241026_SARC-P-X1234-N-X1234-KH20241026-WG20241026_jobdb.json
-|-- SARC-P-X1234-T-X1234-KH-WG-SARC-P-X1234-N-X1234-KH-WG-igvnav-input.txt
-|-- fr_N.Rdata
-|-- fr_T.Rdata
-|-- ws.Rdata
+|-- config_PB-P-00481277-CFDNA-04244258-KH20240305-C420240306_PB-P-00481277-N-04244257-KH20240305-C420240306.yml
+|-- msisensor-PB-P-00481277-N-04244257-KH-C4-PB-P-00481277-CFDNA-04244258-KH-C4.tsv
+|-- PB-P-00481277-CFDNA-04244258-KH20240305-C420240306_PB-P-00481277-N-04244257-KH20240305-C420240306_jobdb.json
+|-- PB-P-00481277-CFDNA-04244258-KH-C4-PB-P-00481277-N-04244257-KH-C4-igvnav-input.txt
+|-- PB-P-00481277-N-04244257-KH-C4-igvnav-input.txt
 |-- bams
 |-- cnv
 |-- contamination
 |-- IGVnav
 |-- logs
+|-- msings-PB-P-00481277-CFDNA-04244258-KH-C4
 |-- multiqc
+|-- purecn
 |-- qc
 |-- svs
 |-- variants
@@ -465,13 +535,13 @@ Once the pipeline gets completed, the resuts folder will appear in the following
 A file named "analysis_finished" will be generated once the pipeline is finished completely. It contains date and time at which the analysis got completed. If any error occurs during any stage of the pipeline, this file will not be generated.
 
 #### Config file:
-Depending on the input parameters for each sample, a configuration file will be generated automatically by modifying `autoseq-snakemake/config.yml` as per the input parameters. The `autoseq-snakemake/config.yml` file contains default information such as additional parameters for each tool, gnomad location etc. On top of this default information additional information such as location of each singularity containers, input and output directory, reference config file, sample config file etc will be added based on the parameters provided by the users. All of these information will be stored in `config_SARC-P-X1234-T-X1234-KH20241026-WG20241026_SARC-P-X1234-N-X1234-KH20241026-WG20241026.yml` file.
+Depending on the input parameters for each sample, a configuration file will be generated automatically by modifying `autoseq-snakemake/config.yml` as per the input parameters. The `autoseq-snakemake/config.yml` file contains default information such as additional parameters for each tool, gnomad location etc. On top of this default information additional information such as location of each singularity containers, input and output directory, reference config file, sample config file etc will be added based on the parameters provided by the users. All of these information will be stored in `config_PB-P-X1234-T-X1234-KH20241026-C20241026_PB-P-X1234-N-X1234-KH20241026-C20241026.yml` file.
 
 #### JobDB file:
-`SARC-P-X1234-T-X1234-KH20241026-WG20241026_SARC-P-X1234-N-X1234-KH20241026-WG20241026_jobdb.json` file will contain ID of each submitted job and their corresponding log file.
+`PB-P-X1234-T-X1234-KH20241026-C20241026_PB-P-X1234-N-X1234-KH20241026-C20241026_jobdb.json` file will contain ID of each submitted job and their corresponding log file.
 
 #### IGVNavigator input files:
-`SARC-P-X1234-N-X1234-KH-WG-igvnav-input.txt` and `SARC-P-X1234-T-X1234-KH-WG-SARC-P-X1234-N-X1234-KH-WG-igvnav-input.txt` files contains information that can be visualized when using the tool IGVNavigator. IGVNavigator is an add-on tool for IGV Visualizer which can assist in analyzing variants during manual review.
+`PB-P-X1234-N-X1234-KH-WG-igvnav-input.txt` and `PB-P-X1234-T-X1234-KH-WG-PB-P-X1234-N-X1234-KH-WG-igvnav-input.txt` files contains information that can be visualized when using the tool IGVNavigator. IGVNavigator is an add-on tool for IGV Visualizer which can assist in analyzing variants during manual review.
 
 #### Bams:
 This directory contains all the BAM files that were generated during analysis; however, intermediate BAM files will be removed.
@@ -494,7 +564,7 @@ This directory contains the results of multiqc tool.
 #### Logs
 This directory contains all the log file of each tool that were created while running the pipeline. Log file for alignment process will be stored directly in this directory; however, the log files of skewer, svs, variants, samtools, picard, fastqc, contamination, and cluster will be stored in seperate directory.
 
-## 6. Workflow Structure
+## 1.5 Workflow Structure
 The autoseq-snakemake directory is organized as per the following structure.
 
 ```
