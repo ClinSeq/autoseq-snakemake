@@ -9,11 +9,11 @@ Each sample+preparation+capture item should have a corresponding barcode with th
 * `PREPID` specifies the library preparation kit used. It must be a two-letter shortname followed by a string matching `[0-9]+`, which can be used to indicate the date on which the prep was performed. The date string should *preferably* be in the format `YYYYMMDDHHMM`. For example, `201701241540` would indicate year 2017, January 24th, at 15:40.
 * `CAPTUREID` specifies the capture that was performed on the library (if any). It must match either `WGS` (indicating that no capture was performed), or else a two-letter shortname indicating the capture kit used, followed by a string matching `[0-9]+`, which can be used to indicate the date on which the capture was performed. The date should *preferably* be in the format `YYYYMMDDHHMM`.
 
-*NOTE:* The combination `SDID-TYPE-SAMPLEID` must uniquely identify a single sample.
+**NOTE:** The combination `SDID-TYPE-SAMPLEID` must uniquely identify a single sample.
 
-*NOTE:* A clinseq barcode is not garuanteed to uniquely specify a single sample+library+capture item, but in practice it should be unique if precise preparation and capture times are included within the `PREPID` and `CAPTUREID` fields.
+**NOTE:** A clinseq barcode is not garuanteed to uniquely specify a single sample+library+capture item, but in practice it should be unique if precise preparation and capture times are included within the `PREPID` and `CAPTUREID` fields.
 
-##### it is always ideal to have the full sample string with prep and capture dates. example - PB-P-00462065-CFDNA-04055058-KH20221214-C420221214
+**It is always ideal to have the full sample string with prep and capture dates. example - PB-P-00462065-CFDNA-04055058-KH20221214-C420221214**
 
 ### Allowed Project IDs
 
@@ -71,3 +71,5 @@ Autoseq knows about the following capture kits:
 * `S2` = `probio_snvindel2`
 * `B2` = `probio_baseline2`
 * `PS` = `probio_snvindel`
+* `P3` = `probio_biomarkersignature2`
+* `N3` = `pancancer3`
