@@ -252,7 +252,7 @@ for record in vcf_reader:
         if len(record.samples) > 1 and len(record.ALT) == 1:
             tumor = record.samples[1]
             if tumor['AD'] and tumor['DP']:
-                tumor_vaf = float(tumor['AD'][1]) / float(tumor['DP']) \
+                tumor_vaf = float(tumor['AD'][1]) / float(tumor['DP']) 
                             
 
         if len(record.ALT) == 1 and filter_col == 'PASS' and \

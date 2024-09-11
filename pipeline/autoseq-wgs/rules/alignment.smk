@@ -71,7 +71,7 @@ rule samtools_merge_normal:
     output:
         bam = outdir + "/bams/{}.bam".format(normal_barcode)
     threads: 8
-    run:
+    shell:
         """
         InputBams=({input})
         bamfiles=${{InputBams[*]}}
@@ -87,7 +87,7 @@ rule samtools_merge_tumor:
     output:
         bam = outdir + "/bams/{}.bam".format(tumor_barcode)
     threads: 8
-    run:
+    shell:
         """
         InputBams=({input})
         bamfiles=${{InputBams[*]}}
