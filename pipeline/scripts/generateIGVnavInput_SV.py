@@ -288,6 +288,7 @@ def load_bed(bed_file):
     """
     Loading genes from genes.bed file for SV annotations
     """
+
     genes = {}
     with open(bed_file, 'r') as genes_fh:
         genes_db = genes_fh.readlines()
@@ -309,23 +310,15 @@ def gene_annotation(chrom, start, end, genes):
     """
     Return gene name for given  SV event
     """
-    gene = ''
 
-    try:
-        # annotate gene name
-        for ranges, gene_name in genes[chrom].items():
-            if int(ranges[0]) - 20 <= int(start) <= int(ranges[1]) + 20 \
-                or int(ranges[0]) - 20 <= int(end) <= int(ranges[1]) + 20:
-                gene = gene_name
-                break
-        
-        if not gene:
-            gene = 'None'
+    query_pr = pr.PyRanges(chromosomes =  chrom,
+                           starts = [start],
+                           ends = [end])
+    
+    hits = genes.intersect(query_pr)
+    gene_names = ",".join(hits.Name) if hits else 'NA'
 
-        return gene
-    except KeyError:
-        print("Warning! chromosome {chrom} is not valid".format(chrom=chrom))
-        return 'NA'
+    return gene_names
         
 
 def check_targets(chrom, start, end, targets):
@@ -419,7 +412,7 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
                 svlength = abs(int(end_b)-int(start_a)) if chrom_a == chrom_b else 'NA'
                 gene_b = gene_annotation(chrom_b, start_b, end_b, genes)
             else:
-                gene_b = 'NA'
+                gene_b = 'NA'    
             
             cgcann = set()
             cgcann.add(cgc_ann[gene_a][0] if gene_a in cgc_ann else None) 
@@ -454,7 +447,6 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
                                 svlength, sup_reads, tool, sdid, sample, gene_a, 
                                 gene_b, gene_a_b_sorted, ",".join(list(filter(None, cgcann))), curator])
         
-
         svs_df = pd.DataFrame(summary_sv, columns = summary_columns)
         # hard filter for gridss germline svs
         gf_idx = svs_df[(svs_df['TOOL'] == "gridss") & \
@@ -562,7 +554,7 @@ if __name__ == "__main__":
 
     if annotBed:
         combined_input = combine_mut(input_file, output_dir)
-        genes = load_bed(annotBed)
+        genes = pr.read_bed(annotBed)
         fh = open(target_json, 'r')
         targets = json.load(fh)
         if capture_kit in targets:
