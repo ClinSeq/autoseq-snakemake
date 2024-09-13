@@ -2,7 +2,9 @@
 
 ## 1.1 Requirements
 
-###### System Recommendation:
+**System Requirements:**
+
+Next Generation Sequencing Analysis, produce huge volume of data. Hence, to begin NGS data analysis, it is crutial for any research lab to have a highly powerful compute environment. The system requirement varies depending on the scale of the project, type of analysis (e.g., whole-genome sequencing, RNA-seq, or targeted sequencing), and specific set of tools used for each analysis. In general, it is highly recommended to have a system with a minimum of 8 CPU cores or more (steps such as alignment and variant calling may requires more core). In case of whole exome sequencing or targeted sequencing analysis, it is recommended to have 64GB of RAM; in case of whole genome sequencing 128GB of RAM is recommended. And, finally regarding data storage, atlease 500GB of disk space is recommended just for the installation of this software, reference genome, and dependencies. Apart from this, you need additional disk space depending on the number of samples you need to analyse. 
 
 |||
 |----------------------|----------------|
@@ -14,113 +16,39 @@
 <br>
 **Note:** These are the minimum system requirements and may vary with pipeline version and size of input files.
 
-###### Software Requirements:
+**Software Requirements:**
 
-**Required Dependencies:**
+Most of the softwares used for Next Generation Sequencing Data Analysis were specifically designed to be compatible with Linux based environment. Hence it is crutial to have any flavors of Linux operating system. Although, we recommend installing Ubuntu 22.04. Additionally, you also need to install dependencies python, singularity and conda to run this tool. We highly recommend using singularity containers since it avoids most of the dependency conflicts which can arise if you are using conda environment.   
+
+**Dependencies:**
 
 ```
 * python =3.8.12
 * Singularity > 3.0 
 * conda
-* snakemake==6.2.1  # This will be installed automatically
-* click             # This will be installed automatically
-* pyyaml            # This will be installed automatically
-* pandas            # This will be installed automatically
-* rich              # This will be installed automatically
-* loguru            # This will be installed automatically
+* snakemake==6.2.1  
 ```
-
-**Optional Dependencies:**
-
-```
-* slurm
-```
-
-**Note:** It is highly recommended to install slurm as a workload manager if you are planning to run your samples on any HPC.
 
 ## 1.2 Installation
 
-#### 1.2.1 Installing Singularity
+If you prefer to run this pipeline using singularity (which is highly recommended), you can visit their [installation page](https://sylabs.io/guides/3.0/user-guide/installation.html) to download and install singularity which is suitable for your operating system.
 
-Singularity is a container platform. It allows us to create and run containers that package up pieces of software in a way that is portable and reproducible. To install singularity, first, we need to download all the prerequisites using the following command.
-
-```
-sudo apt-get update
-sudo apt-get install -y build-essential libssl-dev uuid-dev libgpgme11-dev \
-    squashfs-tools libseccomp-dev wget pkg-config git cryptsetup debootstrap \
-    libglib2.0-dev runc
-```
-
-The above command will download all the prerequisites to install singularity. Since most of the singularity code is written with a programming language called GO, we need to install it first inorder to run singularity. But first, we need ensure that GO language is not already installed in our system. We can delete any pre-existing GO with the following command.
-
-```
-rm -rf /usr/local/go
-```
-
-Then, download and install GO with the following command.
-
-```
-wget https://go.dev/dl/go1.20.5.linux-amd64.tar.gz
-sudo tar --directory=/usr/local -xzvf go1.20.5.linux-amd64.tar.gz
-export PATH=/usr/local/go/bin:$PATH
-```
-
-Then you can download the latest version of singularity from [singularity download page](https://github.com/sylabs/singularity/releases). Install it with the following set of command.
-
-```
-wget https://github.com/sylabs/singularity/releases/download/v3.11.4/singularity-ce-3.11.4.tar.gz  # paste the latest singularity link here
-tar -xzvf singularity-ce-3.11.4.tar.gz  # Change the singularity version according to the version you have downloaded.
-
-cd singularity-ce-3.11.4  # Change directory name as per your downloaded version.
-./mconfig && sudo make -C builddir && sudo make -C builddir install
-```
-
-To check if singularity is installed correctly, type the following command. If singularity is installed correctly, it should print help page of singularity
-
-```
-singularity --help
-```
-
-To know more about singularity installation, you can visit [Singularity's Installation Page](https://sylabs.io/guides/3.0/user-guide/installation.html)
-
-#### 1.2.2 Installing Conda
-
-Conda offers two distributions: Anaconda and Miniconda. Anaconda is a full-featured installer with numerous data science packages and Anaconda Navigator, while Miniconda is a minimal installer with just the Conda package manager and Python. We will use Miniconda because it consumes less memory and disk space compared to Anaconda.
-
-To install miniconda, download the latest version of conda specific to your system from [this link](https://docs.anaconda.com/miniconda/)
-
-Download and install miniconda with the following set of commands.
-
-```
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda3-latest-Linux-x86_64.sh
-# Accept the licencing agreement and select the default directory for installing miniconda when asked for it.
-```
-
-To ensure conda is installed successfully, type the following command which should list conda help page.
-
-```
-conda --help
-```
-
-To know more about conda installation, visit [Conda Home Page](https://docs.anaconda.com/miniconda/#quick-command-line-install)
+To install conda, you can visit [this page](https://docs.anaconda.com/miniconda/#quick-command-line-install)
 
 
-#### 1.2.3 Autoseq Pipeline Installation
+**Autoseq Pipeline Installation**
 
-Download and install autoseq-snakemake and the requirements using pip.
+Once you have successfully installed the above two dependencies, you can download and install autoseq-snakemake in a seperate conda environment with the following command. It is recommeneded to use python version 3.8.12 to create the conda environment, since other python version may cause dependency conflicts. 
 
 ```sh
-conda create --name autoseq_pipeline python=3.8.12
-conda activate autoseq_pipeline
+conda create --name autoseq python=3.8.12
+conda activate autoseq
 
 git clone https://github.com/Clinseq/autoseq-snakemake.git 
 pip install -e autoseq-snakemake/
-cd autoseq-snakemake
-
-# To install all required tools in current environment, run the following command.
-conda env update --file env/base.yml
 ```
+
+The above command will create a conda environment with python 3.8.12 and install all the required tools mentioned in setup.py. Once you have successfully installed the pipeline, you can check if the installation was successful by typing the command `autoseq --help`.
 
 ```sh
 $ autoseq --help
@@ -130,7 +58,7 @@ $ autoseq --help
   / ___ \ |_| | || (_) |__) |  __/ (_| |
  /_/   \_\__,_|\__\___/____/ \___|\__, |
                                      |_| 🐍
-                         version: 3.3.2
+                         version: 3.4.0
 
 
 Usage: autoseq [OPTIONS] COMMAND [ARGS]...
@@ -152,13 +80,90 @@ Commands:
   list    List autoseq available pipelines with version
 ```
 
-##### Downloading Reference Genome:
+#### Downloading Reference Genome:
 
-Our developers have customized the reference genome specifically for liquid biopsy analysis which is available in our S3 cloud. Kindly contact any of our [developers](index.md) if you need access to our reference genome. 
+Currently, we are using human reference genome GRCh37 for all our analysis. And, we have customized all the associated files (such as bed, gtf, interval_list, etc) specifically for liquid biopsy samples. It is available in our S3 cloud for download upon request. Kindly contact [Johan Lindberg](https://ki.se/personer/johan-lindberg) (johan.lindberg@ki.se) if you need access to our reference genome files. 
 
-##### Creating docker containers:
 
-Our developers have created containerization script to create docker containers for all the tools used in the pipeline and it is available in our [github](https://github.com/ClinSeq/autoseq-docker) page. You can build the containers with the following set of commands.
+## 1.3 Launching autoseq pipeline
+
+In this session, we will discuss about how to launch single sample in autoseq pipeline. If you prefer to launch multiple samles in batch wise, please visit [launching samples in server page](server_launch.md). In general, autoseq pipeline can be launched in two different ways. 
+
+* Using conda environment (not recommended)
+* Using singularity containers (highly recommended)
+
+### Launching pipeline with conda:
+
+If you prefer to launch autoseq pipeline using conda environment (which is not recommended), first, you need to create all the conda environment with the following command.
+
+**NOTE:** This is a one time process. Hence, you need to create the conda environment with the following command only when you are launching the pipeline for the first time. You can also check if these conda environments are already available using the command `conda env list`.
+
+```
+conda env create -f env/base.yml
+conda env create -f env/ensemblvep.yml
+conda env create -f env/franken.yml
+conda env create -f env/gatk_3.yml
+conda env create -f env/liqbiocna-env.yml
+conda env create -f env/purecn-env.yml
+conda env create -f env/somaticseqenv.yml
+conda env create -f env/svcallerenv.yml
+```
+
+These command will install all the required tools mentioned in .yml file inside each conda environment. Now, our pipeline can use these newly created conda environment to run your samples.
+
+**Step 1: Preparing sample list file.**
+
+First, make sure that the input directory name is consistent with the [recommended](barcodes.md) format. Naming the files in this format is crutial, because, autoseq uses this format to select the appropriate bed (or) gtf (or) other files automatically. The sample list file needs to be created inside `/path/to/autoseq-snakemake/sample_list/` as per the [recommended](barcodes.md) format.
+
+```
+cd /path/to/autoseq-snakemake/sample_list/
+nano clinseqBarcodes_YYYY-MM-DD.txt  # Replace YYYY-MM-DD with today's date.
+## Inside this file paste the directory name of the sample which you want to run. 
+## Tumor directory name first, followed by normal directory name. Example:
+
+PB-P-*-CFDNA-*-KHYYYYMMDD-C4YYYYMMDD
+PB-P-*-N-*-KHYYYYMMDD-C4YYYYMMDD
+```
+
+**Step 2: Creating config file.**
+
+Once you have created the sample list file as mentioned above, you can use `autoseq config` command to create the config file.
+
+```
+find /path/to/INBOX/ -maxdepth 1 -name "PROJECT*$(date '+%Y%m%d')" \
+    | xargs -I {} basename {} | sort -V > \
+    /path/to/sample_lists/clinseqBarcodes_`date "+%Y-%m-%d"`.txt  
+
+mkdir -p /path/to/config/$(date "+%Y-%m-%d")
+
+conda activate autoseq
+cd /path/to/autoseq-snakemake/
+autoseq config --outdir /path/to/config/$(date "+%Y-%m-%d") \
+    /path/to/sample_lists/clinseqBarcodes_$(date "+%Y-%m-%d").txt
+```
+
+The above command will create input config file in `/path/to/config/YYYY-MM-DD` which can then be used to lanch the autoseq pipeline along with reference config file.
+
+**Step3: Launching Pipeline.**
+
+Once you have prepared your config files as mentioned above, you can run autoseq pipeline with the following command. It is highly recommended to run the below command insde screen, so that your job will continue to run even if you accidently close the terminal.
+```
+screen -S autoseq_run
+conda activate autoseq
+cd /path/to/autoseq-snakemake/
+autoseq launch -r autoseq-genome/autoseq-genome.json \
+        --samples /path/to/sample.json \
+        --outdir /path/to/autoseq-output/ \
+        --libdir /path/to/INBOX/ --umi --cores 8
+```
+
+To know about the description of each of these parameters, visit [pipeline parameters](quick_start.md#pipeline-parameters)
+
+### Launching pipeline with Singularity
+
+It is highly recommended to launch autoseq using singularity because all the required dependencies has been containerized, so that the pipeline can run more consistently compared to running the pipeline using conda environment.
+
+To use singularity, first you need to build the containers for each tool. We have written a seperate script to build all the required singularity images, for which, you can use the following code.
 
 ```
 git clone https://github.com/ClinSeq/autoseq-docker.git
@@ -177,232 +182,161 @@ docker build -t autoseq-purecn -f autoseq-purecn.Dockerfile .
 docker build -t autoseq-somaticseq -f autoseq-somaticseq.Dockerfile .
 docker build -t autoseq-svcaller -f autoseq-svcaller.Dockerfile .
 ```
-The above set of command will create all the docker containers required for running this tool.
 
-Once you have successfully installed the pipeline, you can check if the installation was successful with the following command.
+This should create all the required singularity images which can then be used to run the pipeline.
 
-## 1.3 Launching autoseq pipeline
+**Note:** This is a one time process. Hence, you need to create the singularity images with the above command only when you are launching the pipeline for the first time.
 
-Autoseq pipeline requires two config files (autoseq-genome and input samples), path to input and output directories and singularity containers, number of cores and profile options. Please make sure that the input directory name is consistent with [barcode](barcodes.md) format.
+**Step 1:** Preparing sample list file.
+First, make sure that the input directory name is consistent with the [recommended](barcodes.md) format. Naming the files in this format is crutial, because, autoseq uses this format to select the appropriate bed (or) gtf (or) other files automatically. Then, you need to create a sample list file inside `/path/to/autoseq-snakemake/sample_list/` as per the [recommended](barcodes.md) format.
 
-**Input config file**
-
-The input config json file has to be in the following format.
 ```
-{
-    "sdid": "P-*******",
-    "T": "",
-    "N": ["PB-P-*******-N-********-TD1-C31"],
-    "CFDNA": ["PB-P-*******-CFDNA-********-TD1-C31"]
-}
+cd /path/to/autoseq-snakemake/sample_list/
+nano clinseqBarcodes_YYYY-MM-DD.txt  # Replace YYYY-MM-DD with today's date.
+## Inside this file paste the directory name of the sample which you want to run. 
+## Tumor directory name first, followed by normal directory name. Example:
+
+PB-P-*-CFDNA-*-KHYYYYMMDD-C4YYYYMMDD
+PB-P-*-N-*-KHYYYYMMDD-C4YYYYMMDD
 ```
 
-**Reference config file**
+**Step 2:** Creating config file. 
+Once you have created the sample list file as mentioned above, you can use `autoseq config` command to create the config file.
 
-Similary, in reference genome config file, you need to specify the following parameters.
 ```
-{
-    "1KG": "variants/1000G_phase1.indels.b37.vcf.gz", 
-    "Mills_and_1KG_gold_standard": "variants/Mills_and_1000G_gold_standard.indels.b37.vcf.gz", 
-    "ar_regions": "intervals/ar_regions.bed", 
-    "brca_exchange": "variants/BrcaExchangeClinvar_15Jan2019_v26_hg19.vcf.gz", 
-    "bwaIndex": "bwa/human_g1k_v37_decoy.fasta", 
-    "dbSNP": "variants/dbsnp142-germline-only.vcf.gz", 
-    "fusion_regions": "intervals/fusion_regions.bed", 
-    "genes_bed": "genes/human_grch37_87.bed", 
-    "oncokb": "variants/OncoKB_6Mar19_v1.9.txt", 
-    "reference_dict": "genome/human_g1k_v37_decoy.dict", 
-    "reference_genome": "genome/human_g1k_v37_decoy.fasta", 
-    "swegene_common": "variants/swegen_common.vcf.gz",
-    "pop_vcf": "variants/swegen_common_pop.vcf.gz", 
-    "pondir":"pondir",*
-    "no_chr":"genome/human_g1k_v37_decoy_non_chr.bed",
-    "gene_track": "gene_track_output.csv",
-    "small_design": {
-        "probio_biomarkersignature2": {
-            "targets-bed": "intervals/targets/probio_biomarkersignature2.bed",
-            "targets-bed-gz": "intervals/targets/probio_biomarkersignature2.bed.gz",
-            "targets-interval_list": "intervals/targets/probio_biomarkersignature2.interval_list",
-            "snvindel": {
-                "targets-bed": "intervals/targets/probio_snvindel2.bed",
-                "targets-bed-gz": "intervals/targets/probio_snvindel2.bed.gz",
-                "targets-interval_list": "intervals/targets/probio_snvindel2.interval_list"
-            },
-            "baseline": {
-                "targets-bed": "intervals/targets/probio_baseline2.bed",
-                "targets-bed-gz": "intervals/targets/probio_baseline2.bed.gz",
-                "targets-interval_list": "intervals/targets/probio_baseline2.interval_list"
-            }
-        }        
-    },
-    "sv_filter": "variants/svfilter_2022-07-11.json",
-    "cgcann": "genes/cgcann_filter_v1.txt",*
-    "exons_gtf": "genes/Homo_sapiens.GRCh37.87.exons-only.gtf",
-    "targets": {  
-        "probio_comprehensive3": {
-            "blacklist-bed": null, 
-            "cnvkit-ref": {
-                "KAPA_HYPERPREP": {
-                    "CFDNA": "intervals/targets/probio_comprehensive3.KAPA_HYPERPREP.CFDNA.cnn", 
-                    "N": "intervals/targets/probio_comprehensive3.KAPA_HYPERPREP.N.cnn", 
-                    "T": "intervals/targets/probio_comprehensive3.KAPA_HYPERPREP.T.cnn"
-                }
-            }, 
-            "msings-baseline": "intervals/targets/probio_comprehensive3.msings.baseline", 
-            "msings-bed": "intervals/targets/probio_comprehensive3.msings.bed", 
-            "msings-msi_intervals": "intervals/targets/probio_comprehensive3.msings.msi_intervals", 
-            "msisites": "intervals/targets/probio_comprehensive3.slopped20.msisites.tsv", 
-            "purecn_targets": null, 
-            "targets-bed-slopped20": "intervals/targets/probio_comprehensive3.slopped20.bed", 
-            "targets-bed-slopped20-gz": "intervals/targets/probio_comprehensive3.slopped20.bed.gz", 
-            "targets-interval_list": "intervals/targets/probio_comprehensive3.interval_list", 
-            "targets-interval_list-slopped20": "intervals/targets/probio_comprehensive3.slopped20.interval_list",
-            "jumble-ref": "intervals/targets/comprehensive3_baits_twist.bed.reference.RDS"
-        }
-    },
-    "wgs": {
-        "cnvkit-ref": "wgs/cnvkit/wgs_reference.N.cnn",
-        "jumble-ref": "intervals/targets/wgs.reference.RDS",
-        "targets": {
-                "bed": "wgs/targets/",
-                "interval_list": "wgs/intervals/"
-        },
-        "hartwig": {
-                "ensembl-dir": "wgs/hartwig/ensembl/",
-                "actionable-somatic-panel-bed": "wgs/hartwig/ActionableCodingPanel.somatic.37.bed.gz",
-                "known-hotspots-somatic-vcf": "wgs/hartwig/KnownHotspots.somatic.37.vcf.gz",
-                "NA12878-highconf-bed": "wgs/hartwig/NA12878_GIAB_highconf_IllFB-IllGATKHC-CG-Ion-Solid_ALLCHROM_v3.2.2_highconf.bed.gz"
-        }
-    }, 
-    "ts_regions": "intervals/ts_regions.bed",
-    "vep_dir": "vep"
-}
+find /path/to/INBOX/ -maxdepth 1 -name "SARC*$(date '+%Y%m%d')" \
+    | xargs -I {} basename {} | sort -V > \
+    /path/to/sample_lists/clinseqBarcodes_`date "+%Y-%m-%d"`.txt  
+
+mkdir -p /path/to/config/$(date "+%Y-%m-%d")
+
+conda activate autoseq
+cd /path/to/autoseq-snakemake/
+autoseq config --outdir /path/to/config/$(date "+%Y-%m-%d") \
+    /path/to/sample_lists/clinseqBarcodes_$(date "+%Y-%m-%d").txt
 ```
 
-Once you have prepared your config files as mentioned above, you can run autoseq pipeline with the following command.
+The above command will create input config file in `/path/to/config/YYYY-MM-DD` which can then be used to lanch the autoseq pipeline along with reference config file.
+
+**Step3:** Launching Pipeline.
+Once you have prepared your config files as mentioned above, you can run autoseq pipeline with the following command. It is highly recommended to launch the pipeline in screen, so that you can monitor the pipeline if incase any error occures.
 ```
-autoseq launch -r autoseq-genome/autoseq-genome.json --samples /path/to/sample.json --outdir /path/to/autoseq-output/ --libdir /path/to/INBOX/ --use-singularity --singularity /path/to/container_dir --umi --cores 8 --profile slurm --smk-opt " --singularity-args '--bind /path/to/autoseq-snakemake/:/path/to/autoseq-snakemake/'"
+screen -S autoseq_run
+cd /path/to/autoseq-snakemake/
+autoseq launch -r autoseq-genome/autoseq-genome.json \
+    --samples /path/to/sample.json \
+    --outdir /path/to/autoseq-output/ \
+    --libdir /path/to/INBOX/ --use-singularity \
+    --singularity /path/to/container_dir \
+    --umi --cores 8 --smk-opt " --singularity-args \
+    '--bind /path/to/autoseq-snakemake/:/path/to/autoseq-snakemake/'"
 ```
 
-## 1.4 Results
+To know more about each parameters used in `autoseq launch`, please visit [pipeline parameters](quick_start.md/#pipeline-parameters)
 
-Once the pipeline gets completed, the resuts folder will appear in the following structure.
+The above command will launch the autoseq pipeline using singularity images. If the pipeline gets completed successfully, you will be able to see `analysis_finished` file in the specified output directory (`/path/to/autoseq-output/sdid/*/`). If pipeline is not completed successfully, `analysis_finished` will not be generated, and you need to check the analysis log file to fix the error. 
+
+### Tracing Error:
+
+If the pipeline failes for any reason, you can check the error either by opening screen using the command `screen -r autoseq_run` or you can check the analysis log. The analysis log will usually be saved under `/path/to/autoseq-output/sdid/*/.snakemake/log/date_time.snakemake.log` file. Once you open this file, you can check for the rule in which the error has occured and open the corresponding log file. The log file for each tool will be present in `/path/to/autoseq-output/sdid/*/logs/`. Check if you can resolve the error, else, please feel free to reachout to our bioinformatics team.
+
+### Relaunching Sample:
+
+Once you have identified and resolved the error, you can relaunch the sample with snakemake option `--smk-opt "--rerun-incomplete"`. This option will enable snakemake to re-start the analysis from the step where the error has occured, so that you can save time. Here is the command to re-launch the failed sample.
+
+**If you are using conda to launch samples**
+```
+screen -r autoseq_run
+cd /path/to/autoseq-snakemake/
+autoseq launch -r autoseq-genome/autoseq-genome.json \
+        --samples /path/to/sample.json \
+        --outdir /path/to/autoseq-output/ \
+        --libdir /path/to/INBOX/ --umi --cores 8 \
+        --smk-opt " --rerun-incomplete "
+```
+
+**If you are using singularity to launch samples**
+```
+screen -r autoseq_run
+cd /path/to/autoseq-snakemake/
+autoseq launch -r autoseq-genome/autoseq-genome.json \
+    --samples /path/to/sample.json \
+    --outdir /path/to/autoseq-output/ \
+    --libdir /path/to/INBOX/ --use-singularity \
+    --singularity /path/to/container_dir \
+    --umi --cores 8 --smk-opt " --rerun-incomplete --singularity-args \
+    '--bind /path/to/autoseq-snakemake/:/path/to/autoseq-snakemake/'"
+```
+
+### Results:
+
+Once the pipeline gets completed successfully, you can view the results under `/path/to/autoseq-output/sdid/*/`. The result directory will appear in the following structure. To know more about each tool used in the pipeline, please visit [autoseq pipeline](autoseq_pipeline.md) page
 
 ```
 .
-|-- analysis_finished
-|-- config_PB-P-*******-CFDNA-********-KH20240305-C420240306_PB-P-*******-N-********-KH20240305-C420240306.yml
-|-- msisensor-PB-P-*******-N-04244257-KH-C4-PB-P-*******-CFDNA-********-KH-C4.tsv
-|-- PB-P-*******-CFDNA-********-KH20240305-C420240306_PB-P-*******-N-********-KH20240305-C420240306_jobdb.json
-|-- PB-P-*******-CFDNA-********-KH-C4-PB-P-*******-N-********-KH-C4-igvnav-input.txt
-|-- PB-P-*******-N-********-KH-C4-igvnav-input.txt
 |-- bams
 |-- cnv
 |-- contamination
 |-- IGVnav
 |-- logs
-|-- msings-PB-P-*******-CFDNA-********-KH-C4
+|-- msings-PROJECT-SDID-TYPE-SAMPLEID-PREPID-CAPTUREID
 |-- multiqc
 |-- purecn
 |-- qc
 |-- svs
 |-- variants
+|-- analysis_finished
+|-- config_PROJECT-SDID-T-SAMPLEID-PREPID-CAPTUREID_PROJECT-SDID-N-SAMPLEID-PREPID-CAPTUREID.yml
+|-- PROJECT-SDID-T-SAMPLEID-PREPID-CAPTUREID_PROJECT-SDID-N-SAMPLEID-PREPID-CAPTUREID_jobdb.json
+|-- PROJECT-SDID-T-SAMPLEID-PREPID-CAPTUREID_PROJECT-SDID-N-SAMPLEID-PREPID-CAPTUREID-igvnav-input.txt
+|-- PROJECT-SDID-N-SAMPLEID-PREPID-CAPTUREID-igvnav-input.txt
 ```
 
-**Analysis finished file:**
-A file named "analysis_finished" will be generated once the pipeline is finished completely. It contains date and time at which the analysis got completed. If any error occurs during any stage of the pipeline, this file will not be generated.
+**Bams:** This directory contains all the BAM files that were generated during analysis; however, intermediate BAM files will be removed.
 
-**Config file:**
-Depending on the input parameters for each sample, a configuration file will be generated automatically by modifying `autoseq-snakemake/config.yml` as per the input parameters. The `autoseq-snakemake/config.yml` file contains default information such as additional parameters for each tool, gnomad location etc. On top of this default information additional information such as location of each singularity containers, input and output directory, reference config file, sample config file etc will be added based on the parameters provided by the users. All of these information will be stored in `config_PB-P-*****-T-*****-KH20241026-C20241026_PB-P-*****-N-*****-KH20241026-C20241026.yml` file.
+**cnv:** This directory contains all the files generated by the copy number calling tools (JUMBLE).
 
-**JobDB file:**
-`PB-P-*****-T-*****-KH20241026-C20241026_PB-P-*****-N-*****-KH20241026-C20241026_jobdb.json` file will contain ID of each submitted job and their corresponding log file.
+**svs:** This directory contains all the files generated by structural variant callers (svcaller and GRIDSS).
 
-**IGVNavigator input files:**
-`PB-P-*****-N-*****-KH-WG-igvnav-input.txt` and `PB-P-*****-T-*****-KH-WG-PB-P-*****-N-*****-KH-WG-igvnav-input.txt` files contains information that can be visualized when using the tool IGVNavigator. IGVNavigator is an add-on tool for IGV Visualizer which can assist in analyzing variants during manual review.
+**Variants:** This directory contains all the files generated during variant calling stage.
 
-**Bams:**
-This directory contains all the BAM files that were generated during analysis; however, intermediate BAM files will be removed.
+**QC:** This directory contains all the files generated by quality check tools such as picard, fastqc, samtools, etc. It also contains QC overview plot and liqbio-cna plot.
 
-**cnv:**
-This directory contains all the files generated by copy number calling tools (JUMBLE).
+**Multiqc:** This directory contains the results of multiqc tool.
 
-**svs:**
-This directory contains all the files generated by structural variant callers (svcaller and GRIDSS). 
+**Logs:** This directory contains all the log file of each tool that were created while running the pipeline. Log file for alignment process will be stored directly in this directory; however, the log files of skewer, svs, variants, samtools, picard, fastqc, contamination, and cluster will be stored in seperate directory.
 
-**Variants**
-This directory contains all the files generated during variant calling stage. 
+**Analysis finished file:** A file named "analysis_finished" will be generated once the pipeline is finished completely. It contains date and time at which the analysis got completed. If any error occurs during any stage of the pipeline, this file will not be generated.
 
-**QC**
-This directory contains all the files generated by quality check tools such as picard, fastqc, samtools, etc. It also contains QC overview plot and liqbio-cna plot.
+**Config file:** Depending on the input parameters for each sample, a configuration file will be generated automatically by modifying autoseq-snakemake/config.yml as per the input parameters. The autoseq-snakemake/config.yml file contains default information such as additional parameters for each tool, gnomad location etc. On top of this default information additional information such as location of each singularity containers, input and output directory, reference config file, sample config file etc will be added based on the parameters provided by the users. All of these information will be stored in config_PB-P-*-T-*-KHYYYYMMDD-CYYYYMMDD_PB-P-*-N-*-KHYYYYMMDD-CYYYYMMDD.yml file.
 
-**Multiqc**
-This directory contains the results of multiqc tool.
+**JobDB file:** PB-P-*-T-*-KHYYYYMMDD-CYYYYMMDD_PB-P-*-N-*-KHYYYYMMDD-CYYYYMMDD_jobdb.json file will contain ID of each submitted job and their corresponding log file.
 
-**Logs**
-This directory contains all the log file of each tool that were created while running the pipeline. Log file for alignment process will be stored directly in this directory; however, the log files of skewer, svs, variants, samtools, picard, fastqc, contamination, and cluster will be stored in seperate directory.
+**IGVNavigator input files:** PB-P-*-N-*-KH-WG-igvnav-input.txt and PB-P-*-T-*-KH-WG-PB-P-*-N-*-KH-WG-igvnav-input.txt files contains information that can be visualized when using the tool IGVNavigator. IGVNavigator is an add-on tool for IGV Visualizer which can assist in analyzing variants during manual review.
 
-## 1.5 Workflow Structure
-The autoseq-snakemake directory is organized as per the following structure.
+#### Pipeline Parameters
 
-```
-.
-├── docs
-├── env
-├── pipeline
-│   ├── autoseq
-│   │   ├── rules
-│   │   │   ├── alignment.smk
-│   │   │   ├── cnvcalling.smk
-│   │   │   ├── germline.smk
-│   │   │   ├── __init__.py
-│   │   │   ├── pre_processing.smk
-│   │   │   ├── qc.smk
-│   │   │   ├── somatic.smk
-│   │   │   ├── split_targets.smk
-│   │   │   ├── structuralvariants.smk
-│   │   │   ├── umi_processing.smk
-│   │   │   └── vep.smk
-│   │   └── Snakefile
-│   ├── autoseq-rerun
-│   │   ├── rules
-│   │   │   ├── cnvcalling.smk
-│   │   │   ├── germline.smk
-│   │   │   ├── qc.smk
-│   │   │   ├── somatic.smk
-│   │   │   ├── structuralvariants.smk
-│   │   │   └── vep.smk
-│   │   └── Snakefile
-│   ├── autoseq-sd
-│   │   ├── rules
-│   │   │   ├── qc.smk
-│   │   │   ├── split_targets.smk
-│   │   │   ├── structuralvariants.smk
-│   │   │   ├── umi_processing.smk
-│   │   │   └── variant_calling.smk
-│   │   └── Snakefile
-│   ├── autoseq-wgs
-│   │   ├── rules
-│   │   │   ├── alignment.smk
-│   │   │   ├── cnvcalling.smk
-│   │   │   ├── germline.smk
-│   │   │   ├── pre_processing.smk
-│   │   │   ├── qc.smk
-│   │   │   ├── somatic.smk
-│   │   │   ├── structuralvariants.smk
-│   │   │   └── vep.smk
-│   │   └── Snakefile
-└── tests
-```
+|Parameter|Description|
+|------------------|-----------------------------|
+|--loglevel|level of logging|
+|--verbose/-v|Print verbose output to the console.|
+|--outdir|output directory|
+|--ref/-r|json file with reference files to use|
+|--samples|json file contains list of samples|
+|--outdir|output directory|
+|--libdir|directory to search libraries|
+|--configfile|configuration file for params|
+|--cluster-config|configuration file for different HPC|
+|--scratch|path to /tmp/scratch|
+|--dryrun/--run|dryrun for testing snakemake workflow|
+|--umi|To process the data with UMI- Unique Molecular Identifier|
+|--profile|job schedulers eg. SLURM|
+|--pipeline|Pipeline to be launched|
+|--normal-bam/-n|Normal bam files dir, Applicable only to tumor only pipeline|
+|--use-singularity|To use singularity|
+|--singularity|Path to singularity image|
+|--smk-opt|snakemake option|
+|--cores|max number of cores|
 
-**docs**
-This directory contains all the documentations related to running autoseq.
-
-**env**
-This directory contains all the conda environments associated with running autoseq
-
-**pipeline**
-This directory contains a python code called `cli.py` which acts as a entry point to the pipeline. Depending on the input parameters, this code will run specific pipeline. The source code for all the pipelines will be stored in this directory. Each pipeline is store in a seperate subdirectory which are autoseq, autoseq-rerun, autoseq-sd, autoseq-wgs, tumor_only. Inside each of this directory, there will be a Snakefile and a directory named rule which contains all the associated rules for a specific pipeline. Scripts directory contains all the python, shell, and R codes used in the analysis. Utils directory contains all the basic utilities used in the pipeline.
-
-**tests**
-This directory contains sample dataset and dummy reference genome and associated files to test the pipeline. 
+### Results:
+Once the pipeline gets completed successfully, you can view the results under `/path/to/autoseq-output/sdid/*/`. This directory contains 

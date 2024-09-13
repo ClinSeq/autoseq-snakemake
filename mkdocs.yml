@@ -9,9 +9,9 @@ edit_uri: ""
 nav :
   - Autoseq: index.md
   - Quick Start: quick_start.md
-  - Launching Samples in Server: barcodes.md
+  - Launching Samples in Server: server_launch.md
   - Autoseq Pipeline: autoseq_pipeline.md
-  - Barcodes: barcodes.md
+  - General Description: barcodes.md
   - Autoseq Scripts: scripts.md
 
 theme:
