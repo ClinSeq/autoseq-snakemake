@@ -70,14 +70,14 @@ options(width = 1200)
 
 
 
-## Genome
+## Genome {.active}
 
 
 ```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=15,fig.width=17}
 
 # Print tumor sample frankenplot (with somatic mutations)
 name <- basename(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -85,11 +85,13 @@ germline <- galf_t
 strvs <- t_strvs
 purecn <- purecn_stat
 
-genomeplot(name, targets, segments, snps, somatic, germline, strvs, purecn)
+p <- genomeplot(name, targets, segments, snps, somatic, germline, strvs, purecn)
 
 ```
 
+
 ---
+
 
 ```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=15,fig.width=17}
 
@@ -104,35 +106,40 @@ if (!t_only) { # print normal sample frankenplot (without mutations)
     strvs <- NULL
     purecn <- NULL
     
-    genomeplot(name, targets, segments, snps, somatic, germline, strvs, purecn)
+    q <- genomeplot(name, targets, segments, snps, somatic, germline, strvs, purecn)
     
 }
 
 ```
 
+---
 
 
-<!-- Gene shortcuts: [AR](#chrX) [ATM](#chr11) [PTEN](#chr10) -->
+## HRD
 
 
-<!-- ## Purity {.tabset} -->
+```{r, echo=FALSE, fig.keep='all', message=FALSE, fig.height=5,fig.width=13}
 
-<!-- ### High -->
+hrdplot(hrdtable,p)
 
-<!-- ### Low -->
+print(as.data.table(gis_model(NULL)))
 
-<!-- ## HRD -->
+print(hrdtable[feature=='predicted_gis',.(sample,feature,fraction,value)])
+
+
+```
+
 
 ## 1 {#chr1} 
 
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 1
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -144,7 +151,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 
 
@@ -166,13 +173,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 2 {#chr2}
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 2
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -184,7 +191,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -202,13 +209,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 3 {#chr3}
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 3
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -220,7 +227,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -238,13 +245,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 4 {#chr4}
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 4
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -256,7 +263,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -274,13 +281,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 5 {#chr5} 
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 5
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -292,7 +299,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -310,13 +317,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 6 {#chr6}
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 6
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -328,7 +335,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -346,13 +353,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 7 {#chr7} 
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 7
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -364,7 +371,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -382,13 +389,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 8 {#chr8} 
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 8
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -400,7 +407,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -418,13 +425,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 9 {#chr9} 
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 9
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -436,7 +443,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -454,13 +461,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 10 {#chr10}
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 10
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -472,7 +479,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -490,13 +497,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 11 {#chr11} 
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 11
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -508,7 +515,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -526,13 +533,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 12 {#chr12} 
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 12
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -544,7 +551,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -562,13 +569,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 13 {#chr13} 
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 13
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -580,7 +587,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -598,13 +605,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 14 {#chr14}
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 14
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -616,7 +623,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -634,13 +641,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 15 {#chr15}
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 15
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -652,7 +659,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -670,13 +677,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 16 {#chr16}
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 16
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -688,7 +695,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -706,13 +713,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 17 {#chr17} 
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 17
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -724,7 +731,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -742,13 +749,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 18 {#chr18} 
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 18
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -760,7 +767,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -778,13 +785,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 19 {#chr19} 
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 19
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -796,7 +803,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -814,13 +821,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 20 {#chr20} 
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 20
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -832,7 +839,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -850,13 +857,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 21 {#chr21} 
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 21
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -868,7 +875,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -886,13 +893,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## 22 {#chr22} 
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 22
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -904,7 +911,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))
@@ -922,13 +929,13 @@ if (!t_only) { # print normal sample chromosome
 
 ## X {#chrX}
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 chr <- 'X'
 
 # Print tumor sample chromosome
 name <- paste(str_remove(opts$tumor_cnr,'.cnr'))
-targets <- bins
+targets <- bins_t
 segments <- segments_t
 snps <- alf
 somatic <- salf
@@ -940,7 +947,7 @@ chromplot(chr, name, targets, segments, snps, somatic, germline)
 
 ---
 
-```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=8,fig.width=16}
+```{r, echo=FALSE, results='hide', fig.keep='all', message=FALSE, fig.height=16,fig.width=16}
 
 if (!t_only) { # print normal sample chromosome
     name <- paste(str_remove(opts$normal_cnr,'.cnr'))

@@ -26,7 +26,8 @@ rule gatk4_haplotypecaller:
 
 rule germline_generateIGVnav:
     input:
-        vcf = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR),
+        vcf = "{}/variants/{}-{}.germline_variants_with_taf.vcf".format(outdir, 
+                NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         oncokb = reference['oncokb'],
         cgcann = reference["cgcann"]
     output:
