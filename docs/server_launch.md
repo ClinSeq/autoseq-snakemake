@@ -1,5 +1,5 @@
 ## Our Server:
-In KI, we have a High Performance Computer called ravenclaw. It consists of one head node and 5 compute nodes. The head node has 12 CPUs with 2 cores in each CPUs and 64GB of RAM. Each of the compute nodes have 48 CPUs with 252GB RAM and 250TB of disk space. 
+In Karolinska Institutet, we have a High Performance Computer called ravenclaw. It consists of one head node and 5 compute nodes. The head node has 12 CPUs with 2 cores in each CPUs and 64GB of RAM. Each of the compute nodes have 48 CPUs with 252GB RAM and 250TB of disk space. 
 
 ## Workload Manager:
 In order to manage all these compute nodes effectively, we need a special software called workload manager which can effectively allocate resources for each job for specific amount of time, track, monitor, and report status of job. In our autoseq pipeline, we are using a workload manager called Slurm which takes care of the resource allocation. While working with HPC, we have to login only to the head node to submit our jobs. Slurm will in turn take care of assigning the job to each of the compute nodes depending on the resources requested by the users. Once the analysis is completed by the compute node, it will send status report to the head node. Thus the entire analysis are effectively managed by Slurm. If you are using a different server, and if you don't have Slurm installed in it, kindly contact your IT support team to install Slurm. 
@@ -106,7 +106,7 @@ In order to make the analysis easier, we have configured a virtual environment i
 
 ## Launching multiple samples in server:
 
-Often time, we may need to launch multiple samples for any specific project. During such instances it crutial to ensure that you are submitting your jobs through Slurm, so that Slurm can take care of allocating resources for each of your job. We have already installed Slurm and configured the virtual environment called `prod_up` in our ravenclaw server. If you are using a different server and if you wish to specify any memory requirement for any specific job, you need to modify the cluster configuration file as per your requirement. The cluster configuration file can be found in `/nfs/PIPELINE/autoseq-snakemake/pipeline/scheduler/cluster_config.json`
+If you wish to launch multiple samples in server, it essential to ensure that you are submitting your jobs through Slurm, so that Slurm can take care of allocating resources for each of your job. We have already installed Slurm and configured the virtual environment called `prod_up` in our ravenclaw server. If you are using a different server and if you wish to specify any memory requirement for any specific job, you need to modify the cluster configuration file as per your requirement. The cluster configuration file can be found in `/nfs/PIPELINE/autoseq-snakemake/pipeline/scheduler/cluster_config.json`
 
 Here is an example of cluster configuration file structure.
 
@@ -136,49 +136,49 @@ Once you have prepared your cluster config file, you can start launching your sa
  * Preparing config file
  * Launching samples.
 
-**Rename input directory**
+#### Rename input directory
 
 While running samples in batch, it is essential to create the input directory name in the format `PROJECT-SDID-TYPE-SAMPLEID-PREPID-CAPTUREID`, because, autoseq will use all the information present in this format (especially prepID and captureID) to select appropriate reference files during analysis. Please make sure to mention the date (in YYYYMMDD format) on which you are launching the sample in prepID and captureID, because, autoseq will use this information to retrive all samples that has to be launched on a specific day. To know more about this format, kindly visit [General Description](barcodes.md) page. An example of the input directory format is shown below.
 
 ```
 .
 |-- INBOX/
-|   |-- PB-P-*-N-*-KHYYYYMMDD-CYYYYMMDD/
+|   |-- PROJECT-P-*-N-*-KHYYYYMMDD-CYYYYMMDD/
 |   |   |-- *_DNA-B-*-00_S11_L001_R1_001.fastq.gz
 |   |   |-- *_DNA-B-*-00_S11_L001_R2_001.fastq.gz
 |   |   |-- *_DNA-B-*-00_S11_L002_R1_001.fastq.gz
 |   |   |-- *_DNA-B-*-00_S11_L002_R2_001.fastq.gz
-|   |-- PB-P-*-T-*-KHYYYYMMDD-CYYYYMMDD/
+|   |-- PROJECT-P-*-T-*-KHYYYYMMDD-CYYYYMMDD/
 |   |   |-- *_DNA-T-*-00_S11_L001_R1_001.fastq.gz
 |   |   |-- *_DNA-T-*-00_S11_L001_R2_001.fastq.gz
 |   |   |-- *_DNA-T-*-00_S11_L002_R1_001.fastq.gz
 |   |   |-- *_DNA-T-*-00_S11_L002_R2_001.fastq.gz
-|   |-- PB-P-*-N-*-KHYYYYMMDD-CYYYYMMDD/
+|   |-- PROJECT-P-*-N-*-KHYYYYMMDD-CYYYYMMDD/
 |   |   |-- *_DNA-B-*-00_S11_L001_R1_001.fastq.gz
 |   |   |-- *_DNA-B-*-00_S11_L001_R2_001.fastq.gz
 |   |   |-- *_DNA-B-*-00_S11_L002_R1_001.fastq.gz
 |   |   |-- *_DNA-B-*-00_S11_L002_R2_001.fastq.gz
-|   |-- PB-P-*-T-*-KHYYYYMMDD-CYYYYMMDD/
+|   |-- PROJECT-P-*-T-*-KHYYYYMMDD-CYYYYMMDD/
 |   |   |-- *_DNA-T-*-00_S11_L001_R1_001.fastq.gz
 |   |   |-- *_DNA-T-*-00_S11_L001_R2_001.fastq.gz
 |   |   |-- *_DNA-T-*-00_S11_L002_R1_001.fastq.gz
 |   |   |-- *_DNA-T-*-00_S11_L002_R2_001.fastq.gz
 ```
 
-**Preparing config file**
+#### Preparing config file
 
 Once you have prepared your input directory as mentioned above, you need to create config file. The config file contains information such as SDID, Tumor ID/CFDNA ID, and Normal ID (which is same as directory name) in json format. Autoseq will use this information to search for specific directory inside `/nfs/project_name/INBOX/`. You can automatically create the config file using the command `autoseq config` which will create the config file inside `/nfs/project_name/config/YYYY-MM-DD/` with file name as `SDID.json`
 
 You can use the following command to create config file.
 
 ```
-screen -S autoseq_run   # use "screen -r autoseq_run" if the screen is already active. 
-                        # You can check it using the command "screen -ls"
+screen -S autoseq_run # use 'screen -r autoseq_run' if the screen is already active. 
+                      # You can check it using the command "screen -ls"
 prod_up
 find /nfs/project_name/INBOX/ -maxdepth 1 \
         -name "PROJECT*$(date '+%Y%m%d')" | \
-        xargs -I {} basename {} | \
-        sort -V > /nfs/project_name/sample_lists/clinseqBarcodes_`date "+%Y-%m-%d"`.txt
+        xargs -I {} basename {} | sort -V > \
+        /nfs/project_name/sample_lists/clinseqBarcodes_`date "+%Y-%m-%d"`.txt
 mkdir -p /nfs/project_name/config/$(date "+%Y-%m-%d")
 autoseq config --outdir /path/to/config/$(date "+%Y-%m-%d") \
         /path/to/sample_lists/clinseqBarcodes_$(date "+%Y-%m-%d").txt
@@ -201,19 +201,13 @@ The contents of each configuration file will resemble the following format:
 # P-*.json
 {
     "sdid": "P-*",
-    "T": ["PB-P-*-T-*-KHYYYYMMDD-CYYYYMMDD"],
-    "N": ["PB-P-*-N-*-KHYYYYMMDD-CYYYYMMDD"],
-    "CFDNA": ""
-}
-
-# P-*.json
-{
-    "sdid": "P-*",
-    "T": ["PB-P-*-T-*-KHYYYYMMDD-CYYYYMMDD"],
-    "N": ["PB-P-*-N-*-KHYYYYMMDD-CYYYYMMDD"],
+    "T": ["PROJECT-P-*-T-*-KHYYYYMMDD-CYYYYMMDD"],
+    "N": ["PROJECT-P-*-N-*-KHYYYYMMDD-CYYYYMMDD"],
     "CFDNA": ""
 }
 ```
+
+#### Launching Samples
 
 Once you have prepared all the configuration files successfully, you can launch multiple samples in batch using the following shell script.
 
@@ -234,10 +228,11 @@ for config in ${configs[@]}; do
     echo $sdid
     nohup autoseq launch -r $ref --samples $config \
         --outdir $outdir --libdir $libdir \
-        --cluster-config /nfs/PIPELINE/autoseq-snakemake/pipeline/scheduler/cluster_config_specific_server.json \
+        --cluster-config /path/to/cluster_config_specific_server.json \
         --use-singularity --singularity /nfs/PIPELINE/containers/ \
         --scratch /path/to/tmp --umi --cores $cores --profile slurm \
-        --smk-opt "--latency-wait 60 " >> logs/$sdid.nohub.log &
+        --smk-opt "--latency-wait 60 --singularity-args \
+        '--bind /base-path/:/base-path/'" >> logs/$sdid.nohub.log &
     sleep 250
 done
 # You can use ctrl+d to exit the screen.
@@ -251,14 +246,26 @@ Once you have launched the job, you can track the status of job using the follow
 squeue -o "%.7i %.4P %a %.60j %.20u %.8T %.10M %.9l %.6D %.6C %.6m %R"
 ```
 
-If the status of job shows anything other than `PENDING` or `RUNNING`, you may need to inspect the error manually or reachout to bioinformatician or IT support team. Additionally, you can check for `analysis_finished` file under `/nfs/project_name/autoseq-output/sdid/*/`. This file will be generated only if the entire pipeline gets generated successfully. You can use the following unix command to check the list of sdid that have `analysis_finished` file.
+If the status of job shows anything other than `PENDING` or `RUNNING` (for example: `DependencyNeverSatisfied`), you may need to inspect the error manually or reachout to bioinformatician or IT support team. Additionally, you can check for `analysis_finished` file under `/nfs/project_name/autoseq-output/sdid/*/`. This file will be generated only if the entire pipeline gets generated successfully. You can use the following unix command to check the list of sdid that have `analysis_finished` file.
 
 ```
-ls /nfs/project_name/autoseq-output/*/*/analysis_finished | grep -E "sdid1|sdid2|sdid3|....|sdidn"
+ls /nfs/project_name/autoseq-output/*/*/analysis_finished | \
+         grep -E "sdid1|sdid2|sdid3|....|sdidn"
 ```
 
 ## Relaunching failed samples:
-While running multiple jobs on batch, if any of the job/jobs failed, we need to fix the issue and re-launch the failed samples. But before re-launching the samples, we need to ensure that there are no background jobs running. You can use the following command to check the same.
+While running multiple jobs on batch, if any of the job/jobs failed, we need to fix the issue and re-launch the failed samples. But before re-launching the samples, first we need to cancel all the slurm jobs for the failed samples. You can do that with the following command.
+
+```
+jids=($(squeue -o "%j %i" | grep -E "sdid1|sdid2|sdid3|....|sdidN" | \
+         cut -f 2 -d " "))
+echo ${jids[@]}
+for jid in ${jids[@]}; do
+  scancel $jid
+done
+```
+
+Then we need to ensure that there are no background jobs running. You can use the following command to check the same.
 
 ```
 ps aux | grep "username"
@@ -267,7 +274,8 @@ ps aux | grep "username"
 If there are any background jobs running, you can kill them with the following command.
 
 ```
-kill -9 $(ps aux | grep -E "sdid1|sdid2|sdid3|....|sdidN" | grep -v "grep" | awk '{print $2}')
+kill -9 $(ps aux | grep -E "sdid1|sdid2|sdid3|....|sdidN" | \
+        grep -v "grep" | awk '{print $2}')
 ```
 
 When snakemake starts to run any sample, it usually keeps the output directory locked for that particular sample. If the pipeline failes abruptly (due to server crash or any other reason) the sample directory will remain locked. Hence, we need to unlock such samples directories before re-launching the sample. To unlock such directories, first note down the config file path for the failed jobs and provide them in the code below. 
@@ -279,22 +287,29 @@ ref=/nfs/PIPELINE/autoseq-genome/autoseq-genome.json
 libdir=/nfs/project_name/INBOX/
 outdir=/nfs/project_name/autoseq-output/
 cores=8
-configs=(/nfs/project_name/config/date/sdid1.json /nfs/project_name/config/date/sdid2.json /nfs/project_name/config/date/sdid3.json ... /nfs/project_name/config/date/sdidN.json)  ## Provide the config files for failed samples here.
+
+## Provide the config files for failed samples below.
+configs=(/nfs/project_name/config/date/sdid1.json \
+        /nfs/project_name/config/date/sdid2.json \
+        /nfs/project_name/config/date/sdid3.json ... \
+        /nfs/project_name/config/date/sdidN.json)  
 
 for config in ${configs[@]}; do
     echo $config
     sdid=`basename $config |cut -f 1 -d "."`;
     echo $sdid
-    nohup autoseq launch -r $ref --samples $config --outdir $outdir --libdir $libdir \
-        --cluster-config /nfs/PIPELINE/autoseq-snakemake/pipeline/scheduler/cluster_config.anchorage.json \
+    nohup autoseq launch -r $ref --samples $config \
+        --outdir $outdir --libdir $libdir \
+        --cluster-config /path/to/cluster_config.anchorage.json \
         --use-singularity --singularity /nfs/PIPELINE/containers/ \
         --scratch /path/to/tmp --umi --cores $cores --profile slurm \
-        --smk-opt "--latency-wait 5 --unlock"
+        --smk-opt "--latency-wait 5 --unlock \
+        --singularity-args '--bind /base-path/:/base-path/'"
     sleep 10
 done
 ```
 
-The above command will unlock all the sample directories mentioned in the configs and we can now re-launch the failed samples with the following command. 
+The above command will unlock all the sample directories mentioned in `configs` and we can now re-launch the failed samples with the following command. 
 
 ```
 screen -r autoseq_run
@@ -303,17 +318,24 @@ ref=/path/to/autoseq-genome/autoseq-genome.json
 libdir=/path/to/INBOX/
 outdir=/path/to/autoseq-output/
 cores=8
-configs=(/path/to/config/date/sdid1.json /path/to/config/date/sdid2.json /path/to/config/date/sdid3.json ... /path/to/config/date/sdidN.json)  ## Provide the config files for failed samples here.
+
+## Provide the config files for failed samples below.
+configs=(/path/to/config/date/sdid1.json \
+        /path/to/config/date/sdid2.json  \
+        /path/to/config/date/sdid3.json ... \
+        /path/to/config/date/sdidN.json)  
 
 for config in ${configs[@]}; do
     echo $config
     sdid=`basename $config |cut -f 1 -d "."`;
     echo $sdid
-    nohup autoseq launch -r $ref --samples $config --outdir $outdir --libdir $libdir \
-        --cluster-config /nfs/PIPELINE/autoseq-snakemake/pipeline/scheduler/cluster_config.anchorage.json \
+    nohup autoseq launch -r $ref --samples $config \
+        --outdir $outdir --libdir $libdir \
+        --cluster-config /path/to/cluster_config.anchorage.json \
         --use-singularity --singularity /nfs/PIPELINE/containers/ \
-        --scratch /nfs/KODIAK2/PSFF/re-run/tmp --umi --cores $cores --profile slurm \
-        --smk-opt "--latency-wait 60 --rerun-incomplete"
+        --scratch /path/to/tmp --umi --cores $cores --profile slurm \
+        --smk-opt "--latency-wait 60 --rerun-incomplete \
+        --singularity-args '--bind /base-path/:/base-path/'"
     sleep 250
 done
 ```

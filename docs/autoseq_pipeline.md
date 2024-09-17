@@ -1,6 +1,47 @@
 # Autoseq - Pipeline
 
-Autoseq pipeline is specifically designed to run liquid biopsy samples, however, it performs equally well with tissue biopsy samples with minor modification to the recommended settings. This pipeline requires both tumor and matched normal samples; and the input fastq file has to be either in the format of fastq.gz or fq.gz. Additionally, the input file name has to be specified in the format `PROJECT-SDID-TYPE-SAMPLEID-PREPID-CAPTUREID`. For example: PB-P-00462065-CFDNA-04055058-KH20221214-C420221214.fastq.gz. To know more about this format, visit [General Description](barcodes.md) page. This pipeline can be called either with or without umi parameter. If we specify umi parameter, UMI processing will be performed.
+Autoseq pipeline is specifically designed to run liquid biopsy samples, however, it performs equally well with tissue biopsy samples with minor modification to the recommended settings. This pipeline requires both tumor and matched normal samples; and the input fastq file has to be either in the format of fastq.gz or fq.gz. Additionally, the input file name has to be specified in the format `PROJECT-SDID-TYPE-SAMPLEID-PREPID-CAPTUREID`. For example: PB-P-00462065-CFDNA-04055058-KH20221214-C420221214.fastq.gz. To know more about this format, visit [General Description](barcodes.md) page. Currently, we have 5 different pipeline in our workflow. They are 
+
+1. Autoseq Pipeline
+2. Autoseq-rerun Pipeline
+3. Autoseq-wgs Pipeline
+4. Autoseq-sd Pipeline
+5. Tumor-only Pipeline
+
+## 1. Autoseq Pipeline
+
+Autoseq pipeline is specifically designed for targeted variant calling analysis. Different capture kits focuses on different target genes, for example, in probio, we are targeting 94 genes. If you are using any new capture kit, you can specify the corresponding reference files such as bed, interval_list, etc under `/nfs/PIPELINE/autoseq-genome/intervals/targets/` and specify the same in autoseq-genome.json file in the below format. Also, remember to update `capture_kit_loopkup` dictionary in `utils.py` script so that autoseq pipeline can automatically take the reference file during analysis. 
+
+```
+"targets": {
+        "alascca_core": {
+            "blacklist-bed": null, 
+            "msings-baseline": null, 
+            "msings-bed": null, 
+            "msings-msi_intervals": null, 
+            "msisites": "intervals/targets/alascca_core.slopped20.msisites.tsv", 
+            "purecn_targets": null, 
+            "targets-bed-slopped20": "intervals/targets/alascca_core.slopped20.bed", 
+            "targets-bed-slopped20-gz": "intervals/targets/alascca_core.slopped20.bed.gz", 
+            "targets-interval_list": "intervals/targets/alascca_core.interval_list", 
+            "targets-interval_list-slopped20": "intervals/targets/alascca_core.slopped20.interval_list"
+        },
+        "your_new_capture_kit_name": {
+            "blacklist-bed": null, 
+            "msings-baseline": null, 
+            "msings-bed": null, 
+            "msings-msi_intervals": null, 
+            "msisites": "/path/to/your_new_capture_kit.slopped20.msisites.tsv", 
+            "purecn_targets": null, 
+            "targets-bed-slopped20": "/path/to/your_new_capture_kit.slopped20.bed", 
+            "targets-bed-slopped20-gz": "/path/to/your_new_capture_kit.slopped20.bed.gz", 
+            "targets-interval_list": "/path/to/your_new_capture_kit.interval_list", 
+            "targets-interval_list-slopped20": "/path/to/your_new_capture_kit.slopped20.interval_list"
+        } 
+}
+```
+
+While running the pipeline, you can run it either with or without umi parameter. If you specify umi parameter, additional UMI preprocessing step will be performed.
 
 This pipeline can be broadly classified into 7 major steps. They are
 
@@ -11,8 +52,6 @@ This pipeline can be broadly classified into 7 major steps. They are
 * Structural Variant Calling
 * Microsatellite Instability
 * QC steps 
-
-## Pipeline workflow
 
 ![Autoseq workflow](img/autoseq_overall_diagram.png)
 **Figure 1:** This diagram shows the overall workflow for autoseq pipeline. Here different type of processes are highlighed with different colors. The preprocessing, UMI processing, microsatellite instability, quality check, somatic variant calling, germline variant calling, copy number analysis, structural variant calling and plots are mentioned in grey, orange, plum, blue, dark orange, green, light blue, dark yellow and light orange respectively. 
@@ -52,7 +91,7 @@ Microsatellite Instability provides a glimps into the underlying issues with DNA
 
 Autoseq pipeline utilizes various tools to ensure the generated results in various stages are of good quality. In the initial fastq file, we use [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) to check the quality of input reads. Once the fastq files are aligned, we use [samtools flagstats](http://www.htslib.org/doc/samtools-flagstat.html) to check the overall quality of aligned BAM file. Further, we use various tools in Picard such as [CollectHsMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360036856051-CollectHsMetrics-Picard) to identify GC bias, [MarkDups](https://gatk.broadinstitute.org/hc/en-us/articles/360037052812-MarkDuplicates-Picard) to identify duplicate reads, [CollectInsertSizeMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360037055772-CollectInsertSizeMetrics-Picard) and [collectOxoGMetrics](https://gatk.broadinstitute.org/hc/en-us/articles/360037428231-CollectOxoGMetrics-Picard) to validate the library construction process. GATK's [ContEst](https://github.com/broadinstitute/gatk-docs/blob/master/gatk3-tooldocs/3.6-0/org_broadinstitute_gatk_tools_walkers_cancer_contamination_ContEst.html) tool is used to estimate the level of cross contamination between sequencing data. And, finally, purecn is used to estimate tumor purity and ploidy, copy number and loss of heterozygosity.
 
-## Pipeline Detailed Workflow
+### Pipeline Detailed Workflow
 
 ![Autoseq Complete Workflow](img/autoseq_detailed_workflow.png)
 **Figure 2:** Complete DAG diagram for the autoseq pipeline is shown in this diagram. Here, the postprocessing step is highlighted in light yellow. All other color code is similar to the above diagram.
@@ -1092,3 +1131,68 @@ generate_symlinks.py --targets /path/to/autoseq-genome/intervals/targets/probio_
 --targets       -->  Target bed file
 --outdir        -->  Output directory
 ```
+
+## 2. Autoseq Re-run Pipeline
+
+This pipeline was designed specifically to start analysis from bam file. If the pipeline gets aborted due to any reason after completing the alignment process, or if we do not have fastq file, rather have duplicates removed bam file available, we can use this pipeline. All the tools used here are same as autoseq pipeline.
+
+![Autoseq rerun](img/autoseq_rerun.png)
+**Figure 2:** This diagram shows the overall workflow for autoseq rerun pipeline. Here different type of processes are highlighed with different colors. The preprocessing, quality check, somatic variant calling, germline variant calling, copy number analysis, structural variant calling and plots are mentioned in grey, blue, dark orange, green, light blue, dark yellow and light orange respectively.
+
+### Launching Rerun Pipeline:
+
+Launching autoseq-rerun pipeline is similar to autoseq pipeline; however, here you need to specify the path to bam file in `--libdir` parameter. Additionally, you need to specify `--pipeline autoseq-rerun`. Below, you can find an example command to launch autoseq-rerun pipeline.
+
+```
+autoseq launch -r /path/to/autoseq-genome/autoseq-genome.json \
+        --samples /path/to/sample.json \ 
+        --outdir /path/to/autoseq-output/ \
+        --libdir /path/to/autoseq-output/sdid/ \ 
+        PROJECT-SDID-CFDNA-SAMPLEID-PREPID-CAPTUREID_\
+        PROJECT-SDID-N-SAMPLEID-PREPID-CAPTUREID/bams/ \
+        --use-singularity --singularity /path/to/container_dir \
+        --cores 8 --pipeline autoseq-rerun --smk-opt " --singularity-args\
+        '--bind /base-path/:/base-path/'"
+```
+
+## 3. Autoseq WGS Pipeline
+
+This pipeline is used to analyze whole genome sequencing data. Unlike autoseq pipeline we are not using unique molecular identifier (UMI) in WGS pipeline, and we are running haplotype caller (rule gatk4_haplotypecaller_jc) on tumor sample as well to identify germline variants that were present in tumor sample. The results of this analysis will be used in copy number analysis for generating liqbio plot and franken plot. Additionally, in quality metrics, we are using WGSmetrics instead of CollectHsMetrics. This pipeline also requires tumor as well as matched normal sample for analysis. 
+
+![Autoseq WGS workflow](img/autoseq_wgs.png)
+**Figure 3:** This diagram shows the overall workflow for autoseq whole genome sequencing pipeline. Here different type of processes are highlighed with different colors. The preprocessing, quality check, somatic variant calling, germline variant calling, copy number analysis, structural variant calling and plots are mentioned in grey, blue, dark orange, green, light blue, dark yellow and light orange respectively.
+
+### Launching WGS Pipeline:
+
+Launching WGS pipeline is similar to launching autoseq pipeline, you just have to specify an additional parameter which is `--pipeline autoseq-wgs`. Below, you can find an example command to launch WGS sample.
+
+```
+autoseq launch -r /path/to/autoseq-genome/autoseq-genome.json \
+        --samples /path/to/sample.json \ 
+        --outdir /path/to/autoseq-output/ \ 
+        --libdir /path/to/input_directory/ --use-singularity \ 
+        --singularity /path/to/container_dir \
+        --cores 8 --pipeline autoseq-wgs --smk-opt " --singularity-args\
+        '--bind /base-path/:/base-path/'"
+```
+
+### Launching WGS Pipeline in Ravenclaw Server:
+
+In KI, we are receving WGS samples in batch wise and their directory name does not follow the [recommended](quick_start/barcodes.md) format. Hence, we need to create new directory inside input directory with correct format, and create symbolic link of all input fastq files inside this directory. You can use the following command to do the same.
+
+```
+for dpath in /path/to/INBOX/batch_5/DNA-*;do
+	base=`basename $dpath`;
+	sampletype=`echo $base | awk -F "-" '{if ($2 == "B") {print "N"} \
+                else {print $2}}'`
+	sdid=`echo $base | awk -F "-" '{if (NF == 4) {print $3$4} \
+                else {print $4$5}}' | sed -e "s/WGS//g"`
+	barcode=`echo SARC-P-$sdid-$sampletype-$sdid-\
+                KH$(date '+%Y%m%d')-WG$(date '+%Y%m%d')`
+	mkdir /path/to/INBOX/$barcode
+	ln -s $dpath/* /path/to/INBOX/$barcode
+	echo $base $barcode
+done
+```
+
+Now, your input directories are in correct format, and all the fastq files were symbolic linked inside the input directory. You can now proceed further to prepare config files by following the procedure mentioned in [launching samples in server](server_launch.md/#preparing-config-file) page.
