@@ -42,6 +42,14 @@ def extract_bam(sample, libdir, umi = False):
         raise ValueError(" ".join(["Invalid bam : ", sample, nodups_bam]))
 
 
+def get_fastqs(wildcards):
+    """
+    helper function to get all fq files 
+    """
+    r1, r2 = find_fastqs(wildcards.sample, libdir)
+    return r1 + r2
+
+
 def get_containers(_path):
     """
     fetch containers for each conda env 
