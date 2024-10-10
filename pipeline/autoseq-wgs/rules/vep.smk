@@ -14,11 +14,10 @@ rule vep_annotation:
         germline = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR),
         somatic = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: params['vep']['threads']
-    container: containers['ensemblvep']
+    container: containers['ensemblvep_v112']
     log:
         outdir + "/logs/{}-{}-vep-annotation.log".format(CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:
-        "source activate ensembl-vep && "
         "vep --vcf --output_file STDOUT " 
             " --pick --dir {input.vep_dir} "
             " --fasta {input.reference} --filter_common "
