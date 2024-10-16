@@ -1063,7 +1063,9 @@ if (!t_only) {
         
         
     } #end germline mutations
-    galf$gnomAD_AF=as.numeric(galf$gnomAD_AF)  # Make gnom_AD numerical so it can be used
+    if (!is.null(galf$gnomADe_AF)) galf$gnomAD_AF=as.numeric(galf$gnomADe_AF)  # Make gnom_AD numerical so it can be used
+    if (!is.null(galf$gnomADg_AF)) galf$gnomAD_AF=as.numeric(galf$gnomADg_AF)  # Make gnom_AD numerical so it can be used
+    if (!is.null(galf$gnomAD_AF)) galf$gnomAD_AF=as.numeric(galf$gnomAD_AF)  # Make gnom_AD numerical so it can be used
     galf[is.na(gnomAD_AF),gnomAD_AF:=0]
     galf[,N:=NULL]
     galf[,'point mutation':=type]
@@ -1073,8 +1075,8 @@ if (!t_only) {
     galf_n[,allele_ratio:=AO/DP]
     
     # tumor sample variants with tumor allele ratio if one exists, else the same
-    galf_t <- galf[gnomAD_AF < .01 & SYMBOL %in% cancergenes$gene]
-    galf_t[,allele_ratio:=AO/DP]
+    galf_t <- NULL #galf[gnomAD_AF < .01 & SYMBOL %in% cancergenes$gene]
+    #galf_t[,allele_ratio:=AO/DP]
 }
 
 
@@ -1975,7 +1977,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
             labels[str_detect(Consequence,'inframe'),aa:='if']
             labels[str_detect(Consequence,'splice'),aa:='sp']
             labels[,label:=paste0(SYMBOL,':',ppos,aa)]
-            labels[,nudge:=-.5][AF.T>.1,nudge:=.1]
+            labels[,nudge:=.1][AF.T>.8,nudge:= -.1]
             
             p$pos_alleleratio <- p$pos_alleleratio +
                 geom_label_repel(data = labels,mapping = aes(x=gpos,y=AF.T,label=label),
@@ -2007,7 +2009,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
             labels[str_detect(Consequence,'inframe'),aa:='if']
             labels[str_detect(Consequence,'splice'),aa:='sp']
             labels[,label:=paste0(SYMBOL,':',ppos,aa)]
-            labels[,nudge:=-.5][allele_ratio>.1,nudge:=.1]
+            labels[,nudge:=.1][allele_ratio>.8,nudge:= -.1]
             
             p$pos_alleleratio <- p$pos_alleleratio +
                 geom_label_repel(data = labels,mapping = aes(x=gpos,y=allele_ratio,label=label),
@@ -2116,7 +2118,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
             labels[str_detect(Consequence,'inframe'),aa:='if']
             labels[str_detect(Consequence,'splice'),aa:='sp']
             labels[,label:=paste0(SYMBOL,':',ppos,aa)]
-            labels[,nudge:=-.5][AF.T>.1,nudge:=.1]
+            labels[,nudge:=.1][AF.T>.8,nudge:= -.1]
             
             p$order_alleleratio <- p$order_alleleratio +
                 geom_label_repel(data = labels,mapping = aes(x=bin,y=AF.T,label=label),
@@ -2148,7 +2150,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
             labels[str_detect(Consequence,'inframe'),aa:='if']
             labels[str_detect(Consequence,'splice'),aa:='sp']
             labels[,label:=paste0(SYMBOL,':',ppos,aa)]
-            labels[,nudge:=-.5][allele_ratio>.1,nudge:=.1]
+            labels[,nudge:=.1][allele_ratio>.8,nudge:= -.1]
             
             p$order_alleleratio <- p$order_alleleratio +
                 geom_label_repel(data = labels,mapping = aes(x=bin,y=allele_ratio,label=label),
@@ -2541,7 +2543,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
             labels[str_detect(Consequence,'inframe'),aa:='if']
             labels[str_detect(Consequence,'splice'),aa:='sp']
             labels[,label:=paste0(SYMBOL,':',ppos,aa)]
-            labels[,nudge:=-.5][AF.T>.1,nudge:=.1]
+            labels[,nudge:=.1][AF.T>.8,nudge:= -.1]
             
             p$pos_alleleratio <- p$pos_alleleratio +
                 geom_label_repel(data = labels[chromosome==chr],mapping = aes(x=start,y=AF.T,label=label),
@@ -2573,7 +2575,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
             labels[str_detect(Consequence,'inframe'),aa:='if']
             labels[str_detect(Consequence,'splice'),aa:='sp']
             labels[,label:=paste0(SYMBOL,':',ppos,aa)]
-            labels[,nudge:=-.5][allele_ratio>.1,nudge:=.1]
+            labels[,nudge:=.1][allele_ratio>.8,nudge:=-.1]
             
             p$pos_alleleratio <- p$pos_alleleratio +
                 geom_label_repel(data = labels[chromosome==chr],mapping = aes(x=start,y=allele_ratio,label=label),
@@ -2683,7 +2685,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
             labels[str_detect(Consequence,'inframe'),aa:='if']
             labels[str_detect(Consequence,'splice'),aa:='sp']
             labels[,label:=paste0(SYMBOL,':',ppos,aa)]
-            labels[,nudge:=-.5][AF.T>.1,nudge:=.1]
+            labels[,nudge:=.1][AF.T>.8,nudge:= -.1]
             
             p$order_alleleratio <- p$order_alleleratio +
                 geom_label_repel(data = labels[chromosome==chr],mapping = aes(x=bin,y=AF.T,label=label),
@@ -2715,7 +2717,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
             labels[str_detect(Consequence,'inframe'),aa:='if']
             labels[str_detect(Consequence,'splice'),aa:='sp']
             labels[,label:=paste0(SYMBOL,':',ppos,aa)]
-            labels[,nudge:=-.5][allele_ratio>.1,nudge:=.1]
+            labels[,nudge:=.1][allele_ratio>.8,nudge:= -.1]
             
             p$order_alleleratio <- p$order_alleleratio +
                 geom_label_repel(data = labels[chromosome==chr],mapping = aes(x=bin,y=allele_ratio,label=label),
