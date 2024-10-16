@@ -110,7 +110,7 @@ rule franken_plot:
         capture_to_results[NORMAL_CAPTURE].svs.values(),
         capture_to_results[CANCER_CAPTURE].svs.values(),
         germline_vcf = "{}/variants/{}-{}.germline_variants_with_taf.vcf".format(outdir, 
-                        CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+                        NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         somatic_vcf = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, 
                         CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
         tumor_cns = capture_to_results[CANCER_CAPTURE].cns,
