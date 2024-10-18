@@ -9,6 +9,8 @@ rule vep_annotation_somatic:
         "{}/variants/{}-{}-all.somatic.gnomADg.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: params['vep']['threads']
     container: containers['ensemblvep_v112']
+    log:
+        vep_log = outdir + "/logs/vep_annotation_{}.log".format(CANCER_CAPTURE_STR)
     shell:
         "vep --vcf --output_file STDOUT " 
             " --pick "
@@ -18,7 +20,7 @@ rule vep_annotation_somatic:
             " --no_escape --no_stats --everything --offline "
             " --custom {input.gnomAD},gnomADg,vcf,exact,0,AF "
             " --fork {threads} "
-            " -i {input.somatic} | bgzip > {output} && "
+            " -i {input.somatic} | bgzip > {output} 2> {log.vep_log} && "
         " tabix -p vcf {output} "
 
 
@@ -78,6 +80,8 @@ rule vep_annotation_germline:
         "{}/variants/{}-merged.germline.split_norm.gnomADg.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
     threads: params['vep']['threads']
     container: containers['ensemblvep_v112']
+    log:
+        vep_log = outdir + "/logs/vep_annotation_{}.log".format(CANCER_CAPTURE_STR)
     shell:
         "vep --vcf --output_file STDOUT " 
             " --pick "
@@ -87,7 +91,7 @@ rule vep_annotation_germline:
             " --no_escape --no_stats --everything --offline "
             " --custom {input.gnomAD},gnomADg,vcf,exact,0,AF "
             " --fork {threads} "
-            " -i {input.germline} | bgzip > {output} && "
+            " -i {input.germline} | bgzip > {output} 2>> {log.vep_log} && "
         " tabix -p vcf {output} "
 
 

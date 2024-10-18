@@ -34,6 +34,6 @@ rule vep_annotation:
             " --no_escape --no_stats --everything --offline "
             " --custom {input.brca_exchange},BrcaEx,vcf,exact,0,ClinicalSignificance "
             " --fork {threads} "
-            " -i {input.somatic} > {params.somatic} 2> {log} && "
+            " -i {input.somatic} > {params.somatic} 2>> {log} && "
             " bgzip {params.somatic} && tabix -p vcf {output.somatic} "
 

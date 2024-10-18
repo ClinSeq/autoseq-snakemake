@@ -11,6 +11,8 @@ rule vep_annotation:
         germline = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR),
         somatic = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: params['vep']['threads']
+    log:
+        vep_log = outdir + "/logs/vep_annotation_{}.log".format(CANCER_CAPTURE_STR)
     container: containers['ensemblvep_v112']
     shell:
         "vep --vcf --output_file STDOUT " 
@@ -20,7 +22,7 @@ rule vep_annotation:
             " --no_escape --no_stats --everything --offline "
             " --custom {input.brca_exchange},BrcaEx,vcf,exact,0,ClinicalSignificance "
             " --fork {threads} --filter_common  --format vcf "
-            " -i {input.germline} > {output.germline} && "
+            " -i {input.germline} > {output.germline} 2> {log.vep_log} &&"
         "vep --vcf --output_file STDOUT " 
             " --pick --dir {input.vep_dir} "
             " --fasta {input.reference} "
@@ -28,5 +30,5 @@ rule vep_annotation:
             " --no_escape --no_stats --everything --offline "
             " --custom {input.brca_exchange},BrcaEx,vcf,exact,0,ClinicalSignificance "
             " --fork {threads} --format vcf "
-            " -i {input.somatic} > {output.somatic} "
+            " -i {input.somatic} > {output.somatic} 2>> {log.vep_log}"
 
