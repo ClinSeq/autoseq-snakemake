@@ -73,7 +73,7 @@ rule sage_somatic:
     shell:
         " source activate gridss-env && "
         " bedtools merge -i {input.panel_bed} > {params.workdir}/targets_nonoverlap.bed 2> {log} && "
-        " java -Xms4G -Xmx32G -cp {params.jarfile} "
+        " java -Xms4G -Xmx32G -cp $SAGE_JAR "
         " com.hartwig.hmftools.sage.SageApplication -threads 16 "
         " -reference {params.normalid} -reference_bam {input.normal_bam}"
         " -tumor {params.tumorid} -tumor_bam {input.tumor_bam} "
