@@ -379,13 +379,16 @@ write.table(x = soi_table, file = table_outfile, quote = FALSE, sep = "\t", row.
 theme_update(plot.title = element_text(hjust = 0.5))
 theme_update(plot.subtitle = element_text(hjust = 0.5))
 
+n_capture = length(levels(factor(qc_merge$capture)))
+
 # plotting function to create desired histograms 
 my_barplot = function(x, ybreaks, x_string, title_string) {
+  scale_fill_values = c("antiquewhite", "aliceblue", "lightpink", "palegreen", "plum2", "lightsalmon", "lavenderblush")
   p = ggplot(qc_merge, aes_string(x = x)) +
     geom_bar(aes(group = capture, fill = capture), width = 0.5, alpha = 0.7, color = "black") +
     geom_bar(data = subset(qc_merge, soi), width = 0.5, fill = "blue", show.legend = FALSE) + # the sample of interest
     geom_bar(data = subset(qc_merge, soi&doi), width = 0.5, fill = "red", show.legend = FALSE) + # the sample of interest
-    scale_fill_manual(values = c("antiquewhite", "aliceblue", "lightpink", "palegreen", "plum2")) +
+    scale_fill_manual(values = scale_fill_values[1:n_capture]) +
     scale_y_continuous(breaks = ybreaks) +
     scale_x_discrete(name = x_string) +
     facet_wrap(~sample_type, ncol = 1) +
@@ -395,12 +398,13 @@ my_barplot = function(x, ybreaks, x_string, title_string) {
 
 # plotting function to create desired scatter plots
 my_scatter = function(x, y, xbreaks, ybreaks, x_string, y_string, title_string) {
+  shape_values = c(24, 25, 21, 22, 23, 8, 10, 11)
   p = ggplot(qc_merge, aes(shape = capture)) +
     geom_point(aes_string(x = x, y = y), size = 3) +
     geom_point(data = subset(qc_merge, soi), aes_string(x = x, y = y), fill = "blue", size = 3, show.legend = FALSE) +
     geom_point(data = subset(qc_merge, soi&doi), aes_string(x = x, y = y), fill = "red", size = 3, show.legend = FALSE) +
     scale_alpha_manual(values = c(0.7, 1)) +
-    scale_shape_manual(values = c(24, 25, 21, 22, 23), guide = guide_legend(override.aes = list(fill = NA))) +
+    scale_shape_manual(values = shape_values[1:n_capture], guide = guide_legend(override.aes = list(fill = NA))) +
     scale_x_continuous(name = x_string, breaks = xbreaks) +
     scale_y_continuous(name = y_string, breaks = ybreaks) +
     facet_wrap(~sample_type, ncol = 1) +
