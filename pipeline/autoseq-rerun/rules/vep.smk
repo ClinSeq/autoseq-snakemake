@@ -31,5 +31,5 @@ rule vep_annotation:
             " --custom {input.brca_exchange},BrcaEx,vcf,exact,0,ClinicalSignificance "
             " --fork {threads} "
             " --format vcf "
-            " -i {input.somatic} > {output.somatic} || true 2> {log.vep_log}"
+            " -i {input.somatic} > {output.somatic} || true 2>> {log.vep_log} "
 

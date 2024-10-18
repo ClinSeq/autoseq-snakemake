@@ -22,7 +22,7 @@ rule vep_annotation:
             " --no_escape --no_stats --everything --offline "
             " --custom {input.brca_exchange},BrcaEx,vcf,exact,0,ClinicalSignificance "
             " --fork {threads} --filter_common  --format vcf "
-            " -i {input.germline} > {output.germline} 2> {log.vep_log} &&"
+            " -i {input.germline} > {output.germline} 2> {log.vep_log} && "
         "vep --vcf --output_file STDOUT " 
             " --pick --dir {input.vep_dir} "
             " --fasta {input.reference} "
