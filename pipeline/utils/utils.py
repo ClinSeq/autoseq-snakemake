@@ -63,6 +63,7 @@ def get_containers(_path):
         "jumble": os.path.join(_path, "autoseq-jumble.sif"),
         "purecn": os.path.join(_path, "autoseq-purecn.sif"),
         "ensemblvep": os.path.join(_path, "autoseq-ensemblvep.sif"),
+        "ensemblvep_v112": os.path.join(_path, "autoseq-ensemblvep-v112.sif"),
         "somaticseq": os.path.join(_path, "autoseq-somaticseq.sif"),
         "svcaller": os.path.join(_path, "autoseq-svcaller.sif")
     }

@@ -17,6 +17,7 @@ container:
     jumble: False
     purecn: False
     ensemblvep: False
+    ensemblvep_v112: False
     somaticseq: False
     svcaller: False
 
