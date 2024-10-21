@@ -110,7 +110,7 @@ rule bcftools_filter:
         "bcftools filter -e 'FILTER!=\"PASS\"' {input.sage_vcf} > {params.tmp_sage_vcf} && "
         "bcftools filter -e 'FILTER!=\"PASS\"' {input.mutect_vcf} > {params.tmp_mutect_vcf} && "
         "bgzip {params.tmp_sage_vcf} && tabix -p vcf {output.sage_vcf} && "
-        "bgzip {params.tmp_mutect_vcf} && tabix -p vcf {output.sage_vcf} "
+        "bgzip {params.tmp_mutect_vcf} && tabix -p vcf {output.mutect_vcf} "
 
 
 rule bcftools_concat:
