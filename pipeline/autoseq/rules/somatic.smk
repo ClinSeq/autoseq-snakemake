@@ -121,7 +121,7 @@ rule bcftools_concat:
         "{}/variants/{}-{}-all.somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: 8
     params:
-        extra = " -d exact "
+        extra = " -d exact ",
         ordered_vcf = "{}/variants/{}-{}-hartwig-sage-somatic.pass.reordered.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
     log:
         "{}/logs/variants/{}-{}-bcftools-concat.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
