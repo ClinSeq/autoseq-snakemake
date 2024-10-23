@@ -206,22 +206,31 @@ for record in vcf_reader:
     cgcann = ''
     if ensembl_id in cgc_ann:
         cgcann = cgc_ann[ensembl_id][0]
-
+    
     # processing somatic vcf file
     if vcftype == "somatic":
-        normal = record.genotype('NORMAL')
-        normal_dp = sum(normal['DP4'])
-        normal_alt = sum(normal['DP4'][2:])
-        normal_vaf = normal['VAF']
-
-        tumor = record.genotype('TUMOR')
-        tumor_dp = sum(tumor['DP4'])
-        tumor_alt = sum(tumor['DP4'][2:])
-        tumor_vaf = tumor['VAF']
-
-        num_tools = int(record.INFO['NUM_TOOLS'])
-        rsid = canonical_trans['Existing_variation']
+        try:
+            n_sample = [sample.sample for sample in record.samples if "-N-" in sample.sample ][0]
+            t_sample = [sample.sample for sample in record.samples if "-N-" not in sample.sample ][0]
+        except Exception as e:
+            n_sample = "NORMAL"
+            t_sample = "TUMOR"
         
+        normal = record.genotype(n_sample)
+        tumor = record.genotype(t_sample)
+        
+        ## for backward compatability
+        normal_dp = normal['DP'] if hasattr(normal.data, 'DP') else sum(normal['DP4'])
+        normal_alt = normal['AD'][1] if hasattr(normal.data, 'AD') else sum(normal['DP4'][2:])
+        normal_vaf = normal['AF'] if hasattr(normal.data, 'AF') else normal['VAF']
+
+        tumor_dp = tumor['DP'] if hasattr(tumor.data, 'DP') else sum(tumor['DP4'])
+        tumor_alt = tumor['AD'][1] if hasattr(tumor.data, 'AD') else sum(tumor['DP4'][2:])
+        tumor_vaf = tumor['AF'] if hasattr(tumor.data, 'AF') else tumor['VAF']
+
+        num_tools = int(record.INFO['NUM_TOOLS']) if "NUM_TOOLS" in record.INFO else int(1)
+        rsid = canonical_trans['Existing_variation']
+
         if (filter_col == 'PASS' or filter_col == 'LowQual') and \
             (impact == 'HIGH' or impact == 'MODERATE' or is_splice_variant) and not wgs:
             # forming variant string to remove duplicates
