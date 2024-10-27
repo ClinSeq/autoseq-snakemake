@@ -1061,22 +1061,23 @@ if (!t_only) {
         table[,N:=as.integer(N)]
         galf=merge(galf,table,by='N',all=T)
         
+        if (!is.null(galf$gnomADe_AF)) galf$gnomAD_AF=as.numeric(galf$gnomADe_AF)  # Make gnom_AD numerical so it can be used
+        if (!is.null(galf$gnomADg_AF)) galf$gnomAD_AF=as.numeric(galf$gnomADg_AF)  # Make gnom_AD numerical so it can be used
+        if (!is.null(galf$gnomAD_AF)) galf$gnomAD_AF=as.numeric(galf$gnomAD_AF)  # Make gnom_AD numerical so it can be used
+        galf[is.na(gnomAD_AF),gnomAD_AF:=0]
+        galf[,N:=NULL]
+        galf[,'point mutation':=type]
+        
+        # normal sample variants with allele ratio
+        galf_n <- galf[gnomAD_AF < .01 & SYMBOL %in% cancergenes$gene]
+        galf_n[,allele_ratio:=AO/DP]
         
     } #end germline mutations
-    if (!is.null(galf$gnomADe_AF)) galf$gnomAD_AF=as.numeric(galf$gnomADe_AF)  # Make gnom_AD numerical so it can be used
-    if (!is.null(galf$gnomADg_AF)) galf$gnomAD_AF=as.numeric(galf$gnomADg_AF)  # Make gnom_AD numerical so it can be used
-    if (!is.null(galf$gnomAD_AF)) galf$gnomAD_AF=as.numeric(galf$gnomAD_AF)  # Make gnom_AD numerical so it can be used
-    galf[is.na(gnomAD_AF),gnomAD_AF:=0]
-    galf[,N:=NULL]
-    galf[,'point mutation':=type]
-    
-    # normal sample variants with allele ratio
-    galf_n <- galf[gnomAD_AF < .01 & SYMBOL %in% cancergenes$gene]
-    galf_n[,allele_ratio:=AO/DP]
-    
+
     # tumor sample variants with tumor allele ratio if one exists, else the same
     galf_t <- NULL #galf[gnomAD_AF < .01 & SYMBOL %in% cancergenes$gene]
-    #galf_t[,allele_ratio:=AO/DP]
+    #galf_t[,allele_ratio:=AO/DP]        
+
 }
 
 
