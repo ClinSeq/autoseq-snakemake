@@ -130,7 +130,7 @@ rule bcftools_concat:
         "tabix -p vcf {params.ordered_vcf} &&  "
         "bcftools concat -a -D {input.mutect_vcf} {params.ordered_vcf} "
         " | bgzip > {output}  2> {log} && " 
-        "tabix -p vcf {output} && rm sample_names.txt "
+        "tabix -p vcf {output} && rm sample_names.txt {params.ordered_vcf}* "
 
 
 # rule somaticseq_merge:

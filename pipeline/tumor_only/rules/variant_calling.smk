@@ -105,7 +105,7 @@ rule bcftools_filter:
         "bcftools filter -e 'FILTER!=\"PASS\"' {input.sage_vcf} > {params.tmp_sage_vcf} && "
         "bcftools filter -e 'FILTER!=\"PASS\"' {input.mutect_vcf} > {params.tmp_mutect_vcf} && "
         "bgzip {params.tmp_sage_vcf} && tabix -p vcf {output.sage_vcf} && "
-        "bgzip {params.tmp_mutect_vcf} && tabix -p vcf {output.sage_vcf} "
+        "bgzip {params.tmp_mutect_vcf} && tabix -p vcf {output.mutect_vcf} "
 
 
 rule bcftools_concat:
@@ -116,13 +116,16 @@ rule bcftools_concat:
         "{}/variants/{}-{}-all.somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: 8
     params:
-        extra = " -d exact "
+        ordered_vcf = "{}/variants/{}-{}-hartwig-sage-somatic.pass.reordered.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     log:
         "{}/logs/variants/{}-{}-bcftools-concat.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:
-        "bcftools concat -a {params.extra} {input.mutect_vcf} {input.sage_vcf} "
+        "bcftools query -l {input.sage_vcf} | sort > sample_names.txt && "
+        "bcftools view -Oz -S sample_names.txt {input.sage_vcf} -o {params.ordered_vcf} && "
+        "tabix -p vcf {params.ordered_vcf} &&  "
+        "bcftools concat -a -D {input.mutect_vcf} {params.ordered_vcf} "
         " | bgzip > {output}  2> {log} && " 
-        "tabix -p vcf {output} "
+        "tabix -p vcf {output} && rm sample_names.txt {params.ordered_vcf}* "
 
 
 # rule sage_splitvcf:
