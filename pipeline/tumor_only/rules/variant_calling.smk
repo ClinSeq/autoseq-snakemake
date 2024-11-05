@@ -17,6 +17,7 @@ rule gatk4_mutect2:
         bam = "{}/variants/mutect/{}-{}-mutect.bam".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         vcf = "{}/variants/mutect/{}-{}-gatk-mutect-somatic.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         filtered_vcf = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        normalized_vcf = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered-normalized.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
         java_options = params['gatk4']['mutect2']['java_options'],
         normalid = compose_sample_str(NORMAL_CAPTURE),
@@ -39,10 +40,13 @@ rule gatk4_mutect2:
         " FilterMutectCalls  -R {input.reference} "
         " --max-alt-allele-count 2 "
         " -V {output.vcf}  "
-        " -O {output.filtered_vcf} 2>> {log} "
+        " -O {output.filtered_vcf} 2>> {log} && "
+        " vt decompose -s {output.filtered_vcf} "
+        " | vt normalize  -r {input.reference} - "
+        " | bgzip > {output.normalized_vcf} 2>> {log} "
 
 
-somatic_vcf['mutect2'] = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+somatic_vcf['mutect2'] = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered-normalized.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
 
 
 rule sage_somatic:
@@ -91,7 +95,7 @@ rule sage_somatic:
 rule bcftools_filter:
     input:
         sage_vcf = "{}/variants/{}-{}-hartwig-sage-somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-        mutect_vcf = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+        mutect_vcf = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered-normalized.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     output:
         sage_vcf = "{}/variants/{}-{}-hartwig-sage-somatic.pass.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
         mutect_vcf = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered.pass.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
