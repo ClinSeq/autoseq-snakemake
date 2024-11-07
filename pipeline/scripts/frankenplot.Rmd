@@ -967,7 +967,8 @@ if (!t_only) { # print normal sample chromosome
 
 ```{r, echo=FALSE}
 
-print(opts)
+
+dput(opts)
 
 
 print(sessionInfo())
