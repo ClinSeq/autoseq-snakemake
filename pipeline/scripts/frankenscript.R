@@ -1426,6 +1426,8 @@ hotspots_splice <- c("17:7578370", "17:7578290", "17:7578291", "17:7578369", "17
             salf[hotkey_start %in% hotspots_inframes,is_hotspot:=T]
             salf[hotkey_end %in% hotspots_inframes,is_hotspot:=T]
             salf[paste(chromosome,start,sep = ':') %in% hotspots_splice,is_hotspot:=T]
+            salf[paste(chromosome,start,sep = ':') %in% c('5:1295228','5:1295250'),is_hotspot:=T]
+            
             
             # sort(table(salf[is_hotspot==T]$hotkey),decreasing = T)
             # sort(table(salf[is_hotspot==T & str_detect(Consequence,'splice')]$hotkey),decreasing = T)
