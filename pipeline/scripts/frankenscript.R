@@ -1536,9 +1536,9 @@ if (!t_only) {
         
         table[,N:=as.integer(N)]
         galf=merge(galf,table,by='N',all=T)
-        
-        
-        
+
+
+
         galf[,effect:=NA_character_]
         ix <- galf$CANONICAL=='YES' | galf$SYMBOL!=''
         if (!is.null(galf$AO.N)) ix <- ix & galf$AO.N < 5
@@ -1564,6 +1564,11 @@ if (!t_only) {
     # tumor sample variants with tumor allele ratio if one exists, else the same
     galf_t <- galf[gnomAD_AF < .01 & SYMBOL %in% cancergenes$gene]
     galf_t[,allele_ratio:=AF_t]
+
+    # tumor sample variants with tumor allele ratio if one exists, else the same
+    galf_t <- NULL #galf[gnomAD_AF < .01 & SYMBOL %in% cancergenes$gene]
+    #galf_t[,allele_ratio:=AO/DP]        
+
 }
 
 

@@ -30,11 +30,17 @@ def csq_parsing(csq, vcftype):
      
     csq_keys_86 = ['Allele', 'Consequence', 'IMPACT', 'SYMBOL', 'Gene', 'Feature_type', 'Feature', 'BIOTYPE', 'EXON', 'INTRON', 'HGVSc', 'HGVSp', 'cDNA_position', 'CDS_position', 'Protein_position', 'Amino_acids', 'Codons', 'Existing_variation', 'ALLELE_NUM', 'DISTANCE', 'STRAND', 'FLAGS', 'VARIANT_CLASS', 'SYMBOL_SOURCE', 'HGNC_ID', 'CANONICAL', 'MANE_SELECT', 'MANE_PLUS_CLINICAL', 'TSL', 'APPRIS', 'CCDS', 'ENSP', 'SWISSPROT', 'TREMBL', 'UNIPARC', 'UNIPROT_ISOFORM', 'GIVEN_REF', 'USED_REF', 'BAM_EDIT', 'SOURCE', 'GENE_PHENO', 'SIFT', 'PolyPhen', 'DOMAINS', 'miRNA', 'HGVS_OFFSET', 'AF', 'AFR_AF', 'AMR_AF', 'EAS_AF', 'EUR_AF', 'SAS_AF', 'gnomADe_AF', 'gnomADe_AFR_AF', 'gnomADe_AMR_AF', 'gnomADe_ASJ_AF', 'gnomADe_EAS_AF', 'gnomADe_FIN_AF', 'gnomADe_NFE_AF', 'gnomADe_OTH_AF', 'gnomADe_SAS_AF', 'gnomADg_AF', 'gnomADg_AFR_AF', 'gnomADg_AMI_AF', 'gnomADg_AMR_AF', 'gnomADg_ASJ_AF', 'gnomADg_EAS_AF', 'gnomADg_FIN_AF', 'gnomADg_MID_AF', 'gnomADg_NFE_AF', 'gnomADg_OTH_AF', 'gnomADg_SAS_AF', 'MAX_AF', 'MAX_AF_POPS', 'FREQS', 'CLIN_SIG', 'SOMATIC', 'PHENO', 'PUBMED', 'MOTIF_NAME', 'MOTIF_POS', 'HIGH_INF_POS', 'MOTIF_SCORE_CHANGE', 'TRANSCRIPTION_FACTORS', 'BrcaEx', 'BrcaEx_ClinicalSignificance']
 
+    csq_keys_82 = ['Allele', 'Consequence', 'IMPACT', 'SYMBOL', 'Gene', 'Feature_type', 'Feature', 'BIOTYPE', 'EXON', 'INTRON', 'HGVSc', 'HGVSp', 'cDNA_position', 'CDS_position', 'Protein_position', 'Amino_acids', 'Codons', 'Existing_variation', 'ALLELE_NUM', 'DISTANCE', 'STRAND', 'FLAGS', 'VARIANT_CLASS', 'SYMBOL_SOURCE', 'HGNC_ID', 'CANONICAL', 'MANE_SELECT', 'MANE_PLUS_CLINICAL', 'TSL', 'APPRIS', 'CCDS', 'ENSP', 'SWISSPROT', 'TREMBL', 'UNIPARC', 'UNIPROT_ISOFORM', 'SOURCE', 'GENE_PHENO', 'SIFT', 'PolyPhen', 'DOMAINS', 'miRNA', 'HGVS_OFFSET', 'AF', 'AFR_AF', 'AMR_AF', 'EAS_AF', 'EUR_AF', 'SAS_AF', 'gnomADe_AF', 'gnomADe_AFR_AF', 'gnomADe_AMR_AF', 'gnomADe_ASJ_AF', 'gnomADe_EAS_AF', 'gnomADe_FIN_AF', 'gnomADe_NFE_AF', 'gnomADe_OTH_AF', 'gnomADe_SAS_AF', 'gnomADg_AF', 'gnomADg_AFR_AF', 'gnomADg_AMI_AF', 'gnomADg_AMR_AF', 'gnomADg_ASJ_AF', 'gnomADg_EAS_AF', 'gnomADg_FIN_AF', 'gnomADg_MID_AF', 'gnomADg_NFE_AF', 'gnomADg_OTH_AF', 'gnomADg_SAS_AF', 'MAX_AF', 'MAX_AF_POPS', 'CLIN_SIG', 'SOMATIC', 'PHENO', 'PUBMED', 'MOTIF_NAME', 'MOTIF_POS', 'HIGH_INF_POS', 'MOTIF_SCORE_CHANGE', 'TRANSCRIPTION_FACTORS', 'BrcaEx', 'BrcaEx_ClinicalSignificance']
+    
+    csq_keys_83 = ['Allele', 'Consequence', 'IMPACT', 'SYMBOL', 'Gene', 'Feature_type', 'Feature', 'BIOTYPE', 'EXON', 'INTRON', 'HGVSc', 'HGVSp', 'cDNA_position', 'CDS_position', 'Protein_position', 'Amino_acids', 'Codons', 'Existing_variation', 'ALLELE_NUM', 'DISTANCE', 'STRAND', 'FLAGS', 'VARIANT_CLASS', 'SYMBOL_SOURCE', 'HGNC_ID', 'CANONICAL', 'MANE_SELECT', 'MANE_PLUS_CLINICAL', 'TSL', 'APPRIS', 'CCDS', 'ENSP', 'SWISSPROT', 'TREMBL', 'UNIPARC', 'UNIPROT_ISOFORM', 'SOURCE', 'GENE_PHENO', 'SIFT', 'PolyPhen', 'DOMAINS', 'miRNA', 'HGVS_OFFSET', 'AF', 'AFR_AF', 'AMR_AF', 'EAS_AF', 'EUR_AF', 'SAS_AF', 'gnomADe_AF', 'gnomADe_AFR_AF', 'gnomADe_AMR_AF', 'gnomADe_ASJ_AF', 'gnomADe_EAS_AF', 'gnomADe_FIN_AF', 'gnomADe_NFE_AF', 'gnomADe_OTH_AF', 'gnomADe_SAS_AF', 'gnomADg_AF', 'gnomADg_AFR_AF', 'gnomADg_AMI_AF', 'gnomADg_AMR_AF', 'gnomADg_ASJ_AF', 'gnomADg_EAS_AF', 'gnomADg_FIN_AF', 'gnomADg_MID_AF', 'gnomADg_NFE_AF', 'gnomADg_OTH_AF', 'gnomADg_SAS_AF', 'MAX_AF', 'MAX_AF_POPS', 'FREQS', 'CLIN_SIG', 'SOMATIC', 'PHENO', 'PUBMED', 'MOTIF_NAME', 'MOTIF_POS', 'HIGH_INF_POS', 'MOTIF_SCORE_CHANGE', 'TRANSCRIPTION_FACTORS', 'BrcaEx', 'BrcaEx_ClinicalSignificance']
+
     csq_keys_map = { 
         69 : csq_keys_69,
         70 : csq_keys_70,
         85 : csq_keys_85,
-        86 : csq_keys_86
+        86 : csq_keys_86,
+        82 : csq_keys_82,
+        83 : csq_keys_83
     }
 
     for transcript in csq:
@@ -206,22 +212,31 @@ for record in vcf_reader:
     cgcann = ''
     if ensembl_id in cgc_ann:
         cgcann = cgc_ann[ensembl_id][0]
-
+    
     # processing somatic vcf file
     if vcftype == "somatic":
-        normal = record.genotype('NORMAL')
-        normal_dp = sum(normal['DP4'])
-        normal_alt = sum(normal['DP4'][2:])
-        normal_vaf = normal['VAF']
-
-        tumor = record.genotype('TUMOR')
-        tumor_dp = sum(tumor['DP4'])
-        tumor_alt = sum(tumor['DP4'][2:])
-        tumor_vaf = tumor['VAF']
-
-        num_tools = int(record.INFO['NUM_TOOLS'])
-        rsid = canonical_trans['Existing_variation']
+        try:
+            n_sample = [sample.sample for sample in record.samples if "-N-" in sample.sample ][0]
+            t_sample = [sample.sample for sample in record.samples if "-N-" not in sample.sample ][0]
+        except Exception as e:
+            n_sample = "NORMAL"
+            t_sample = "TUMOR"
         
+        normal = record.genotype(n_sample)
+        tumor = record.genotype(t_sample)
+        
+        ## for backward compatability
+        normal_dp = normal['DP'] if hasattr(normal.data, 'DP') else sum(normal['DP4'])
+        normal_alt = normal['AD'][1] if hasattr(normal.data, 'AD') else sum(normal['DP4'][2:])
+        normal_vaf = normal['AF'] if hasattr(normal.data, 'AF') else normal['VAF']
+
+        tumor_dp = tumor['DP'] if hasattr(tumor.data, 'DP') else sum(tumor['DP4'])
+        tumor_alt = tumor['AD'][1] if hasattr(tumor.data, 'AD') else sum(tumor['DP4'][2:])
+        tumor_vaf = tumor['AF'] if hasattr(tumor.data, 'AF') else tumor['VAF']
+
+        num_tools = int(record.INFO['NUM_TOOLS']) if "NUM_TOOLS" in record.INFO else int(1)
+        rsid = canonical_trans['Existing_variation']
+
         if (filter_col == 'PASS' or filter_col == 'LowQual') and \
             (impact == 'HIGH' or impact == 'MODERATE' or is_splice_variant) and not wgs:
             # forming variant string to remove duplicates
