@@ -2,7 +2,7 @@
 
 Each sample+preparation+capture item should have a corresponding barcode with the format `PROJECT-SDID-TYPE-SAMPLEID-PREPID-CAPTUREID` where:
 
-* `PROJECT` is a two-letter short project designator. One of `AL` (alascca), `LB` (liquid biopspy) and `OT` (other)
+* `PROJECT` is a two-letter short project designator. For example `AL` (alascca), `LB` (liquid biopspy), `OT` (other) etc.
 * `SDID` is an identifier for a single individual. It must match the pattern `P-[a-zA-Z0-9]+` (*NOTE:* This necessitates an additional "-" within this field).
 * `TYPE` is the sample type, one of `T` (tumor), `N` (normal) and `CFDNA` (ctDNA)
 * `SAMPLEID` identifies a single biological sample, for example piece of a tumor or a single tube of plasma. It must match the pattern `[a-zA-Z0-9]+`.
@@ -16,6 +16,8 @@ Each sample+preparation+capture item should have a corresponding barcode with th
 It is always ideal to have the full sample string with prep and capture dates. example - PB-P-00462065-CFDNA-04055058-KH20221214-C420221214
 
 ### Allowed Project IDs
+
+Autoseq knows about the following project ids:
 
 * `AL` = `ALASCCA` 
 * `LB` = `LIQBIO` 

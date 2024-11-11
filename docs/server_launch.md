@@ -1,13 +1,14 @@
 ## Our Server:
-In Karolinska Institutet, we have a High Performance Computer called ravenclaw. It consists of one head node and 5 compute nodes. The head node has 12 CPUs with 2 cores in each CPUs and 64GB of RAM. Each of the compute nodes have 48 CPUs with 252GB RAM and 250TB of disk space. 
+At Karolinska Institutet, we operate a High Performance Computing (HPC) system named "Ravenclaw." The server comprises one head node and five compute nodes. The head node is equipped with 12 CPUs, each with 6 cores, 64 GB of RAM, and 500 GB of SSD storage. Each compute node has 48 CPUs, 252 GB of RAM, and 250 TB of disk space. 
 
 ## Workload Manager:
-In order to manage all these compute nodes effectively, we need a special software called workload manager which can effectively allocate resources for each job for specific amount of time, track, monitor, and report status of job. In our autoseq pipeline, we are using a workload manager called Slurm which takes care of the resource allocation. While working with HPC, we have to login only to the head node to submit our jobs. Slurm will in turn take care of assigning the job to each of the compute nodes depending on the resources requested by the users. Once the analysis is completed by the compute node, it will send status report to the head node. Thus the entire analysis are effectively managed by Slurm. If you are using a different server, and if you don't have Slurm installed in it, kindly contact your IT support team to install Slurm. 
+To efficiently manage these compute nodes, we use a specialized software called a workload manager, which allocates resources for each job, tracks progress, monitors performance, and reports the job status. In our autoseq pipeline, we use Slurm as the workload manager, responsible for resource allocation. When working with HPC, users only need to log in to the head node to submit jobs. Slurm automatically assigns jobs to compute nodes based on the requested resources. Once a compute node completes the analysis, it sends a status report back to the head node. This system ensures that all analyses are managed efficiently by Slurm. If you're working on a different server and Slurm is not installed, please contact your IT support team to facilitate its installation. 
 
 ## Data Organization in Ravenclaw:
-While working on server, it is crutial to organize all the projects in specific structure such that it is easy to understand and access each projects. Here we have discussed about how data is organization in Ravenclaw server. 
+Organizing project data on the Ravenclaw server is essential for easy navigation and access. Below is an overview of how data is structured within the Ravenclaw server.
 
-All the projects and autoseq pipeline are stored in an extensible SSD under `/nfs/`. The directory structure is as follow
+All projects and the autoseq pipeline are stored on a scalable SSD under the `/nfs/` directory. The structure is as follows:
+
 ```
 |-- PIPELINE
 |-- Project1
@@ -18,7 +19,7 @@ All the projects and autoseq pipeline are stored in an extensible SSD under `/nf
 ```
 
 ### Pipeline Structure:
-Autoseq pipeline is located under `/nfs/PIPELINE/` and it has the following structure.
+The autoseq pipeline is located in the `/nfs/PIPELINE/` directory, which is organized as follows:
 ```
 |-- autoseq-genome
 |-- autoseq-snakemake
@@ -26,7 +27,12 @@ Autoseq pipeline is located under `/nfs/PIPELINE/` and it has the following stru
 |-- tools
 ```
 
-The `autoseq-genome` directory contains the reference genome (GRCh37) and all the associated files. The `autoseq-snakemake` directory contains all the pipelines, their conda environment, documentation and some test samples to check the pipeline. The `containers` has all the singularity images used in the pipeline and the `tools` directory contains all the additional tools used in autoseq pipeline. The `autoseq-snakemake` directory contains further subdirectories for each of the 5 pipeline we use. Inside each pipeline we have `rules` directory containing all rules and a `Snakefile`. Their structure is shown below.
+* The `autoseq-genome` directory houses the reference genome (GRCh37) and associated files.
+* The `autoseq-snakemake` directory contains all pipeline scripts, Conda environments, documentation, and test samples for verifying pipeline functionality.
+* The `containers` directory stores all Singularity images used by the pipeline.
+* The `tool` directory contains additional tools required for the autoseq pipeline.
+
+Within the `autoseq-snakemake` directory, there are subdirectories for each of the five pipelines we use. Each pipeline has a `rules` directory containing the specific rules, along with a `Snakefile`. The structure for these subdirectories is as follows:
 
 ```
 |-- docs
@@ -86,7 +92,8 @@ The `autoseq-genome` directory contains the reference genome (GRCh37) and all th
 ```
 
 ### Project Structure:
-So far we have been working on x different projects and each of these projects are listed under `/nfs/`. All of the projects follow similar structure, one such example is shown below.
+We are currently managing five different projects, all organized under the `/nfs/` directory. Each project follows a standardized structure, as illustrated below:
+
 ```
 |-- Project1
 │   │-- INBOX
@@ -96,19 +103,25 @@ So far we have been working on x different projects and each of these projects a
 │   │-- sample_lists
 ```
 
-The `INBOX` contains all the sample fastq files; their directory name has to follow pattern mentioned in [General Description page](barcodes.md). The `autoseq-output` directory contains the results of the analysis. `config` directory contains the configuration files (which contains tool specific parameters) used in the pipeline. The `logs` directory contains the no hungup analysis log for each sample. And, the `sample_lists` directory contains list of files with file name as `clinseqBarcodes_YYYY-MM-DD.txt`. Each of these files contains list of samples for which analysis were started on the specific date.
+* The `INBOX` directory contains all sample FASTQ files, and the directory names must follow the pattern specified in the [General Description page](barcodes.md)
+* The `autoseq-output` directory stores the analysis results.
+* The `config` directory contains configuration files, including tool-specific parameters used in the pipeline.
+* The `logs` directory holds the "no hungup" logs for each sample analysis.
+* The `sample_lists` directory includes files named `clinseqBarcodes_YYYY-MM-DD.txt`, each listing the samples analyzed on a particular date.
 
-**Note:** If you are starting analysis for any new project in our server or creating a new pipeline, it is crutial to maintain the above directory structure. 
+**Note:** When starting a new project or creating a new pipeline on our server, it is crucial to maintain the above directory structure for consistency.
 
 ## Virtual Environment
 
-In order to make the analysis easier, we have configured a virtual environment in our ravenclaw server with all the required dependencies. You can use the command `prod_up` to activate this virtual environment.
+To streamline the analysis process, we have set up a virtual environment on the Ravenclaw server with all necessary dependencies. You can activate this environment using the command `prod_up`.
 
-## Launching multiple samples in server:
+## Launching Multiple Samples on the Server
 
-If you wish to launch multiple samples in server, it essential to ensure that you are submitting your jobs through Slurm, so that Slurm can take care of allocating resources for each of your job. We have already installed Slurm and configured the virtual environment called `prod_up` in our ravenclaw server. If you are using a different server and if you wish to specify any memory requirement for any specific job, you need to modify the cluster configuration file as per your requirement. The cluster configuration file can be found in `/nfs/PIPELINE/autoseq-snakemake/pipeline/scheduler/cluster_config.json`
+When launching multiple samples on the server, it is essential to submit your jobs via Slurm. Slurm will manage resource allocation for each job. Our Ravenclaw server is already equipped with Slurm, and the virtual environment `prod_up` is pre-configured.
 
-Here is an example of cluster configuration file structure.
+If you are using a different server and need to specify memory or time requirements for certain jobs, you will need to modify the cluster configuration file accordingly. The cluster configuration file is located at `/nfs/PIPELINE/autoseq-snakemake/pipeline/scheduler/cluster_config.json`
+
+Below is an example structure of the cluster configuration file:
 
 ```
 {
@@ -128,7 +141,7 @@ Here is an example of cluster configuration file structure.
 }
 ```
 
-Here, the `__default__` will be applied to all the rules, and the parameters which you have specified inside each rule will overwrite the parameters provided in `__default__`. You can pass this config file to autoseq pipeline with `--cluster-config` parameter.
+In this configuration, the `__default__` settings apply to all rules, while any parameters specified under individual rules (such as `rule_name_1` and `rule_name_2`) will override the default settings. You can pass this configuration file to the autoseq pipeline using the `--cluster-config` parameter.
 
 Once you have prepared your cluster config file, you can start launching your samples. There are 3 essential steps to launch the pipeline. 
 
@@ -158,7 +171,7 @@ While running samples in batch, it is essential to create the input directory na
 |   |   |-- *_DNA-B-*-00_S11_L001_R2_001.fastq.gz
 |   |   |-- *_DNA-B-*-00_S11_L002_R1_001.fastq.gz
 |   |   |-- *_DNA-B-*-00_S11_L002_R2_001.fastq.gz
-|   |-- PROJECT-P-*-T-*-KHYYYYMMDD-CYYYYMMDD/
+|   |-- PROJECT-P-*-CFDNA-*-KHYYYYMMDD-CYYYYMMDD/
 |   |   |-- *_DNA-T-*-00_S11_L001_R1_001.fastq.gz
 |   |   |-- *_DNA-T-*-00_S11_L001_R2_001.fastq.gz
 |   |   |-- *_DNA-T-*-00_S11_L002_R1_001.fastq.gz
@@ -180,8 +193,8 @@ find /nfs/project_name/INBOX/ -maxdepth 1 \
         xargs -I {} basename {} | sort -V > \
         /nfs/project_name/sample_lists/clinseqBarcodes_`date "+%Y-%m-%d"`.txt
 mkdir -p /nfs/project_name/config/$(date "+%Y-%m-%d")
-autoseq config --outdir /path/to/config/$(date "+%Y-%m-%d") \
-        /path/to/sample_lists/clinseqBarcodes_$(date "+%Y-%m-%d").txt
+autoseq config --outdir /nfs/project_name/config/$(date "+%Y-%m-%d") \
+        /nfs/project_name/sample_lists/clinseqBarcodes_$(date "+%Y-%m-%d").txt
 # You can use ctrl+d to exit the screen.
 ```
 
@@ -238,15 +251,17 @@ done
 # You can use ctrl+d to exit the screen.
 ```
 
-In the above script, first we are initializing reference config file path (ref), path to INBOX (libdir), path to output (outdir), number of cores, and config files. Then for each sample json file present in config file, we are extracting the sdid and launching autoseq pipeline with the command `autoseq launch` which will launch each job on slurm cluster. We are using `nohup` to ensure that the system does not hungup while launching job. Finally `sleep 250` is used to wait for 250-second before submitting the next job. To know more about each parameters used in `autoseq launch`, please visit [pipeline parameters](quick_start.md/#pipeline-parameters)
+In the above script, first we are initializing reference config file path (ref), path to INBOX (libdir), path to output (outdir), number of cores, and config files (present within specific date). Then for each sample json file present in config file, we are extracting the sdid and launching autoseq pipeline with the command `autoseq launch` which will launch each job on slurm cluster. We are using `nohup` to ensure that the system does not hungup while launching job. Finally `sleep 250` is used to wait for 250-second before submitting the next job. To know more about each parameters used in `autoseq launch`, please visit [pipeline parameters](quick_start.md/#pipeline-parameters)
 
 Once you have launched the job, you can track the status of job using the following command which will list all the jobs and their status.
 
 ```
 squeue -o "%.7i %.4P %a %.60j %.20u %.8T %.10M %.9l %.6D %.6C %.6m %R"
+##   [OR]
+squeue -o "%.7i %.4P %a %.60j %.20u %.8T %.10M %.9l %.6D %.6C %.6m %R" | grep "username"
 ```
 
-If the status of job shows anything other than `PENDING` or `RUNNING` (for example: `DependencyNeverSatisfied`), you may need to inspect the error manually or reachout to bioinformatician or IT support team. Additionally, you can check for `analysis_finished` file under `/nfs/project_name/autoseq-output/sdid/*/`. This file will be generated only if the entire pipeline gets generated successfully. You can use the following unix command to check the list of sdid that have `analysis_finished` file.
+If the status of job shows anything other than `PENDING` or `RUNNING` (for example: `DependencyNeverSatisfied`), you may need to inspect the error manually or reachout to bioinformatics or IT support team. Additionally, you can check for `analysis_finished` file under `/nfs/project_name/autoseq-output/sdid/*/`. This file will be generated only if the entire pipeline gets generated successfully. You can use the following unix command to check the list of sdid that have `analysis_finished` file.
 
 ```
 ls /nfs/project_name/autoseq-output/*/*/analysis_finished | \

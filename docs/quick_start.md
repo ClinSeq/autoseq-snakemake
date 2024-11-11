@@ -4,21 +4,21 @@
 
 **System Requirements:**
 
-Next Generation Sequencing Analysis, produce huge volume of data. Hence, to begin NGS data analysis, it is crutial for any research lab to have a highly powerful compute environment. The system requirement varies depending on the scale of the project, type of analysis (e.g., whole-genome sequencing, RNA-seq, or targeted sequencing), and specific set of tools used for each analysis. In general, it is highly recommended to have a system with the following features. 
+The system requirements for NGS analysis vary depending on the project's scale, the type of analysis (e.g., whole-genome sequencing, RNA-seq, or targeted sequencing), and the specific tools employed. In general, the following features are highly recommended as a baseline for system specifications. 
 
 |||
 |----------------------|----------------|
 | **Operating System** |  Any Linux Distrubution (Tested on Ubuntu 22.04)  |
 | **RAM**              |  minimum of 64 GB for small dataset. 128G or more RAM is preferred.|
-| **Disk Space**       |  500G is required for complete installation and supported files. But disk space for data is additional.|
+| **Disk Space**       |  500G is required for complete installation of this pipeline and supported files. But disk space for data is additional.|
 | **CPU cores**        |  minimum of 8 CPU cores is required. |
 
 <br>
-**Note:** These are the minimum system requirements and may vary with pipeline version and size of input files.
+**Note:** These are the minimum system requirements, and they may vary depending on the pipeline version and the size of the input files.
 
 **Software Requirements:**
 
-To run autoseq pipeline, we need some dependencies which are python, conda, and singularity (optional). We highly recommend using singularity containers since it avoids most of the dependency conflicts which can arise if you are using conda environment.   
+To run the Autoseq pipeline, several dependencies are needed, including Python, Conda, and optionally, Singularity. We highly recommend using Singularity containers, as they help avoid most dependency conflicts that can occur when working within a conda environment.   
 
 **Dependencies:**
 
@@ -31,14 +31,14 @@ To run autoseq pipeline, we need some dependencies which are python, conda, and 
 
 ## 1.2 Installation
 
-If you prefer to run this pipeline using singularity (which is highly recommended), you can visit their [installation page](https://sylabs.io/guides/3.0/user-guide/installation.html) to download and install singularity which is suitable for your operating system.
+You can visit Singularity's [installation page](https://sylabs.io/guides/3.0/user-guide/installation.html) to download and install singularity which is compatible with your operating system.
 
-To install conda, you can visit [this page](https://docs.anaconda.com/miniconda/#quick-command-line-install)
+To install conda, please refer to the [Conda installation page](https://docs.anaconda.com/miniconda/#quick-command-line-install)
 
 
 **Autoseq Pipeline Installation**
 
-Once you have successfully installed the above two dependencies, you can download and install autoseq-snakemake in a seperate conda environment with the following command. It is recommeneded to use python version 3.8.12 to create the conda environment, since other python version may cause dependency conflicts. 
+Once the required dependencies are installed, you can proceed to install Autoseq-Snakemake in a separate Conda environment using the following commands. It is recommended to use Python version 3.8.12 to create the Conda environment, as other versions may lead to dependency issues. 
 
 ```sh
 conda create --name autoseq python=3.8.12
@@ -46,9 +46,12 @@ conda activate autoseq
 
 git clone https://github.com/Clinseq/autoseq-snakemake.git 
 pip install -e autoseq-snakemake/
+
+cd autoseq-snakemake/
+conda env create -f env/base.yml
 ```
 
-The above command will create a conda environment with python 3.8.12 and install all the required tools mentioned in setup.py. Once you have successfully installed the pipeline, you can check if the installation was successful by typing the command `autoseq --help`.
+These commands will create a Conda environment with Python 3.8.12 and install all required tools as specified in the setup.py file. Once the installation is complete, you can verify its success by running the following command: `autoseq --help`.
 
 ```sh
 $ autoseq --help
@@ -80,21 +83,21 @@ Commands:
   list    List autoseq available pipelines with version
 ```
 
-#### Downloading Reference Genome:
+#### Downloading the Reference Genome:
 
-Currently, we are using human reference genome GRCh37 for all our analysis. And, we have customized all the associated files (such as bed, gtf, interval_list, etc) specifically for liquid biopsy samples. It is available in our S3 cloud for download upon request.  
+Currently, we use the human reference genome GRCh37 for all analyses. The associated files (such as BED, GTF, interval lists, etc.) have been customized specifically for liquid biopsy samples. These files are available for download from our S3 cloud storage upon request.  
 
 ## 1.3 Launching autoseq pipeline
 
-Once you have successfully installed all the dependencies and autoseq pipeline, you can start launching your samples. In general, autoseq pipeline can be launched in two different ways. 
+Once you have successfully installed all the dependencies and the Autoseq pipeline, you can begin launching your samples. Generally, the Autoseq pipeline can be initiated in two different ways: 
 
 * Using singularity containers (highly recommended)
 * Using conda environment (not recommended)
 
-There are 3 steps in launching autoseq pipeline among which the first two steps are same irrespective of you use singularity or conda to launch pipeline. Hence, let's discuss about those 2 steps first and then we'll discuss about the steps to run the pipeline specifically for singularity or conda.
+There are three steps involved in launching the Autoseq pipeline. The first two steps remain the same, regardless of whether you use Singularity or Conda. Therefore, we will first discuss these two steps before outlining the specific procedures for launching the pipeline with either Singularity or Conda.
 
-**Step 1:** Preparing sample list file.
-First, make sure that the input directory name is consistent with the [recommended](barcodes.md) format. Naming the files in this format is crutial, because, autoseq uses this format to select the appropriate bed (or) interval_list (or) other files automatically. Then, you need to create a sample list file inside `/path/to/project_name/sample_list/` as per the [recommended](barcodes.md) format. You can use the following command to create the same.
+**Step 1:** Preparing the Sample List File
+First, ensure that the input directory name adheres to the [recommended](barcodes.md) format. Naming the directories correctly is crucial, as Autoseq uses this format to automatically select the appropriate BED, interval_list, or other files. Next, create a sample list file in `/path/to/project_name/sample_list/` according to the [recommended](barcodes.md) format. You can use the following command to accomplish this:
 
 ```
 find /path/to/input_directory/ -maxdepth 1 -name "PROJECT*$(date '+%Y%m%d')" \
@@ -102,25 +105,25 @@ find /path/to/input_directory/ -maxdepth 1 -name "PROJECT*$(date '+%Y%m%d')" \
     /path/to/project_name/sample_lists/clinseqBarcodes_`date "+%Y-%m-%d"`.txt 
 ```
 
-**Step 2:** Creating config file. 
-Once you have created the sample list file as mentioned above, you can use `autoseq config` command to create the config file.
+**Step 2:** Creating hte Config File. 
+Once you have created the sample list file as described above, use the `autoseq config` command to generate the config file:
 
 ```
-mkdir -p /path/to/config/$(date "+%Y-%m-%d")
+mkdir -p /path/to/project_name/config/$(date "+%Y-%m-%d")
 
 screen -S autoseq_run
 conda activate autoseq
-autoseq config --outdir /path/to/config/$(date "+%Y-%m-%d") \
+autoseq config --outdir /path/to/project_name/config/$(date "+%Y-%m-%d") \
     /path/to/project_name/sample_lists/clinseqBarcodes_$(date "+%Y-%m-%d").txt
 ```
 
-The above command will create a directory in today's date, and then create input config file in `/path/to/config/YYYY-MM-DD/`. This config file is then used by autoseq pipeline along with reference config file to launch samples.
+The above command will create a directory with today's date and generate an input config file in `/path/to/project_name/config/YYYY-MM-DD/`. This config file will be used by the Autoseq pipeline in conjunction with the reference config file to launch the samples.
 
 ### Launching pipeline with Singularity
 
-It is highly recommended to launch autoseq using singularity because all the required dependencies has been containerized, so that the pipeline can run more consistently compared to running the pipeline using conda environment.
+It is highly recommended to launch Autoseq using Singularity, as all required dependencies have been containerized, allowing the pipeline to run more consistently compared to using a Conda environment.
 
-To use singularity, first you need to build the containers for each tool. We have written a seperate script to build all the required singularity images, for which, you can use the following code.
+To use Singularity, you first need to build the containers for each tool. We have provided a separate script to build all the necessary Singularity images, which you can do using the following commands:
 
 ```
 git clone https://github.com/ClinSeq/autoseq-docker.git
@@ -140,12 +143,12 @@ docker build -t autoseq-somaticseq -f autoseq-somaticseq.Dockerfile .
 docker build -t autoseq-svcaller -f autoseq-svcaller.Dockerfile .
 ```
 
-This should create all the required singularity images which can then be used to run the pipeline.
+These commands will create all the necessary Singularity images, which can then be used to run the pipeline.
 
-**Note:** This is a one time process. Hence, you need to create the singularity images with the above command only when you are launching the pipeline for the first time.
+**Note:** This is a one-time process. You only need to create the Singularity images with the commands above when launching the pipeline for the first time.
 
-**Step3:** Launching Pipeline.
-Once you have prepared your config files as mentioned in step 2, you can run autoseq pipeline with the following command. It is highly recommended to launch the pipeline in screen, so that you can monitor the pipeline if incase any error occurs.
+**Step3:** Launching the Pipeline.
+Once you have prepared your config files as described in Step 2, you can run the Autoseq pipeline with the following command. It is highly recommended to launch the pipeline within a screen session so you can monitor the process and address any errors that may arise:
 ```
 screen -r autoseq_run
 
@@ -158,15 +161,15 @@ autoseq launch -r autoseq-genome/autoseq-genome.json \
     '--bind /path/to/autoseq-snakemake/:/path/to/autoseq-snakemake/'"
 ```
 
-To know more about each parameters used in `autoseq launch`, please visit [pipeline parameters](quick_start.md/#pipeline-parameters)
+For more information about each parameter used in `autoseq launch`, please visit [pipeline parameters](quick_start.md/#pipeline-parameters)
 
-The above command will launch the autoseq pipeline using singularity images. If the pipeline gets completed successfully, you will be able to see `analysis_finished` file in the specified output directory (`/path/to/autoseq-output/sdid/*/`). If pipeline is not completed successfully, `analysis_finished` will not be generated, and you need to check the analysis log file to fix the error. 
+The above command will initiate the Autoseq pipeline using Singularity images. If the pipeline completes successfully, you will see an `analysis_finished` file in the specified output directory (`/path/to/autoseq-output/sdid/*/`). If the pipeline does not complete successfully, the `analysis_finished` file will not be generated, and you should check the analysis log file to troubleshoot the error.
 
 ### Launching pipeline with conda:
 
-If you prefer to launch autoseq pipeline using conda environment (which is not recommended), first, you need to create all the conda environment with the following command.
+If you prefer to launch the Autoseq pipeline using a Conda environment (which is not recommended), you will first need to create all the necessary Conda environments with the following commands.
 
-**NOTE:** This is a one time process. Hence, you need to create the conda environment with the following command only when you are launching the pipeline for the first time. You can also check if these conda environments are already available using the command `conda env list`.
+**NOTE:** This is a one-time process. You only need to create the Conda environments with the commands below when launching the pipeline for the first time. You can check if these Conda environments already exist using the command `conda env list`.
 
 ```
 conda env create -f env/base.yml
@@ -179,11 +182,11 @@ conda env create -f env/somaticseqenv.yml
 conda env create -f env/svcallerenv.yml
 ```
 
-These command will install all the required tools mentioned in .yml file inside each conda environment. Now, our pipeline can use these newly created conda environment to run your samples.
+These commands will install all the required tools specified in `/autoseq-snakemake/env/*.yml` files within each Conda environment. The pipeline will then utilize these newly created Conda environments to process your samples.
 
-**Step3: Launching Pipeline.**
+**Step3: Launching the Pipeline.**
 
-Once you have prepared your config files as mentioned in step 2, you can run autoseq pipeline with the following command. It is highly recommended to run the below command inside screen, so that your job will continue to run even if you accidently close the terminal.
+Once you have prepared your config files as mentioned in Step 2, you can run the Autoseq pipeline with the following command. It is advisable to execute this command within a screen session so that your job continues to run even if you accidentally close the terminal, allowing you to monitor the progress of your analysis:
 ```
 screen -r autoseq_run
 conda activate autoseq
@@ -194,15 +197,15 @@ autoseq launch -r autoseq-genome/autoseq-genome.json \
         --libdir /path/to/INBOX/ --umi --cores 8
 ```
 
-To know about the description of each of these parameters, visit [pipeline parameters](quick_start.md#pipeline-parameters)
+To learn more about the description of each of these parameters, visit [pipeline parameters](quick_start.md#pipeline-parameters)
 
-### Tracing Error:
+### Error Tracing:
 
-If the pipeline failes for any reason, you can check the error either by opening screen using the command `screen -r autoseq_run` or you can check the analysis log. The analysis log will usually be saved under `/path/to/autoseq-output/sdid/*/.snakemake/log/date_time.snakemake.log` file. Once you open this file, you can check for the rule in which the error has occured and open the corresponding log file. The log file for each tool will be present in `/path/to/autoseq-output/sdid/*/logs/`. Check if you can resolve the error, else, please feel free to reachout to our bioinformatics team.
+If the pipeline fails for any reason, you can trace the error by reopening the screen session using the command `screen -r autoseq_run` or by checking the analysis log. The analysis log is typically located at `/path/to/autoseq-output/sdid/*/.snakemake/log/date_time.snakemake.log` After opening the log file, identify the rule where the error occurred and then check the corresponding log file, which can be found in`/path/to/autoseq-output/sdid/*/logs/`. If you are unable to resolve the error, please feel free to contact our bioinformatics team for assistance.
 
 ### Relaunching Sample:
 
-Once you have identified and resolved the error, you can relaunch the sample with snakemake option `--smk-opt "--rerun-incomplete"`. This option will enable snakemake to re-start the analysis from the step where the error has occured, so that you can save time. Here is the command to re-launch the failed sample.
+Once you have identified and resolved the issue, you can relaunch the sample using the Snakemake option `--smk-opt "--rerun-incomplete"`. This option allows Snakemake to restart the analysis from the point where the error occurred, saving time. The following commands will help you relaunch the failed sample.
 
 **If you are using conda to launch samples**
 ```
@@ -228,11 +231,11 @@ autoseq launch -r autoseq-genome/autoseq-genome.json \
     '--bind /path/to/project_name/:/path/to/project_name/'"
 ```
 
-To know about the description of each of these parameters, visit [pipeline parameters](quick_start.md#pipeline-parameters)
+For more details on the parameters used in `autoseq launch`, please refer to [pipeline parameters](quick_start.md#pipeline-parameters)
 
 ### Results:
 
-Once the pipeline gets completed successfully, you can view the results under `/path/to/autoseq-output/sdid/*/`. The result directory will appear in the following structure. To know more about each tool used in the pipeline, please visit [autoseq pipeline](autoseq_pipeline.md) page
+Once the pipeline successfully completes, you can view the results in `/path/to/autoseq-output/sdid/*/`. The result directory will be organized as follows. For detailed information on each tool used in the pipeline, visit the [autoseq pipeline](autoseq_pipeline.md) page
 
 ```
 .
@@ -248,33 +251,36 @@ Once the pipeline gets completed successfully, you can view the results under `/
 |-- svs
 |-- variants
 |-- analysis_finished
-|-- config_PROJECT-SDID-T-SAMPLEID-PREPID-CAPTUREID_PROJECT-SDID-N-SAMPLEID-PREPID-CAPTUREID.yml
-|-- PROJECT-SDID-T-SAMPLEID-PREPID-CAPTUREID_PROJECT-SDID-N-SAMPLEID-PREPID-CAPTUREID_jobdb.json
-|-- PROJECT-SDID-T-SAMPLEID-PREPID-CAPTUREID_PROJECT-SDID-N-SAMPLEID-PREPID-CAPTUREID-igvnav-input.txt
+|-- config_PROJECT-SDID-T-SAMPLEID-PREPID-CAPTUREID\
+        _PROJECT-SDID-N-SAMPLEID-PREPID-CAPTUREID.yml
+|-- PROJECT-SDID-T-SAMPLEID-PREPID-CAPTUREID\
+        _PROJECT-SDID-N-SAMPLEID-PREPID-CAPTUREID_jobdb.json
+|-- PROJECT-SDID-T-SAMPLEID-PREPID-CAPTUREID\
+        _PROJECT-SDID-N-SAMPLEID-PREPID-CAPTUREID-igvnav-input.txt
 |-- PROJECT-SDID-N-SAMPLEID-PREPID-CAPTUREID-igvnav-input.txt
 ```
 
-**Bams:** This directory contains all the BAM files that were generated during analysis; however, intermediate BAM files will be removed.
+**Bams:** This directory contains all the generated BAM files, although intermediate BAM files will be removed.
 
-**cnv:** This directory contains all the files generated by the copy number calling tools (JUMBLE).
+**cnv:** This folder includes all the files generated by copy number variation (CNV) calling tools (JUMBLE).
 
-**svs:** This directory contains all the files generated by structural variant callers (svcaller and GRIDSS).
+**svs:** This directory contains the output files from structural variant callers (svcaller and GRIDSS).
 
-**Variants:** This directory contains all the files generated during variant calling stage.
+**Variants:** This directory houses all the files generated during the variant calling process.
 
-**QC:** This directory contains all the files generated by quality check tools such as picard, fastqc, samtools, etc. It also contains QC overview plot and liqbio-cna plot.
+**QC:** This directory includes files from quality control tools such as Picard, FastQC, and Samtools, as well as QC overview plots and liqbio-CNA plots.
 
-**Multiqc:** This directory contains the results of multiqc tool.
+**Multiqc:** This folder contains the MultiQC results, which summarize all QC tools' outputs.
 
-**Logs:** This directory contains all the log file of each tool that were created while running the pipeline. Log file for alignment process will be stored directly in this directory; however, the log files of skewer, svs, variants, samtools, picard, fastqc, contamination, and cluster will be stored in seperate directory.
+**Logs:** This directory stores the log files for each tool used in the pipeline. Log files for the alignment process will be saved directly in this directory, while logs for Skewer, svs, variants, Samtools, Picard, FastQC, contamination, and clustering will be organized into subdirectories.
 
-**Analysis finished file:** A file named "analysis_finished" will be generated once the pipeline is finished completely. It contains date and time at which the analysis got completed. If any error occurs during any stage of the pipeline, this file will not be generated.
+**Analysis Finished File:** An "analysis_finished" file will be generated once the pipeline completes successfully. It records the date and time when the analysis finished. If an error occurs at any point in the pipeline, this file will not be created.
 
-**Config file:** Depending on the input parameters for each sample, a configuration file will be generated automatically by modifying autoseq-snakemake/config.yml as per the input parameters. The autoseq-snakemake/config.yml file contains default information such as additional parameters for each tool, gnomad location etc. On top of this default information additional information such as location of each singularity containers, input and output directory, reference config file, sample config file etc will be added based on the parameters provided by the users. All of these information will be stored in config_PB-P-*-T-*-KHYYYYMMDD-CYYYYMMDD_PB-P-*-N-*-KHYYYYMMDD-CYYYYMMDD.yml file.
+**Config File:** Based on the input parameters for each sample, a configuration file will be automatically generated by modifying `autoseq-snakemake/config.yml` according to the specific inputs. The `autoseq-snakemake/config.yml` file contains default information, such as additional parameters for each tool and the gnomAD database location. Additional details, such as the locations of the Singularity containers, input/output directories, reference config files, and sample-specific config files, will be appended based on the user's input. All of this information will be stored in a file named `config_PB-P-*-T-*-KHYYYYMMDD-CYYYYMMDD_PB-P-*-N-*-KHYYYYMMDD-CYYYYMMDD.yml`.
 
-**JobDB file:** PB-P-*-T-*-KHYYYYMMDD-CYYYYMMDD_PB-P-*-N-*-KHYYYYMMDD-CYYYYMMDD_jobdb.json file will contain ID of each submitted job and their corresponding log file.
+**JobDB File:** The file `PB-P-*-T-*-KHYYYYMMDD-CYYYYMMDD_PB-P-*-N-*-KHYYYYMMDD-CYYYYMMDD_jobdb.json` will contain the IDs of each submitted job along with their corresponding log files.
 
-**IGVNavigator input files:** PB-P-*-N-*-KH-WG-igvnav-input.txt and PB-P-*-T-*-KH-WG-PB-P-*-N-*-KH-WG-igvnav-input.txt files contains information that can be visualized when using the tool IGVNavigator. IGVNavigator is an add-on tool for IGV Visualizer which can assist in analyzing variants during manual review.
+**IGVNavigator Input Files:** The files `PB-P-*-N-*-KH-WG-igvnav-input.txt` and `PB-P-*-T-*-KH-WG-PB-P-*-N-*-KH-WG-igvnav-input.txt` files contains information that can be visualized when using the tool IGVNavigator. IGVNavigator is an add-on tool for IGV Visualizer which can assist in analyzing variants during manual curation.
 
 #### Pipeline Parameters
 

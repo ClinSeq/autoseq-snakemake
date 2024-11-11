@@ -1,8 +1,8 @@
 # Autoseq: A clinical genomics workflow management platform to analyze next generation sequencing data from cancer samples.
 
-Autoseq consists of a custom-pipeline with additional support modules aimed primarily for the analysis of data from high-throughput sequencing of liquid biopsies. However the pipeline performs equally well with data from tissues with slight change in recommended settings. The pipeline is continuously developed and supported at Johan Lindberg's Cancer Genomics lab at Karolinska Institutet, Stockholm, Sweden.
+Autoseq is a custom pipeline with supplementary support modules, designed primarily for the analysis of data from high-throughput sequencing of liquid biopsies. However, the pipeline performs equally well with tissue-derived data, with only minor adjustments to the recommended settings. The pipeline is continuously developed and supported by Johan Lindberg's Cancer Genomics Lab at Karolinska Institutet, Stockholm, Sweden.
 
-LiqBio pipeline is used to analyze cell free DNA from blood samples in PROBIO study. Liqbio pipeline has two versions, one with regular data analysis steps and another pipeline with additional umi processing steps. Currently this pipeline only supports GRCh37 reference genome. 
+The LiqBio pipeline is used to analyze cell-free DNA from blood samples in the PROBIO study. There are two versions of the LiqBio pipeline: one with standard data analysis steps and another that includes additional UMI processing. Currently, this pipeline supports only the GRCh37 reference genome. 
 
 This pipeline reports different types of variants such as 
 
@@ -19,7 +19,7 @@ To know more about different tools that we use in this pipeline, visit [autoseq 
 |License | [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0)|
 |Packages | [Python >3.6](https://www.python.org/downloads/), [Snakemake](https://snakemake.readthedocs.io/en/stable/), [Conda](https://docs.conda.io/en/latest/), [Singularity](https://cloud.sylabs.io/)|
 |Q&A | [Questions & Answers](https://github.com/ClinSeq/autoseq-snakemake/issues)|
-|Latest Version | [v3.3.1](https://github.com/ClinSeq/autoseq-snakemake/releases/tag/v3.3.1)|
+|Latest Version | [v3.4.0](https://github.com/ClinSeq/autoseq-snakemake/releases/tag/v3.4.0)|
 
 
 **Authors**
