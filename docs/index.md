@@ -40,7 +40,7 @@ To know more about different tools that we use in this pipeline, visit [autoseq 
     * [Workload Manager: Slurm](server_launch.md#workload-manager)
     * [Data Organization in Ravenclaw](server_launch.md#data-organization-in-ravenclaw)
     * [Virtual Environment](server_launch.md#virtual-environment)
-    * [Launching multiple samples in server](server_launch.md#launching-multiple-samples-in-server)
+    * [Launching multiple samples in server](server_launch.md#launching-multiple-samples-on-the-server)
     * [Relaunching failed samples](server_launch.md#relaunching-failed-samples)
 * [Autoseq Pipeline](autoseq_pipeline.md)
 * [General Description](barcodes.md)
