@@ -1463,7 +1463,8 @@ if (!t_only) {
     
     csq <- as.data.table(info(vcf)$CSQ)
     ix <- unique(csq[str_detect(value,'HIGH') | str_detect(value,'pathogenic'),group])
-    vcf <- expand(vcf)[ix]
+    #vcf <- vcf[ix]
+    vcf <- expand(vcf[ix])
     
     second_vcf <- NULL; if (ncol(vcf)>1) { 
         second_vcf <- vcf[,2]
@@ -1537,8 +1538,7 @@ if (!t_only) {
         table[,N:=as.integer(N)]
         galf=merge(galf,table,by='N',all=T)
 
-
-
+        
         galf[,effect:=NA_character_]
         ix <- galf$CANONICAL=='YES' | galf$SYMBOL!=''
         if (!is.null(galf$AO.N)) ix <- ix & galf$AO.N < 5
