@@ -128,11 +128,11 @@ autoseq launch -r /path/to/autoseq-genome/autoseq-genome.json \
 The Autoseq WGS Pipeline is designed for whole genome sequencing (WGS) analysis. Unlike the standard Autoseq pipeline, this pipeline does not incorporate unique molecular identifiers (UMIs). Additionally, germline variants in the tumor sample are identified by running the Haplotype Caller (rule: gatk4_haplotypecaller_jc), as these variants contribute to the copy number analysis for generating liqbio and franken plots. For quality metrics, WGSmetrics is utilized in place of CollectHsMetrics. Both tumor and matched normal samples are required for this pipeline, with the remaining steps closely mirroring those in the standard Autoseq pipeline.
 
 ![Autoseq WGS workflow](img/autoseq_wgs.png)
-**Figure 3:** This diagram shows the overall workflow for autoseq whole genome sequencing pipeline. Here different type of processes are highlighed with different colors. The preprocessing, quality check, somatic variant calling, germline variant calling, copy number analysis, structural variant calling and plots are mentioned in grey, blue, dark orange, green, light blue, dark yellow and light orange respectively.
+**Figure 3:** The workflow for the Autoseq WGS pipeline, with different processes distinguished by color: preprocessing, quality checks, somatic variant calling, germline variant calling, copy number analysis, structural variant calling, and plotting are represented in grey, blue, dark orange, green, light blue, dark yellow, and light orange, respectively.
 
 ### Launching WGS Pipeline:
 
-Launching WGS pipeline is similar to launching autoseq pipeline, you just have to specify an additional parameter which is `--pipeline autoseq-wgs`. Below, you can find an example command to launch WGS sample.
+The WGS pipeline can be launched similarly to the standard Autoseq pipeline, with the addition of the parameter `--pipeline autoseq-wgs`. Below is an example command for launching a WGS sample:
 
 ```
 autoseq launch -r /path/to/autoseq-genome/autoseq-genome.json \
@@ -144,12 +144,12 @@ autoseq launch -r /path/to/autoseq-genome/autoseq-genome.json \
         '--bind /base-path/:/base-path/'"
 ```
 
-### Launching WGS Pipeline in Ravenclaw Server:
+### Launching WGS Pipeline on the Ravenclaw Server:
 
-In KI, we are receving WGS samples in batch wise and their directory name does not follow the [recommended](quick_start/barcodes.md) format. Hence, we need to create new directory inside input directory with correct format, and create symbolic link of all input fastq files inside this directory. You can use the following command to do the same.
+At KI, WGS samples are received in batches, often with directory names that do not conform to the [recommended](quick_start/barcodes.md) format. To align with the expected format, create a new directory within the input directory and set up symbolic links to all input FASTQ files within it, using the following command:
 
 ```
-for dpath in /path/to/INBOX/batch_5/DNA-*;do
+for dpath in /path/to/INBOX/batch_n/DNA-*;do
 	base=`basename $dpath`;
 	sampletype=`echo $base | awk -F "-" '{if ($2 == "B") {print "N"} \
                 else {print $2}}'`
@@ -163,18 +163,18 @@ for dpath in /path/to/INBOX/batch_5/DNA-*;do
 done
 ```
 
-Now, your input directories are in correct format, and all the fastq files were symbolic linked inside the input directory. You can now proceed further to prepare config files by following the procedure mentioned in [launching samples in server](server_launch.md/#preparing-config-file) page.
+Once formatted and linked, you can proceed with preparing configuration files as described in the [launching samples in server](server_launch.md/#preparing-config-file) page.
 
 ## 4. Autoseq Tumor Only Pipeline:
 
-This pipeline can be used when we do not have a matched normal for your tumor sample. For such samples, we need to provide a Panel Of Normal (PON) bam file with the option `--normal /path/to/panel_of_normal.bam`. In Karolinska Institute, we have specifically designed panel of normal for each projects that we are handling. These data can be downloaded upon request.
+The Tumor-Only Pipeline is utilized when there is no matched normal sample available for the tumor sample. In such cases, provide a Panel of Normal (PON) BAM file with the `--normal /path/to/panel_of_normal.bam`. option. At Karolinska Institute, a specialized PON has been developed for each project, available for download upon request.
 
 ![Autoseq tumor only workflow](img/tumor_only.png)
-**Figure 4:** This diagram shows the overall workflow for autoseq whole genome sequencing pipeline. Here different type of processes are highlighed with different colors. The preprocessing, quality check, somatic variant calling, germline variant calling, copy number analysis, structural variant calling and plots are mentioned in grey, blue, dark orange, green, light blue, dark yellow and light orange respectively.
+**Figure 4:** This diagram illustrates the workflow for the Autoseq whole genome sequencing pipeline. Different process types are represented by distinct colors: preprocessing (grey), quality checks (blue), somatic variant calling (dark orange), germline variant calling (green), copy number analysis (light blue), structural variant calling (dark yellow), and plotting (light orange).
 
-### Launching Tumor-Only Pipeline:
+### Launching the Tumor-Only Pipeline:
 
-Launching tumor-only pipeline is similar to launching autoseq pipeline, you just have to specify two additional parameters which are`--pipeline tumor_only` and the location of panel of normal bam file with the parameter `--normal-bam /path/to/panel_of_normal/bams/`. Below, you can find an example command to launch tumor only sample.
+The Tumor-Only Pipeline can be launched similarly to the standard Autoseq pipeline, with the addition of two parameters: `--pipeline tumor_only` and `--normal-bam /path/to/panel_of_normal/bams/` to specify the location of the panel of normal BAM file. Below is an example command for launching a tumor-only sample:
 
 ```
 autoseq launch -r /path/to/autoseq-genome/autoseq-genome.json \
