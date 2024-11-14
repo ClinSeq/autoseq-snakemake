@@ -153,7 +153,7 @@ Once the cluster configuration file is prepared, you are ready to launch your sa
 
 #### Renaming the Input Directory
 
-When running batch samples, it is critical to name the input directory following the format  `PROJECT-SDID-TYPE-SAMPLEID-PREPID-CAPTUREID`. Autoseq relies on this structure, especially the prepID and captureID, to select appropriate reference files for analysis. Ensure that the prepID and captureID include the sample receipt or launch date (in YYYYMMDD format) as this allows Autoseq to retrieve all samples for processing on that specific date. For more details on this format, please refer to the [General Description](barcodes.md) page. Below is an example of the directory structure:
+When running batch samples, it is critical to name the input directory following the format  `PROJECT-SDID-TYPE-SAMPLEID-PREPID-CAPTUREID`. Autoseq relies on this structure, especially the prepID and captureID, to select appropriate reference files for analysis. Ensure that the prepID and captureID include the received date or launch date (in YYYYMMDD format) of the sample as this allows Autoseq to retrieve all samples for processing on that specific date. For more details on this format, please refer to the [General Description](barcodes.md) page. Below is an example of the directory structure:
 
 ```
 .
