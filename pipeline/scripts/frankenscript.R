@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-scriptversion <- '24.11.1'
+scriptversion <- '24.11.2'
 
 # Dependencies and arguments ----------------------------------------------
 {
@@ -1316,6 +1316,9 @@ hotspots_splice <- c("17:7578370", "17:7578290", "17:7578291", "17:7578369", "17
     vcf <- vcf[rowRanges(vcf)$FILTER %in% c('PASS','LowQual')]
     if (length(vcf)>50000) vcf <- vcf[rowRanges(vcf)$FILTER %in% c('PASS')]
     
+    
+    if (which(str_detect(colnames(vcf),'-N-'))==2) vcf <- vcf[,2:1]
+    
     salf <- NULL
     
     g <- geno(vcf)
@@ -1334,6 +1337,7 @@ hotspots_splice <- c("17:7578370", "17:7578290", "17:7578291", "17:7578369", "17
         # }
         
         salf$FILTER <- rowRanges(vcf)$FILTER
+        
         
         
         
@@ -1459,11 +1463,12 @@ galf_n <- NULL
 if (!t_only) {
     vcf <- readVcf(opts$germline_mut_vcf,genome = "GRCh37")
     
+    if (which(str_detect(colnames(vcf),'-N-'))==2) vcf <- vcf[,2:1]
     
     
     csq <- as.data.table(info(vcf)$CSQ)
     ix <- unique(csq[str_detect(value,'HIGH') | str_detect(value,'pathogenic'),group])
-    vcf <- expand(vcf)[ix]
+    vcf <- expand(vcf[ix])
     
     second_vcf <- NULL; if (ncol(vcf)>1) { 
         second_vcf <- vcf[,2]
