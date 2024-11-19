@@ -13,7 +13,7 @@ rule vep_annotation:
     threads: params['vep']['threads']
     log:
         vep_log = outdir + "/logs/vep_annotation_{}.log".format(CANCER_CAPTURE_STR)
-    container: containers['ensemblvep_v112']
+    container: containers['ensemblvep']
     shell:
         "vep --vcf --output_file STDOUT " 
             " --pick --dir {input.vep_dir} "
