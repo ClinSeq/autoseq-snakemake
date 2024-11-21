@@ -1,13 +1,13 @@
 ## Our Server:
-At Karolinska Institutet, we operate a High Performance Computing (HPC) system named "Ravenclaw." The server comprises one head node and five compute nodes. The head node is equipped with 12 CPUs, each with 6 cores, 64 GB of RAM, and 500 GB of SSD storage. The compute node contains 48 CPUs each, 252 GB of RAM, and 250 TB of disk space. 
+At Karolinska Institutet, we use internal High Performance Computing (HPC) under Infrastructure as a Service (IaaS) provided by the Karolinska Institutet's Central IT. Our setup of VMs has one head node and five compute nodes. The head node contains with 12 CPUs, 64 GB of RAM, and 500 GB of SSD storage. The compute node contains 48 CPUs each, 252 GB of RAM, and 250 TB of disk space. 
 
 ## Workload Manager:
-To efficiently manage these compute nodes, we use a specialized software called a workload manager, which allocates resources for each job, tracks progress, monitors performance, and reports the job status. In our autoseq pipeline, we use Slurm as the workload manager, responsible for resource allocation. When working with HPC, users only need to log in to the head node to submit jobs. Slurm automatically assigns jobs to compute nodes based on the requested resources. Once a compute node completes the analysis, it sends a status report back to the head node. This system ensures that all analyses are managed efficiently by Slurm. If you're working on a different server and Slurm is not installed, please contact your IT support team to facilitate its installation. 
+To efficiently manage these compute nodes and the compute jobs on them, we use a specialized software called a workload manager, which allocates resources for each job, tracks progress, monitors performance, and reports the job status. SLURM is our workload manager of choice. Read more about Slurm on their documentation page (https://slurm.schedmd.com/documentation.html). In autoseq pipeline, we use Slurm as the workload manager, responsible for resource allocation. When working with HPC, users only need to log in to the head node to submit jobs. Slurm automatically assigns jobs to compute nodes based on the requested resources. Once a compute node completes the analysis, it sends a status report back to the head node. This system ensures that all analyses are managed efficiently by Slurm. If you're working on a different server and Slurm is not installed, please contact your IT support team to facilitate its installation. 
 
-## Data Organization in Ravenclaw:
-Organizing project data on the Ravenclaw server is essential for easy navigation and access. Below is an overview of how data is structured within the Ravenclaw server.
+## Data Organization in the HPC:
+Organizing project data fodler is essential for easy navigation and access. Below is an overview of how data is structured on our HPC.
 
-All projects and the autoseq pipeline are stored on a scalable SSD under the `/nfs/` directory. The structure is as follows:
+All projects and the autoseq pipeline are stored on a scalable NFS with all nodes as hosts. The structure is as follows:
 
 ```
 ls /nfs/
@@ -29,7 +29,7 @@ ls /nfs/PIPELINE/
 |-- tools
 ```
 
-* The `autoseq-genome` directory houses the reference genome (GRCh37) and associated files.
+* The `autoseq-genome` directory houses the reference genome (GRCh37) and associated files. We currently support only GRCh37 but we are working on upgrading to the GRCh38 reference genome.
 * The `autoseq-snakemake` directory contains all pipeline scripts, Conda environments, documentation, and test samples for verifying pipeline functionality.
 * The `containers` directory stores all Singularity images used by the pipeline.
 * The `tool` directory contains additional tools required for the autoseq pipeline.
@@ -94,7 +94,7 @@ Within the `autoseq-snakemake` directory, there are subdirectories for each of t
 ```
 
 ### Project Structure:
-We are currently managing five different projects, all organized under the `/nfs/` directory. Each project follows a standardized structure, as illustrated below:
+We manage different projects, all organized under the `/nfs/` directory. Each project follows a standardized structure, as illustrated below:
 
 ```
 |-- Project1
