@@ -4,11 +4,11 @@ The Autoseq pipeline is primarily designed for liquid biopsy samples but is also
 
 The current workflow includes five distinct pipelines: 
 
-1. Autoseq Pipeline
-2. Autoseq-rerun Pipeline
-3. Autoseq-wgs Pipeline
-4. Autoseq-sd Pipeline
-5. Tumor-only Pipeline
+1. autoseq 
+2. autoseq-rerun 
+3. autoseq-wgs 
+4. autoseq-sd 
+5. tumor-only 
 
 ## 1. Autoseq Pipeline
 
