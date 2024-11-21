@@ -2,7 +2,7 @@
 
 Autoseq is a custom pipeline with supplementary support modules, designed primarily for the analysis of data from high-throughput sequencing of liquid biopsies. However, the pipeline performs equally well with tissue-derived data, with only minor adjustments to the recommended settings. The pipeline is continuously developed and supported by Johan Lindberg's Cancer Genomics Lab at Karolinska Institutet, Stockholm, Sweden.
 
-The LiqBio pipeline is used to analyze cell-free DNA from blood samples in the PROBIO study. There are two versions of the LiqBio pipeline: one with standard data analysis steps and another that includes additional UMI processing. Currently, this pipeline supports only the GRCh37 reference genome. 
+This pipeline is used to analyze cell-free DNA from blood samples in the PROBIO study. There are two versions of the pipeline: one with standard data analysis steps and another that includes additional UMI processing. Currently, this pipeline supports only the GRCh37 reference genome. 
 
 This pipeline reports different types of variants such as 
 
