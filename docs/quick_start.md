@@ -8,9 +8,9 @@ The system requirements for NGS analysis vary depending on the project's scale, 
 
 |||
 |----------------------|----------------|
-| **Operating System** |  Any Linux Distrubution (Tested on Ubuntu 22.04)  |
-| **RAM**              |  minimum of 64 GB for small dataset. 128G or more RAM is preferred.|
-| **Disk Space**       |  500G is required for complete installation of this pipeline and supported files. But disk space for data is additional.|
+| **Operating System** |  Any Linux Distrubution (fully tested on Ubuntu 22.04)  |
+| **RAM**              |  minimum of 64 GB but 128G or more of RAM is preferred.|
+| **Disk Space**       |  500G is required for complete installation of this pipeline and dependency files.|
 | **CPU cores**        |  minimum of 8 CPU cores is required. |
 
 <br>
@@ -18,7 +18,7 @@ The system requirements for NGS analysis vary depending on the project's scale, 
 
 **Software Requirements:**
 
-To run the Autoseq pipeline, several dependencies are needed, including Python, Conda, and optionally, Singularity. We highly recommend using Singularity containers, as they help avoid most dependency conflicts that can occur when working within a conda environment.   
+To run the Autoseq pipeline, several dependencies are needed, including Snakemake, Python, Conda, and optionally, Singularity. We highly recommend using Singularity containers, as they help avoid most dependency conflicts that can occur when working within a conda environment.   
 
 **Dependencies:**
 
