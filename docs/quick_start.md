@@ -4,7 +4,7 @@
 
 **System Requirements:**
 
-The system requirements for NGS analysis vary depending on the project's scale, the type of analysis (e.g., whole-genome sequencing, RNA-seq, or targeted sequencing), and the specific tools employed. In general, the following features are highly recommended as a baseline for system specifications. 
+The system requirements for installing and running this pipeline vary depending on the project's scale, the type of analysis (e.g., panel, whole exome, whole-genome sequencing or RNA-seq), and the specific tools employed. In general, the following features are highly recommended as a baseline for system specifications. 
 
 |||
 |----------------------|----------------|
