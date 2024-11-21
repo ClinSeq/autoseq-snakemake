@@ -1,4 +1,4 @@
-# Autoseq - Pipeline
+# Autoseq - pipeline
 
 The Autoseq pipeline is primarily designed for liquid biopsy samples but is also highly effective for tissue biopsy samples with minor configuration adjustments. This pipeline requires both tumor and matched normal samples, with input FASTQ files in `.fastq.gz` or `.fq.gz` format. Input file names should follow the format: PROJECT-SDID-TYPE-SAMPLEID-PREPID-CAPTUREID (e.g., `PB-P-00462065-CFDNA-04055058-KH20221214-C420221214.fastq.gz`). For details on this naming format, please refer to the [General Description](barcodes.md) page. 
 
@@ -100,14 +100,14 @@ The Autoseq pipeline integrates several tools to verify quality at different sta
 
 
 
-## 2. Autoseq Re-run Pipeline
+## 2. Autoseq re-run pipeline
 
-The Autoseq Re-run Pipeline is specifically designed to initiate analysis from a BAM file. This is particularly useful if the original pipeline is interrupted after alignment is complete, or if only a duplicate-removed BAM file is available instead of FASTQ files. The tools employed here are identical to those used in the standard Autoseq pipeline.
+The Autoseq re-run pipeline is specifically designed to initiate analysis from a BAM file. This is particularly useful if the original pipeline is interrupted after alignment is complete, or if only a duplicate-removed BAM file is available instead of FASTQ files. The tools employed here are identical to those used in the standard Autoseq pipeline.
 
 ![Autoseq rerun](img/autoseq_rerun.png)
 **Figure 2:** The Autoseq Re-run Pipeline workflow diagram, highlighting different processes by color. Steps for preprocessing, quality checks, somatic and germline variant calling, copy number analysis, structural variant calling, and plotting are represented in grey, blue, dark orange, green, light blue, dark yellow, and light orange, respectively.
 
-### Launching Rerun Pipeline:
+### Launching rerun Pipeline:
 
 Launching the Autoseq Re-run Pipeline is similar to the standard Autoseq pipeline. However, here you need to specify the path to the BAM file using the `--libdir` parameter and set `--pipeline autoseq-rerun`. Below is an example command for initiating the Autoseq Re-run Pipeline:
 
@@ -165,7 +165,7 @@ done
 
 Once formatted and linked, you can proceed with preparing configuration files as described in the [launching samples in server](server_launch.md/#preparing-config-file) page.
 
-## 4. Autoseq Tumor Only Pipeline:
+## 4. Autoseq Tumor-Only Pipeline:
 
 The Tumor-Only Pipeline is utilized when there is no matched normal sample available for the tumor sample. In such cases, provide a Panel of Normal (PON) BAM file with the `--normal /path/to/panel_of_normal.bam`. option. At Karolinska Institute, a specialized PON has been developed for each project, available for download upon request.
 
