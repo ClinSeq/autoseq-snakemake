@@ -38,7 +38,7 @@ To know more about different tools that we use in this pipeline, visit [autoseq 
 * [Launching Samples in Server](launch_pipeline.md)
     * [Breif Description About Our Server](launch_pipeline.md#breif-description-about-our-server)
     * [Workload Manager: Slurm](launch_pipeline.md#workload-manager)
-    * [Data Organization in Ravenclaw](launch_pipeline.md#data-organization-in-ravenclaw)
+    * [Data Organization in Ravenclaw](launch_pipeline.md#data-organization-in-the-hpc)
     * [Virtual Environment](launch_pipeline.md#virtual-environment)
     * [Launching multiple samples in server](launch_pipeline.md#launching-multiple-samples-on-the-server)
     * [Relaunching failed samples](launch_pipeline.md#relaunching-failed-samples)
