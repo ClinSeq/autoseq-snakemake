@@ -22,8 +22,8 @@ rule gatk4_mutect2:
     log:
         "{}/logs/variants/{}-{}-gatk4-mutect-somatic.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR) 
     shell:
-        "normalId=`samtools view -H {input.normal_bam} | grep \"^@RG\" | cut -f3 | cut -d\':\' -f2 ` && "
-        "tumorId=`samtools view -H {input.tumor_bam} | grep \"^@RG\" | cut -f3 | cut -d\':\' -f2 ` && "
+        "normalId=`samtools view -H {input.normal_bam} | grep \"^@RG\" | tr \'\\t\' \'\\n\' | grep \'^SM\' | cut -d\':\' -f2 ` && "
+        "tumorId=`samtools view -H {input.tumor_bam} | grep \"^@RG\" |  tr \'\\t\' \'\\n\' | grep \'^SM\' | cut -d\':\' -f2 ` && "
         "gatk --java-options '{params.java_options} -Djava.io.tmpdir={params.tmpdir}' "
         " Mutect2  -R {input.reference} "
         " -I {input.tumor_bam} "
@@ -247,3 +247,63 @@ rule make_allelic_fraction_track:
             outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     shell:
         "generate_allelic_fraction_bedGraph.py  --output {output}  {input.vcf} "
+
+
+rule gatk4_haplotypecaller_tumor:
+    input:
+        reference = reference["reference_genome"],
+        tumor_bam = cancerBam,
+        germline_vcf = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR)
+    output:
+        vcf = "{}/variants/{}-haplotypecaller.vcf".format(outdir, CANCER_CAPTURE_STR)
+    params:
+        tmpdir = params['scratch']
+    threads: params['gatk4']['threads']
+    log:
+        "{}/logs/variants/{}-{}-gatk4-haplotypecaller-tumor.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR) 
+    shell:
+        "gatk HaplotypeCaller -R {input.reference} "
+        " -I {input.tumor_bam} "
+        " -O {output.vcf} "
+        " -ERC GVCF "
+        " -L {input.germline_vcf} 2> {log} "
+
+
+rule gatk4_haplotypecaller_genotype_tumor:
+    input:
+        reference = reference["reference_genome"],
+        vcf = "{}/variants/{}-haplotypecaller.vcf".format(outdir, CANCER_CAPTURE_STR),
+        germline_vcf = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR)
+    output:
+        vcf = "{}/variants/{}-haplotypecaller.genotyped.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
+    params:
+        vcf = "{}/variants/{}-haplotypecaller.genotyped.vcf".format(outdir, CANCER_CAPTURE_STR)
+    threads: params['gatk4']['threads']
+    log: 
+        "{}/logs/variants/{}-{}-haplotypecaller-tumor-genotyped.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR) 
+    shell:
+        "gatk GenotypeGVCFs -R {input.reference} "
+        "  -V {input.vcf}  "
+        "  -O {params.vcf} "
+        "  -L {input.germline_vcf} 2> {log} && "
+        " bgzip {params.vcf} && "
+        " tabix -p vcf {output.vcf} 2>> {log} "
+    
+
+rule bcftools_merge:
+    input:
+        germline_vcf = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR),
+        genotyped_tvcf = "{}/variants/{}-haplotypecaller.genotyped.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
+    output:
+        vcf = "{}/variants/{}-{}.germline_variants_with_taf.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    params:
+        gvcf = "{}/variants/{}-all.germline.vep.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
+    threads: params['gatk4']['threads']
+    log:
+       "{}/logs/variants/{}-{}-bcftools-merge.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)  
+    shell:
+        "bgzip -c {input.germline_vcf} > {params.gvcf} && "
+        "tabix -p vcf {params.gvcf} && "
+        "bcftools merge {params.gvcf} {input.genotyped_tvcf} "
+        " -O v -o {output.vcf} 2> {log} && "
+        " rm {params.gvcf} "

@@ -249,8 +249,11 @@ if (! is_rerun) {
   for (d in unique(InsertSize_histogram$DIR)) {
     for (s in unique(subset(InsertSize_histogram, DIR == d)$SAMP)) {
       tot_reads = MarkDuplicates$READ_PAIRS_EXAMINED[which(MarkDuplicates$DIR == d & MarkDuplicates$SAMP == s)]
-      idx = which(InsertSize_histogram$DIR == d & InsertSize_histogram$SAMP == s)
-      InsertSize_histogram$count_norm[idx] = InsertSize_histogram$All_Reads.fr_count[idx]/tot_reads
+      # quick fix if autoseq-rerun and autoseq output in same outdir 
+      if (length(tot_reads) != 0) {
+        idx = which(InsertSize_histogram$DIR == d & InsertSize_histogram$SAMP == s)
+        InsertSize_histogram$count_norm[idx] = InsertSize_histogram$All_Reads.fr_count[idx]/tot_reads
+      }
     }
   }
 }

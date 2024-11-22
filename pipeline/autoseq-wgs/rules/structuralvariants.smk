@@ -24,10 +24,8 @@ rule gridss_svcalling_normal:
         vcf = "{}/svs/gridss/{}-gridss.vcf".format(outdir, NORMAL_CAPTURE_STR),
         svbam = "{}/svs/gridss/{}-gridss.sv.bam".format(outdir, NORMAL_CAPTURE_STR)
     params:
-        gridss_jar = os.environ.get('GRIDSS_JAR'),
         jvmheap = '10g',
         basename = os.path.basename(capture_to_results[NORMAL_CAPTURE].bamfile),
-        gridss_config = os.path.join(os.environ.get('GRIDSS_SCRIPT'), 'gridss.properties'),
         workdir = directory("{}/svs/gridss/{}/".format(outdir, NORMAL_CAPTURE_STR))
     threads: params['gridss']['threads']
     container: containers['gridss']
@@ -37,8 +35,8 @@ rule gridss_svcalling_normal:
         "source activate gridss-env && "
         "gridss --reference {input.reference} "
         " --jvmheap {params.jvmheap} "
-        " --jar {params.gridss_jar} "
-        " -c {params.gridss_config} "
+        " --jar $GRIDSS_JAR "
+        " -c $GRIDSS_SCRIPT/gridss.properties "
         " --assembly {output.assembly_bam} "
         " --threads {threads} --steps  ALL "
         " --workingdir {params.workdir} "
@@ -59,10 +57,8 @@ rule gridss_svcalling_somatic:
         vcf = "{}/svs/gridss/{}-{}-gridss.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         svbam = "{}/svs/gridss/{}-gridss.sv.bam".format(outdir, CANCER_CAPTURE_STR)
     params:
-        gridss_jar = os.environ.get('GRIDSS_JAR'),
         jvmheap = '10g',
         basename = os.path.basename(capture_to_results[CANCER_CAPTURE].bamfile),
-        gridss_config = os.path.join(os.environ.get('GRIDSS_SCRIPT'), 'gridss.properties'),
         workdir = directory("{}/svs/gridss/{}/".format(outdir, CANCER_CAPTURE_STR))
     threads: params['gridss']['threads']
     container: containers['gridss']
@@ -72,8 +68,8 @@ rule gridss_svcalling_somatic:
         "source activate gridss-env && "
         "gridss --reference {input.reference} "
         " --jvmheap {params.jvmheap} "
-        " --jar {params.gridss_jar} "
-        " -c {params.gridss_config} "
+        " --jar $GRIDSS_JAR "
+        " -c $GRIDSS_SCRIPT/gridss.properties "
         " --assembly {output.assembly_bam} "
         " --threads {threads} --steps  ALL "
         " --workingdir {params.workdir} "
@@ -97,10 +93,10 @@ rule gridss_somatic_filter:
         outdir + "/logs/svs/gridss-somatic-{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     shell:
         "source activate gridss-env && "
-        "Rscript {params.script_dir}gridss_somatic_filter -p {params.pondir} "
+        "Rscript $GRIDSS_SCRIPT/gridss_somatic_filter -p {params.pondir} "
         " -i {input.vcf} "
         " -o {output.vcf} "
-        " -s {params.script_dir} 2> {log} && "
+        " -s $GRIDSS_SCRIPT 2> {log} && "
         " bgzip -d {output.vcf}.bgz "
 
 

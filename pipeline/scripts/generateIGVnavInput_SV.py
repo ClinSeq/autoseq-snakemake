@@ -275,7 +275,7 @@ def combine_mut(input_dir, output_dir):
             cmd.append("awk -F'\\t' 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $6,\"svcaller\", $4, \"" + vcftype + "\", $7, $8}' " \
                         + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
         elif 'gridss.mut' in file:
-            vcftype = 'somatic' if 'somatic' in filebase else 'germline'            
+            vcftype = 'somatic' if 'somatic' in filebase else 'tumor' if 'tumor' in filebase else 'germline'            
             cmd.append("awk -F'\\t' 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $6,\"gridss\", $4, \"" + vcftype + "\", $7, $8}' " \
                         + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
 
