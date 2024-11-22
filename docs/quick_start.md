@@ -25,8 +25,9 @@ To run the Autoseq pipeline, several dependencies are needed, including Snakemak
 ```
 * python =3.8.12
 * Singularity > 3.0 
-* conda
-* snakemake==6.2.1  
+* conda or mamba
+* snakemake==6.2.1 
+* SLURM (Work load Manager) 
 ```
 
 ## 1.2 Installation
@@ -47,8 +48,6 @@ conda activate autoseq
 git clone https://github.com/Clinseq/autoseq-snakemake.git 
 pip install -e autoseq-snakemake/
 
-cd autoseq-snakemake/
-conda env create -f env/base.yml
 ```
 
 These commands will create a Conda environment with Python 3.8.12 and install all required tools as specified in the setup.py file. Once the installation is complete, you can verify its success by running the following command: `autoseq --help`.
@@ -61,7 +60,7 @@ $ autoseq --help
   / ___ \ |_| | || (_) |__) |  __/ (_| |
  /_/   \_\__,_|\__\___/____/ \___|\__, |
                                      |_| 🐍
-                         version: 3.4.0
+                         version: 3.5.2
 
 
 Usage: autoseq [OPTIONS] COMMAND [ARGS]...
@@ -80,7 +79,6 @@ Options:
 Commands:
   config  Create sample json for given clinseq barcodes
   launch  launch the respective pipeline with samples json
-  list    List autoseq available pipelines with version
 ```
 
 #### Downloading the Reference Genome:
@@ -96,21 +94,21 @@ Once you have successfully installed all the dependencies and the Autoseq pipeli
 
 There are three steps involved in launching the Autoseq pipeline. The first two steps remain the same, regardless of whether you use Singularity or Conda. Therefore, we will first discuss these two steps before outlining the specific procedures for launching the pipeline with either Singularity or Conda.
 
-**Step 1:** Preparing the Sample List File
+**Step 1: Preparing the Sample List File **
 
 First, ensure that the input directory name adheres to the [recommended](barcodes.md) format. Naming the directories correctly is crucial, as Autoseq uses this format to automatically select the appropriate BED, interval_list, or other files. Next, create a sample list file in `/path/to/project_name/sample_list/` according to the [recommended](barcodes.md) format. You can use the following command to accomplish this:
 
-```
+```sh
 find /path/to/input_directory/ -maxdepth 1 -name "PROJECT*$(date '+%Y%m%d')" \
     | xargs -I {} basename {} | sort -V > \
     /path/to/project_name/sample_lists/clinseqBarcodes_`date "+%Y-%m-%d"`.txt 
 ```
 
-**Step 2:** Creating the Config File. 
+**Step 2: Creating the Config File. **
 
 Once you have created the sample list file as described above, use the `autoseq config` command to generate the config file:
 
-```
+```sh
 mkdir -p /path/to/project_name/config/$(date "+%Y-%m-%d")
 
 screen -S autoseq_run
@@ -122,39 +120,32 @@ autoseq config --outdir /path/to/project_name/config/$(date "+%Y-%m-%d") \
 
 The above command will create a directory with today's date and generate an input config file in `/path/to/project_name/config/YYYY-MM-DD/`. This config file will be used by the Autoseq pipeline in conjunction with the reference config file to launch the samples.
 
-### Launching pipeline with Singularity
+#### Launching pipeline with Singularity
 
 It is highly recommended to launch Autoseq using Singularity, as all required dependencies have been containerized, allowing the pipeline to run more consistently compared to using a Conda environment.
 
 To use Singularity, you first need to build the containers for each tool. We have provided a separate script to build all the necessary Singularity images, which you can do using the following commands:
 
-```
+```sh
 git clone https://github.com/ClinSeq/autoseq-docker.git
-cd /path/to/autoseq-docker/
+cd autoseq-docker/
 
 sudo systemctl start docker
 sudo systemctl enable docker
 
-docker build -t autoseq-base -f autoseq-base.Dockerfile .
-docker build -t autoseq-ensemblvep -f autoseq-ensemblvep.Dockerfile .
-docker build -t autoseq-franken -f autoseq-franken.Dockerfile .
-docker build -t autoseq-gatk3 -f autoseq-gatk3.Dockerfile .
-docker build -t autoseq-gridss -f autoseq-gridss.Dockerfile .
-docker build -t autoseq-jumble -f autoseq-jumble.Dockerfile .
-docker build -t autoseq-purecn -f autoseq-purecn.Dockerfile .
-docker build -t autoseq-somaticseq -f autoseq-somaticseq.Dockerfile .
-docker build -t autoseq-svcaller -f autoseq-svcaller.Dockerfile .
-
-mv /path/to/autoseq-docker/*.sif /path/to/container_dir/
+# building docker images and convert it into singularity images
+bash docker_to_singularity.sh /path/to/autoseq-docker/  /path/to/containers/
 ```
 
 These commands will create all the necessary Singularity images, which can then be used to run the pipeline.
 
 **Note:** This is a one-time process. You only need to create the Singularity images with the commands above when launching the pipeline for the first time.
 
-**Step3:** Launching the Pipeline.
+**Step3: Launching the Pipeline.**
+
 Once you have prepared your config files as described in Step 2, you can run the Autoseq pipeline with the following command. It is highly recommended to launch the pipeline within a screen session so you can monitor the process and address any errors that may arise:
-```
+
+```sh
 screen -r autoseq_run
 
 autoseq launch -r autoseq-genome/autoseq-genome.json \
@@ -170,7 +161,7 @@ For more information about each parameter used in `autoseq launch`, please visit
 
 The above command will initiate the Autoseq pipeline using Singularity images. If the pipeline completes successfully, you will see an `analysis_finished` file in the specified output directory (`/path/to/autoseq-output/sdid/*/`). If the pipeline does not complete successfully, the `analysis_finished` file will not be generated, and you should check the analysis log file to troubleshoot the error.
 
-### Launching pipeline with conda:
+#### Launching pipeline with conda:
 
 If you prefer to launch the Autoseq pipeline using a Conda environment (which is not recommended), you will first need to create all the necessary Conda environments with the following commands.
 
