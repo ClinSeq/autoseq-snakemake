@@ -5,7 +5,7 @@ At Karolinska Institutet, we use internal High Performance Computing (HPC) under
 To efficiently manage these compute nodes and the compute jobs on them, we use a specialized software called a workload manager, which allocates resources for each job, tracks progress, monitors performance, and reports the job status. SLURM is our workload manager of choice. Read more about Slurm on their documentation page (https://slurm.schedmd.com/documentation.html). In autoseq pipeline, we use Slurm as the workload manager, responsible for resource allocation. When working with HPC, users only need to log in to the head node to submit jobs. Slurm automatically assigns jobs to compute nodes based on the requested resources. Once a compute node completes the analysis, it sends a status report back to the head node. This system ensures that all analyses are managed efficiently by Slurm. If you're working on a different server and Slurm is not installed, please contact your IT support team to facilitate its installation. 
 
 ## Data Organization in the HPC:
-Organizing project data fodler is essential for easy navigation and access. Below is an overview of how data is structured on our HPC.
+Organizing project data folder is essential for easy navigation and access. Below is an overview of how data is structured on our HPC.
 
 All projects and the autoseq pipeline are stored on a scalable NFS with all nodes as hosts. The structure is as follows:
 
@@ -201,6 +201,7 @@ autoseq config --outdir /nfs/project_name/config/$(date "+%Y-%m-%d") \
 ```
 
 This script performs the following actions:
+
 * Searches all directories in `/nfs/project_name/INBOX/` ending with today’s date.
 * Sorts these directory names and writes them into `/nfs/project_name/sample_lists/` as `clinseqBarcodes_today's_date`.
 * Creates a new directory within `/nfs/project_name/config/` with today’s date.
@@ -260,6 +261,7 @@ done
 ```
 
 In this script:
+
 * Paths to the reference file (ref), INBOX directory (libdir), output directory (outdir), and configuration files (for the specific date) are initialized.
 * For each sample configuration JSON file, the sdid is extracted, and the `autoseq launch` command is executed to initiate each job on the Slurm cluster.
 * `nohup` is used to prevent interruptions, and `sleep 250` ensures a 250-second delay before the next job submission.

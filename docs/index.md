@@ -19,7 +19,7 @@ To know more about different tools that we use in this pipeline, visit [autoseq 
 |License | [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0)|
 |Packages | [Python >3.6](https://www.python.org/downloads/), [Snakemake](https://snakemake.readthedocs.io/en/stable/), [Conda](https://docs.conda.io/en/latest/), [Singularity](https://cloud.sylabs.io/)|
 |Q&A | [Questions & Answers](https://github.com/ClinSeq/autoseq-snakemake/issues)|
-|Latest Version | [v3.4.0](https://github.com/ClinSeq/autoseq-snakemake/releases/tag/v3.4.0)|
+|Latest Version | [v3.5.2](https://github.com/ClinSeq/autoseq-snakemake/releases/tag/v3.5.2)|
 
 
 **Authors**
@@ -35,13 +35,13 @@ To know more about different tools that we use in this pipeline, visit [autoseq 
     * [Requirements](quick_start.md/#11-requirements)
     * [Installation](quick_start.md/#12-installation)
     * [Launching Autoseq Pipeline](quick_start.md/#13-launching-autoseq-pipeline)
-* [Launching Samples in Server](server_launch.md)
-    * [Breif Description About Our Server](server_launch.md#breif-description-about-our-server)
-    * [Workload Manager: Slurm](server_launch.md#workload-manager)
-    * [Data Organization in Ravenclaw](server_launch.md#data-organization-in-ravenclaw)
-    * [Virtual Environment](server_launch.md#virtual-environment)
-    * [Launching multiple samples in server](server_launch.md#launching-multiple-samples-on-the-server)
-    * [Relaunching failed samples](server_launch.md#relaunching-failed-samples)
+* [Launching Samples in Server](launch_pipeline.md)
+    * [Breif Description About Our Server](launch_pipeline.md#breif-description-about-our-server)
+    * [Workload Manager: Slurm](launch_pipeline.md#workload-manager)
+    * [Data Organization in Ravenclaw](launch_pipeline.md#data-organization-in-ravenclaw)
+    * [Virtual Environment](launch_pipeline.md#virtual-environment)
+    * [Launching multiple samples in server](launch_pipeline.md#launching-multiple-samples-on-the-server)
+    * [Relaunching failed samples](launch_pipeline.md#relaunching-failed-samples)
 * [Autoseq Pipeline](autoseq_pipeline.md)
 * [General Description](barcodes.md)
 * [Autoseq scripts](scripts.md)
