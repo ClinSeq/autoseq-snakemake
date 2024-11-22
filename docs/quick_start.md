@@ -167,7 +167,7 @@ If you prefer to launch the Autoseq pipeline using a Conda environment (which is
 
 **NOTE:** This is a one-time process. You only need to create the Conda environments with the commands below when launching the pipeline for the first time. You can check if these Conda environments already exist using the command `conda env list`.
 
-```
+```sh
 conda env create -f env/base.yml
 conda env create -f env/ensemblvep.yml
 conda env create -f env/franken.yml
@@ -183,7 +183,8 @@ These commands will install all the required tools specified in `/autoseq-snakem
 **Step3: Launching the Pipeline.**
 
 Once you have prepared your config files as mentioned in Step 2, you can run the Autoseq pipeline with the following command. It is advisable to execute this command within a screen session so that your job continues to run even if you accidentally close the terminal, allowing you to monitor the progress of your analysis:
-```
+
+```sh
 screen -r autoseq_run
 conda activate autoseq
 
