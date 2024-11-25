@@ -71,6 +71,9 @@ def main():
         logging.error(FileNotFoundError)
         exit
     
+    if not os.path.exists(args.output):
+        os.makedirs(args.output, exist_ok=True)
+    
     batch_script = create_batch_script(args.input, args.xml, args.output)
     igv_cmd = f"igv.sh -b {batch_script} --preferences {args.preferences} " 
 

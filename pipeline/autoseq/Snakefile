@@ -191,11 +191,11 @@ rule generate_IGVSnapshots_snv:
         "generate_igvsnapshots.py --xml {input.xml} "
         " --preferences $IGV_PREFS "
         " --input  {input.somatic_snvs} "
-        " --ouptut {output.somatic_snvs} 2> {log}  && "
+        " --output {output.somatic_snvs} 2> {log}  && "
         "generate_igvsnapshots.py --xml {input.xml} "
         " --preferences $IGV_PREFS "
         " --input  {input.germline_snvs} "
-        " --ouptut {output.germline_snvs}  2>> {log} "
+        " --output {output.germline_snvs}  2>> {log} "
 
 
 
