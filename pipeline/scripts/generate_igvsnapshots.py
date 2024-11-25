@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     generate_igvsnapshots.py is a script designed to create IGV snapshots using a customized XML file.
