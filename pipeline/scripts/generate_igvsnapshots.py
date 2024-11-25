@@ -62,7 +62,7 @@ def main():
     parser.add_argument('--xml', required=True, help="IGV session xml file ")
     parser.add_argument('-i', '--input', required=True, help="SNVs txt file as input")
     parser.add_argument('-p', '--preferences', required=True, help="Preferences for IGV batch")
-    parser.add_argument('--output', help="evidence bam for gridss variants")
+    parser.add_argument('--output', help="output directory to store all images")
     args = parser.parse_args()
     
     setup_logging()

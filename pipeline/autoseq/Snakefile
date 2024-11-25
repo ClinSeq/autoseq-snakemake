@@ -173,6 +173,32 @@ rule generate_symlinks:
         "generate_symlinks.py --targets {params.target_bed} --outdir {params.outdir}  2> {log} " 
 
 
+rule generate_IGVSnapshots_snv:
+    input:
+        xml = "{}/IGVnav/igv_session_snps.xml".format(outdir),
+        somatic_snvs = "{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        germline_snvs = "{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR)
+    output:
+        somatic_snvs = directory(outdir + "/IGVsnapshots/somatic/"),
+        germline_snvs = directory(outdir + "/IGVsnapshots/germline/")
+    params:
+        prefs = "../scripts/igvsnapshot.prefs"
+    container: containers['igv']
+    threads: 8
+    log:
+        "{}/logs/generate_igvsnapshots_snvs.log"
+    shell:
+        "generate_igvsnapshots.py --xml {input.xml} "
+        " --preferences {params.prefs} "
+        " --input  {input.somatic_snvs} "
+        " --ouptut {output.somatic_snvs} 2> {log}  && "
+        "generate_igvsnapshots.py --xml {input.xml} "
+        " --preferences {params.prefs} "
+        " --input  {input.germline_snvs} "
+        " --ouptut {output.germline_snvs}  2>> {log} "
+
+
+
 include: "rules/pre_processing.smk"
 if umi:
     include: "rules/split_targets.smk"

@@ -20,6 +20,7 @@ container:
     ensemblvep: False
     somaticseq: False
     svcaller: False
+    igv: False
 
 
 outdir: tests
