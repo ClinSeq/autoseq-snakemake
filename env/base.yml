@@ -1,4 +1,4 @@
-name: base
+#name: base
 channels:
   - bioconda
   - conda-forge
@@ -22,6 +22,9 @@ dependencies:
   - bioconductor-dnacopy
   - pip:
     - pysam
-    - pyvcf
+    - pyvcf==0.6.8
     - cnvkit==0.9.8
     - multiqc==1.10
+    - wheel
+    - pulp==2.7.0
+    - setuptools<58

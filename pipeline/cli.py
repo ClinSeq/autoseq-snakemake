@@ -70,27 +70,6 @@ def config(context, barcodes_file, outdir):
 
 
 @cli.command()
-@click.pass_context
-def list(context):
-    """
-    List autoseq available pipelines with version
-    """
-    console = Console()
-
-    pipelines = Table(show_header=True, header_style="bold magenta")
-    pipelines.add_column("No.")
-    pipelines.add_column("Pipeline Name")
-    pipelines.add_column("Type")
-    pipelines.add_column("Last update")
-    
-    pipelines.add_row("1", "Autoseq", "Targeted Re-sequencing", "May 25 2021")
-    pipelines.add_row("2", "Autoseq-TO", "Tumor with non-matched germline - Targeted Re-sequencing", "May 13 2022")
-    pipelines.add_row("2", "Autoseq-SD", "Targeted Re-sequencing - Small Design", "May 30 2022")
-
-    console.print(pipelines)
-    
-
-@cli.command()
 @click.option("--ref", '-r', help="json file with reference files to use", 
             type=click.Path(exists=True))
 @click.option("--samples", help="json file contains list of samples")

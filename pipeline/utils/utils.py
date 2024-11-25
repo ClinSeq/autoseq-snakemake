@@ -1,5 +1,6 @@
 import os, re
 import glob
+import sys
 from pipeline.utils.clinseq_barcodes import parse_prep_id, compose_sample_str, \
     extract_unique_capture, find_fastqs, compose_lib_capture_str
 
@@ -62,8 +63,7 @@ def get_containers(_path):
         "gridss": os.path.join(_path, "autoseq-gridss.sif"),
         "jumble": os.path.join(_path, "autoseq-jumble.sif"),
         "purecn": os.path.join(_path, "autoseq-purecn.sif"),
-        "ensemblvep": os.path.join(_path, "autoseq-ensemblvep.sif"),
-        "ensemblvep_v112": os.path.join(_path, "autoseq-ensemblvep-v112.sif"),
+        "ensemblvep": os.path.join(_path, "autoseq-ensemblvep-v113.1.sif"),
         "somaticseq": os.path.join(_path, "autoseq-somaticseq.sif"),
         "svcaller": os.path.join(_path, "autoseq-svcaller.sif")
     }

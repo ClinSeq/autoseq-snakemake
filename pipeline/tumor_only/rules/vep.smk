@@ -8,7 +8,7 @@ rule vep_annotation_somatic:
     output:
         "{}/variants/{}-{}-all.somatic.gnomADg.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: params['vep']['threads']
-    container: containers['ensemblvep_v112']
+    container: containers['ensemblvep']
     log:
         vep_log = outdir + "/logs/vep_annotation_{}.log".format(CANCER_CAPTURE_STR)
     shell:
@@ -35,7 +35,7 @@ rule vep_filter_somatic:
         nosnps = "{}/variants/{}-{}-all.somatic.gnomADg.noSNPs.vep.vcf.gz".format(outdir, 
                                             CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: 1
-    container: containers['ensemblvep_v112']
+    container: containers['ensemblvep']
     shell:
         "zcat {input} | filter_vep --filter \"gnomADg_AF > 0.01\" "
         " | bgzip > {output.snps} && "
@@ -56,7 +56,7 @@ rule vep_annotation_noSNPs:
         "{}/variants/{}-{}-all.somatic.gnomADg.noSNPs.brcaEx.vep.vcf.gz".format(outdir, 
                                                 CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: params['vep']['threads']
-    container: containers['ensemblvep_v112']
+    container: containers['ensemblvep']
     shell:
         "vep --vcf --output_file STDOUT " 
             " --pick "
@@ -79,7 +79,7 @@ rule vep_annotation_germline:
     output:
         "{}/variants/{}-merged.germline.split_norm.gnomADg.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
     threads: params['vep']['threads']
-    container: containers['ensemblvep_v112']
+    container: containers['ensemblvep']
     log:
         vep_log = outdir + "/logs/vep_annotation_{}.log".format(CANCER_CAPTURE_STR)
     shell:
@@ -104,7 +104,7 @@ rule vep_filter_germline:
         snps = "{}/variants/{}-merged.germline.split_norm.gnomADg.vep.SNPs.vcf.gz".format(outdir, CANCER_CAPTURE_STR),
         nosnps = "{}/variants/{}-merged.germline.split_norm.gnomADg.vep.noSNPs.vcf.gz".format(outdir, CANCER_CAPTURE_STR),
     threads: 1
-    container: containers['ensemblvep_v112']
+    container: containers['ensemblvep']
     shell:
         "zcat {input} | filter_vep --filter \"gnomADg_AF > 0.01\" "
         " | bgzip > {output.snps} && "
@@ -124,7 +124,7 @@ rule vep_annotation_brcaex:
     output:
         "{}/variants/{}-merged.germline.split_norm.brcaEx.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
     threads: params['vep']['threads']
-    container: containers['ensemblvep_v112']
+    container: containers['ensemblvep']
     shell:
         "vep --vcf --output_file STDOUT " 
             " --pick "
