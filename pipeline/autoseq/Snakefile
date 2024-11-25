@@ -150,6 +150,8 @@ rule all:
         OUTPUT,
         outdir + "/bams/intermediate_bamfiles.removed",
         directory("{}/multiqc".format(outdir)),
+        directory(outdir + "/IGVsnapshots/somatic/"),
+        directory(outdir + "/IGVsnapshots/germline/"),
         "{}/IGVnav/igv_session_sv.xml".format(outdir),
         "{}/IGVnav/igv_session_snps.xml".format(outdir)
     output:
@@ -181,19 +183,17 @@ rule generate_IGVSnapshots_snv:
     output:
         somatic_snvs = directory(outdir + "/IGVsnapshots/somatic/"),
         germline_snvs = directory(outdir + "/IGVsnapshots/germline/")
-    params:
-        prefs = "../scripts/igvsnapshot.prefs"
     container: containers['igv']
     threads: 8
     log:
-        "{}/logs/generate_igvsnapshots_snvs.log"
+        "{}/logs/generate_igvsnapshots_snvs.log".format(outdir)
     shell:
         "generate_igvsnapshots.py --xml {input.xml} "
-        " --preferences {params.prefs} "
+        " --preferences $IGV_PREFS "
         " --input  {input.somatic_snvs} "
         " --ouptut {output.somatic_snvs} 2> {log}  && "
         "generate_igvsnapshots.py --xml {input.xml} "
-        " --preferences {params.prefs} "
+        " --preferences $IGV_PREFS "
         " --input  {input.germline_snvs} "
         " --ouptut {output.germline_snvs}  2>> {log} "
 

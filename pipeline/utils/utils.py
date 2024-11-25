@@ -65,7 +65,8 @@ def get_containers(_path):
         "purecn": os.path.join(_path, "autoseq-purecn.sif"),
         "ensemblvep": os.path.join(_path, "autoseq-ensemblvep-v113.1.sif"),
         "somaticseq": os.path.join(_path, "autoseq-somaticseq.sif"),
-        "svcaller": os.path.join(_path, "autoseq-svcaller.sif")
+        "svcaller": os.path.join(_path, "autoseq-svcaller.sif"),
+        "igv": os.path.join(_path, "autoseq-igvbatch.sif")
     }
 
     for k, v in containers.items():
