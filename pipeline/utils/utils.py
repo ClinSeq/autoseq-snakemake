@@ -1,5 +1,6 @@
 import os, re
 import glob
+import sys
 from pipeline.utils.clinseq_barcodes import parse_prep_id, compose_sample_str, \
     extract_unique_capture, find_fastqs, compose_lib_capture_str
 
