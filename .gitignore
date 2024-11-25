@@ -1,6 +1,9 @@
 .snakemake/
 __pycache__
+docs/.Rhistory
 autoseq.egg-info/
 tools/
 .DS_Store
 build/
+tests/
+site/

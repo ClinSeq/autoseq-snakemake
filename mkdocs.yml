@@ -9,13 +9,13 @@ edit_uri: ""
 nav :
   - Autoseq: index.md
   - Quick Start: quick_start.md
-  - Setting up: setting_up.md
-  - Autoseq Pipeline: autoseq_pipeline.md
-  - Barcodes: barcodes.md
+  - Launching Samples in Server: launch_pipeline.md
+  - Autoseq Pipelines: autoseq_pipeline.md
+  - General Description: barcodes.md
   - Autoseq Scripts: scripts.md
 
 theme:
-    name: readthedocs
+    name: material
     highlightjs: true
     hljs_languages:
         - python
@@ -23,6 +23,7 @@ theme:
 markdown_extensions:
     - toc:
         permalink: 
-    - admonition
     - attr_list
+    - admonition
     - def_list
+    
