@@ -20,6 +20,8 @@ container:
     ensemblvep: False
     somaticseq: False
     svcaller: False
+    mulled-v2: False
+    hmftools-markdups: False
 
 
 outdir: tests

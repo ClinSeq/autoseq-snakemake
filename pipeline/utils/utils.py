@@ -65,7 +65,9 @@ def get_containers(_path):
         "purecn": os.path.join(_path, "autoseq-purecn.sif"),
         "ensemblvep": os.path.join(_path, "autoseq-ensemblvep-v113.1.sif"),
         "somaticseq": os.path.join(_path, "autoseq-somaticseq.sif"),
-        "svcaller": os.path.join(_path, "autoseq-svcaller.sif")
+        "svcaller": os.path.join(_path, "autoseq-svcaller.sif"),
+        "mulled-v2": os.path.join(_path, "autoseq-mulled-v2.sif"),
+        "hmftools-markdups": os.path.join(_path, "autoseq-hmftools-markdups.sif"),
     }
 
     for k, v in containers.items():

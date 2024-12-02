@@ -2,7 +2,7 @@
 
 rule jumblerun_cnv:
     input:
-        bam = outdir + "/bams/{sample}_nodups.bam",
+        bam = outdir + "/bams/{sample}_markdups.bam",
         reference = reference['wgs']['jumble-ref']
     output:
         cns = outdir + "/cnv/{sample}.cns",
