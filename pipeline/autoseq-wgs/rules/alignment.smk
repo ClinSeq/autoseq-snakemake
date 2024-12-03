@@ -123,7 +123,7 @@ rule sambamba_merge_tumor:
     log: 
         outdir + "/logs/sambamba_merge_{}.log".format(tumor_barcode)
     shell:
-         """
+        """
         InputBams=({input})
         bamfiles=${{InputBams[*]}}
         sambamba merge \\
