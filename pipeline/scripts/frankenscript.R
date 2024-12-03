@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-scriptversion <- '24.11.2'
+scriptversion <- '24.12.1'
 
 # Dependencies and arguments ----------------------------------------------
 {
@@ -41,7 +41,8 @@ args <- rbind(
     c("svcaller_N_INV", NA, 2, "character", "Normal SV caller INV-events.gtf"),
     c("svcaller_N_TRA", NA, 2, "character", "Normal SV caller TRA-events.gtf"),
     c("germline_mut_vcf", NA, 2, "character", "germline mutation vcf file"),
-    c("somatic_mut_vcf", NA, 1, "character", "somatic mutation vcf file")
+    c("somatic_mut_vcf", NA, 1, "character", "somatic mutation vcf file"),
+    c("purity_model_file", NA, 2, "character", "model file for estimating purity")
 )
 
 
@@ -792,6 +793,7 @@ cancergenes <- data.table(
 
 cancergenes[symbol=='AR_enhancer',symbol:='enh_AR']
 cancergenes[,gene:=symbol]
+cancergenes <- cancergenes[!str_detect(symbol,'^HLA')]
 
 cancergeneranges <- makeGRangesFromDataFrame(cancergenes[,start:=start-1e3][,end:=end+1e3])
 
@@ -1256,7 +1258,7 @@ hotspots_splice <- c("17:7578370", "17:7578290", "17:7578291", "17:7578369", "17
             # stored for use with VEP-annotated
             all_alf <- alf
             
-            # filter unwanted for SNP allele ratio <- this removes things needed for germline variant plotting...
+            # filter unwanted for SNP allele ratio 
             alf <- alf[width(vcf)==1 & str_detect(names(vcf),'rs')]
             alf <- alf[chromosome %in% c(1:22,'X','Y')]
             alf <- alf[nd > 30 & nd*n>5 & nd*(1-n)>5][td > 30 & td*t>5 & td*(1-t)>5]
@@ -1317,7 +1319,8 @@ hotspots_splice <- c("17:7578370", "17:7578290", "17:7578291", "17:7578369", "17
     if (length(vcf)>50000) vcf <- vcf[rowRanges(vcf)$FILTER %in% c('PASS')]
     
     
-    if (which(str_detect(colnames(vcf),'-N-'))==2) vcf <- vcf[,2:1]
+    if (any(str_detect(colnames(vcf),'-N-'))) if (which(str_detect(colnames(vcf),'-N-'))==2) vcf <- vcf[,2:1]
+    if (any(str_detect(colnames(vcf),'NORMAL'))) if (which(str_detect(colnames(vcf),'NORMAL'))==2) vcf <- vcf[,2:1]
     
     salf <- NULL
     
@@ -1463,8 +1466,8 @@ galf_n <- NULL
 if (!t_only) {
     vcf <- readVcf(opts$germline_mut_vcf,genome = "GRCh37")
     
-    if (which(str_detect(colnames(vcf),'-N-'))==2) vcf <- vcf[,2:1]
-    
+    if (any(str_detect(colnames(vcf),'-N-'))) if (which(str_detect(colnames(vcf),'-N-'))==2) vcf <- vcf[,2:1]
+    if (any(str_detect(colnames(vcf),'NORMAL'))) if (which(str_detect(colnames(vcf),'NORMAL'))==2) vcf <- vcf[,2:1]
     
     csq <- as.data.table(info(vcf)$CSQ)
     ix <- unique(csq[str_detect(value,'HIGH') | str_detect(value,'pathogenic'),group])
@@ -1495,7 +1498,7 @@ if (!t_only) {
         
         galf$AF <- g$AD[,1,2]/g$DP[,1]
         galf[,AF_t:=NA_real_]
-        if (exists('g2')) galf$AF_t <- g2$AD[,1,2]/g2$DP[,1]    # <----- this should be the tumor sample allele ratio.
+        if (!is.null(second_vcf)) galf$AF_t <- g2$AD[,1,2]/g2$DP[,1]    # <----- this should be the tumor sample allele ratio.
         galf$AO <- g$AD[,1,2]
         galf$DP <- g$DP[,1]
         #
@@ -1882,12 +1885,6 @@ if (all(!is.null(purecn_files))) try( {
 #
 
 #save.image('ws_.Rdata')
-
-
-
-
-
-# Purity estimate ---------------------------------------------------------
 
 
 
@@ -3300,6 +3297,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
 temp_rmd_path <- tempfile(pattern = "tempRmd_", fileext = ".Rmd")
 file.copy(opts$frankenplot_Rmd, temp_rmd_path)
 
+#temp_rmd_path <- 'frankenplot.Rmd'
 
 
 if (T) rmarkdown::render(
