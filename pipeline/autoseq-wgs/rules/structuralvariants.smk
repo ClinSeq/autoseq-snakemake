@@ -150,6 +150,7 @@ rule gridss_evidence_bam_tumor:
     log:
         outdir + "/logs/svs/gridss-evidence-{}.log".format(CANCER_CAPTURE_STR)
     shell:
+        "source activate gridss-env && "
         " samtools view -@ {threads} -hb -N {input.readnames} "
         "   -o {output.tumor_bam} {input.tumor_svbam} 2> {log} &&    "
         " samtools index -@ {threads} {output.tumor_bam} 2>> {log}"
@@ -167,6 +168,7 @@ rule gridss_evidence_bam_normal:
     log:
         outdir + "/logs/svs/gridss-evidence-{}.log".format(NORMAL_CAPTURE_STR)
     shell:
+        "source activate gridss-env && "
         " samtools view -@ {threads} -hb -N {input.readnames} "
         "   -o {output.normal_bam} {input.normal_svbam} 2> {log} &&    "
         " samtools index -@ {threads} {output.normal_bam} 2>> {log}"
