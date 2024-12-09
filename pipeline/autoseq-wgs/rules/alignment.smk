@@ -20,7 +20,7 @@ rule bwa_mem2_alignment_normal:
         prefix = "|".join(nfq_prefix)
     params:
         readgroup = get_readgroup(normal_barcode)
-    threads: params['bwa']['threads']
+    threads: 16
     container: containers['mulled-v2']
     log:
         outdir + "/logs/bwa_{prefix}.log",
@@ -29,7 +29,7 @@ rule bwa_mem2_alignment_normal:
         bwa-mem2 mem \\
             -Y \\
             -K 100000000 \\
-            -R '{params.readgroup}' \\
+            -R {params.readgroup} \\
             -t {threads} \\
             {input.bwa_index} \\
             {input.fq1} \\
@@ -59,7 +59,7 @@ rule bwa_mem2_alignment_tumor:
         prefix = "|".join(tfq_prefix)
     params:
         readgroup = get_readgroup(tumor_barcode),
-    threads: 12
+    threads: 16
     container: containers['mulled-v2']
     log:
         outdir + "/logs/bwa_{prefix}.log"
@@ -68,7 +68,7 @@ rule bwa_mem2_alignment_tumor:
         bwa-mem2 mem \\
             -Y \\
             -K 100000000 \\
-            -R '{params.readgroup}' \\
+            -R {params.readgroup} \\
             -t {threads} \\
             {input.bwa_index} \\
             {input.fq1} \\
