@@ -154,8 +154,8 @@ rule hmftools_markdups:
         """
         markdups \\
             -Xmx5g \\
-            -samtools $(which samtools) \\
-            -sambamba $(which sambamba) \\
+            -samtools $(type -p samtools) \\
+            -sambamba $(type -p sambamba) \\
             -sample {params.sample_id} \\
             -input_bam {input.bam} \\
             -form_consensus \\
