@@ -142,7 +142,7 @@ rule hmftools_markdups:
         ref_genome = reference['reference_genome']
     output:
         bam = outdir + "/bams/{sample}_markdups.bam",
-        metrics = outdir + "/qc/picard/{sample}-duplicate_freq.tsv"
+        metrics = outdir + "/bams/{sample}-duplicate_freq.tsv"
     params:
         sample_id = "{sample}",
         ref_genome_ver = "37",
