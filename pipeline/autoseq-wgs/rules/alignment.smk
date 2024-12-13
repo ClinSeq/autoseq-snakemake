@@ -93,7 +93,8 @@ rule sambamba_merge_normal:
     output:
         bam = outdir + "/bams/{}.bam".format(normal_barcode)
     params:
-        extra = ''
+        extra = '',
+        bamdir = outdir + "/bams/{}".format(normal_barcode)
     threads: 8
     container: containers['mulled-v2']
     log:
@@ -107,7 +108,7 @@ rule sambamba_merge_normal:
             {output.bam} \\
             ${{bamfiles}} 2> {log}
         sambamba index {output.bam}
-        rm ${{bamfiles}}
+        rm ${{bamfiles}} && rm -rf {params.bamdir}
         """
 
 
@@ -117,7 +118,8 @@ rule sambamba_merge_tumor:
     output:
         bam = outdir + "/bams/{}.bam".format(tumor_barcode)
     params:
-        extra = ''
+        extra = '',
+        bamdir = outdir + "/bams/{}".format(tumor_barcode)
     threads: 8
     container: containers['mulled-v2']
     log: 
@@ -131,7 +133,7 @@ rule sambamba_merge_tumor:
             {output.bam} \\
             ${{bamfiles}} 2> {log}
         sambamba index {output.bam}
-        rm ${{bamfiles}}
+        rm ${{bamfiles}} && rm -rf {params.bamdir}
         """
 
 
