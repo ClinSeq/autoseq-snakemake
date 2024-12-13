@@ -135,15 +135,6 @@ def parse_gridss(input_vcf, SDID, output, vcftype):
     """
     GRIDSS - vcf parsing 
     """
-    # header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-    #                   " > " + output + "_" + vcftype + "_pass_gridss.mut.tmp"
-
-    # gridss_cmd = "less " + input_vcf  + " | vawk '{ if($7 == \"PASS\")  print $1, $2, $2+1, \""+ SDID + '_gridss_' + vcftype +"\", I$SIMPLE_TYPE, $5, I$VF}' " \
-    #              " >> " + output + "_" + vcftype +"_pass_gridss.mut.tmp"
-    
-    # tmp_mut = output + "_" + vcftype + "_pass_gridss.mut.tmp"
-    # subprocess.call(" && ".join([header, gridss_cmd]), shell=True)
-    # get_igvcolortype(tmp_mut, "gridss")
     output_fname = "_".join([output, vcftype, "pass_gridss.mut"])
     outfile = open(output_fname, "w")
 
@@ -334,7 +325,6 @@ def check_targets(chrom, start, end, targets):
             return True
 
     return False
-
 
 
 def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output, exons):
