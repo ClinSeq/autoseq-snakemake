@@ -84,7 +84,7 @@ def apply_filters(vcf, name_indexed):
             rn = set(record.info['BPNAMES'])
         except KeyError:
             logging.error("Need to add BPNAMES to INFO column in vcf file")
-            exit 
+            exit()
 
         read_names.extend(rn)
         mpos = set()
@@ -153,7 +153,7 @@ def main():
                 rn_out.write("\n".join(list(read_names)))
 
         logging.info(f"Exporting Read names into {args.readnames}")
-        exit
+        exit()
 
     logging.info(f"Generating evidence Bam {args.output}")
     extract_reads(samfile, name_indexed, read_names, args.output)
