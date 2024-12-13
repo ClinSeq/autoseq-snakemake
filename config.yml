@@ -22,6 +22,7 @@ container:
     svcaller: False
     mulled-v2: False
     hmftools-markdups: False
+    hmftools-redux: False
 
 
 outdir: tests

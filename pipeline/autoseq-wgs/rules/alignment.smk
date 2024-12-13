@@ -135,7 +135,7 @@ rule sambamba_merge_tumor:
         """
 
 
-rule hmftools_markdups:
+rule hmftools_redux:
     input:
         bam = outdir + "/bams/{sample}.bam",
         unmap_regions = reference['unmap_regions'],
@@ -152,7 +152,7 @@ rule hmftools_markdups:
     log: outdir + "/logs/hmftools_markdups_{sample}.log"
     shell:
         """
-        markdups \\
+        redux \\
             -Xmx5g \\
             -samtools $(type -p samtools) \\
             -sambamba $(type -p sambamba) \\
