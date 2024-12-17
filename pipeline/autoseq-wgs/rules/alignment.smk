@@ -144,7 +144,7 @@ rule hmftools_redux:
         ref_genome = reference['reference_genome']
     output:
         bam = outdir + "/bams/{sample}_markdups.bam",
-        metrics = outdir + "/bams/{sample}-duplicate_freq.tsv"
+        metrics = outdir + "/bams/{sample}.duplicate_freq.tsv"
     params:
         sample_id = "{sample}",
         ref_genome_ver = "37",
@@ -156,8 +156,7 @@ rule hmftools_redux:
         """
         redux \\
             -Xmx5g \\
-            -samtools $(type -p samtools) \\
-            -sambamba $(type -p sambamba) \\
+            -bamtool $(type -p sambamba) \\
             -sample {params.sample_id} \\
             -input_bam {input.bam} \\
             -form_consensus \\
@@ -167,7 +166,7 @@ rule hmftools_redux:
             -write_stats \\
             -threads {threads} \\
             -output_bam {output.bam} 2> {log}
-        samtools index {output.bam}
+        sambamba index {output.bam}
         """
 
 
@@ -180,7 +179,7 @@ rule rm_interbamfiles:
     log:
         outdir + "/logs/remove_intermediate_{sample}.log".format(sample="_".join(all_clinseq_barcodes))
     run:
-        del_bam = [bam for bam in input if 'nodups' not in bam]
+        del_bam = [bam for bam in input if 'markdups' not in bam]
         bamfiles = " ".join(del_bam)
         shell("rm {bamfiles} 2> {log} ")
         shell("touch {output} ")

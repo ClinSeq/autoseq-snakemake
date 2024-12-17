@@ -9,7 +9,8 @@ rule jumblerun_cnv:
         cnr = outdir + "/cnv/{sample}.cnr",
         seg = outdir + "/cnv/{sample}_dnacopy.seg"
     params:
-        outdir = outdir + "/cnv/"
+        outdir = outdir + "/cnv/",
+        prefix = outdir + "/cnv/{sample}_markdups.bam"
     threads: params['jumble']['threads']
     container: containers['jumble']
     log:
@@ -18,7 +19,10 @@ rule jumblerun_cnv:
         "source activate jumble-env && "
         "jumble-run.R -r {input.reference} "
         " -b {input.bam} " 
-        " -o {params.outdir} 2> {log} "
+        " -o {params.outdir} 2> {log} && "
+        "mv {params.prefix}.cnr {output.cnr} && "
+        "mv {params.prefix}.cns {output.cns} && "
+        "mv {params.prefix}_dnacopy.seg {output.seg} "
 
 
 rule cnvkit_tracks:
