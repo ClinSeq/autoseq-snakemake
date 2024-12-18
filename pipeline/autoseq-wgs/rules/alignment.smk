@@ -143,8 +143,7 @@ rule hmftools_redux:
         unmap_regions = reference['unmap_regions'],
         ref_genome = reference['reference_genome']
     output:
-        bam = outdir + "/bams/{sample}_markdups.bam",
-        metrics = outdir + "/bams/{sample}.duplicate_freq.tsv"
+        bam = outdir + "/bams/{sample}_markdups.bam"
     params:
         sample_id = "{sample}",
         ref_genome_ver = "37",
