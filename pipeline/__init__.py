@@ -3,4 +3,4 @@ Autoseq - pipeline
 
 """
 
-__version__ = '3.5.5'
+__version__ = '3.6.1'
