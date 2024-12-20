@@ -179,7 +179,7 @@ for (f in contest_files) {
   tryCatch({
     fname = strsplit(basename(f), split = "\\.")[[1]][1]
     project = unlist(strsplit(fname, split = "-"))[1]
-    if (project == "AL") {
+    if (project == "AL" && is_rerun) {
       SAMP = fname
     } else {
       clinseq_barcodes = rev(strsplit(f, split = "/")[[1]])[3]

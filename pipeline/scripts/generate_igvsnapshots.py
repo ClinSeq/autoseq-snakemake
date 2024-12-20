@@ -17,6 +17,42 @@ import subprocess
 
 _default_ops = ["new", "genome hg19"]
 
+
+def is_indel(variant):
+    """
+    Check if a variant is an indel.
+    """
+    ref = variant[3]
+    alt = variant[4]
+
+    if len(ref) > 1:
+        return True
+    
+    for _alt in alt:
+        if len(_alt) != len(ref):
+            return True
+
+    return False
+
+
+def adj_base(variant):
+    """
+    
+    """
+    ref = variant[3]
+    alt = variant[4]
+    end = int(variant[2])
+
+    for _alt in alt:
+        if _alt is None:
+            return None
+        if len(_alt) < len(ref):
+            return round(end + len(ref)/2)
+        else:
+            return end
+    return None
+
+
 def create_batch_script(vars, xml, outdir):
     """
     """
@@ -28,8 +64,14 @@ def create_batch_script(vars, xml, outdir):
         header = fh.readline()
         for line in fh:
             line = line.strip().split('\t')
-            _chr, _start, _end = line[0], line[1], line[2]
-            cmds.append(f"goto chr{_chr}:{_end}")
+            _chr = line[0] 
+            _start = line[1]
+            _end = line[2]
+            if is_indel(line):
+                # small deletion 
+                cmds.append(f"goto chr{_chr}:{str(adj_base(line))}")
+            else:
+                cmds.append(f"goto chr{_chr}:{_end}")
             cmds.append("sort base")
             cmds.append(f"snapshot chr{_chr}_{_start}-{_end}.png")
     
