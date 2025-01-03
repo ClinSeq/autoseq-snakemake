@@ -47,20 +47,24 @@ rule gatk4_mutect2:
         " FilterMutectCalls  -R {input.reference} "
         " -V {output.vcf}  "
         " -O {output.filtered_vcf} 2>> {log} "
-      
+
 
 rule mutect2_vcfmerge:
     input:
         expand(mutect_vcf_prefix + "{suf}-filtered.vcf.gz", suf=suffix)
     output:
         mutect_vcf_prefix + "-filtered.vcf.gz"     
+    params:
+        vcf_prefix = mutect_vcf_prefix
     threads: params['bcftools']['threads']
     log:
         "{}/logs/variants/{}-{}-mutect-somatic-merge.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR) 
     shell:
-        "bcftools concat --threads {threads} -a "
+        "bcftools concat --threads {threads} -a -D "
         " -O z {input} > {output} 2> {log} && "
-        " tabix -p vcf {output} "
+        " tabix -p vcf {output} && "
+        " rm {params.vcf_prefix}000*.vcf.gz* "
+        " {params.vcf_prefix}000*.ba* {input}* "
 
 
 rule mutect2_normalize:
@@ -155,54 +159,6 @@ rule bcftools_concat:
         "tabix -p vcf {output} && rm sample_names.txt {params.ordered_vcf}* "
 
 
-# rule somaticseq_merge:
-#     input:
-#         **somatic_vcf,
-#         reference = reference['reference_genome'],
-#         normal_bam = normalBam,
-#         tumor_bam = cancerBam
-#     output:
-#         rundir = directory("{}/variants/{}-{}-somaticseq".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)),
-#         consensus_snv = "{}/variants/{}-{}-somaticseq/Consensus.sSNV.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-#         consensus_indel = "{}/variants/{}-{}-somaticseq/Consensus.sINDEL.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
-#     params:
-#         tmpdir = params['scratch']
-#     threads: 16
-#     container: containers['somaticseq']
-#     log:
-#         "{}/logs/variants/{}-{}-somaticseq.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
-#     shell:
-#         "source activate somaticseqenv && "
-#         "somaticseq_parallel.py  --output-directory {output.rundir} "
-#         " --genome-reference {input.reference} "
-#         " --threads {threads} paired "
-#         " --tumor-bam-file {input.tumor_bam} " 
-#         " --normal-bam-file {input.normal_bam} " 
-#         " --mutect2-vcf {input.mutect2} " 
-#         " --arbitrary-snvs {input.sage_snv} "
-#         " --arbitrary-indels {input.sage_indel} "
-
-
-# rule gatk3_combinevariants:
-#     input:
-#         reference = reference['reference_genome'],
-#         consensus_snv = "{}/variants/{}-{}-somaticseq/Consensus.sSNV.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-#         consensus_indel = "{}/variants/{}-{}-somaticseq/Consensus.sINDEL.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
-#     output:
-#         "{}/variants/{}-{}-all.somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
-#     threads: 8
-#     container: containers['gatk3']
-#     log:
-#         "{}/logs/variants/{}-{}-somaticseq-vcfmerge.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
-#     shell:
-#         " source activate gatk_3 && "
-#         " gatk3 -T CombineVariants "
-#         " -R {input.reference} --variant {input.consensus_snv} " 
-#         " --variant {input.consensus_indel} " 
-#         " --assumeIdenticalSamples  | bgzip > {output} 2> {log} && "
-#         " tabix -p vcf {output} 2>> {log} "
-
-
 rule somatic_generateIGVnav:
     input:
         somatic = "{}/variants/{}-{}-all.somatic.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
@@ -259,10 +215,12 @@ rule picard_vcfmerge:
     threads: params["gatk4"]["threads"]
     log:
         haplotype_jc_log_prefix + ".log"
-    run:
-        input_bams = ["I="+i for i in input]
-        ibams = " ".join(input_bams)
-        shell("picard MergeVcfs {ibams} O={output.vcf} 2> {log}")
+    shell:
+        """
+        InputBams={input}
+        ibams=`for i in ${InputBams[@]}; echo "I="$i; done | tr '\n' '\t' `
+        picard MergeVcfs $ibams O={output.vcf} 2> {log}
+        """
 
 
 rule make_allelic_fraction_track:

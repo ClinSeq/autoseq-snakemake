@@ -154,7 +154,7 @@ rule hmftools_redux:
     shell:
         """
         redux \\
-            -Xmx5g \\
+            -Xmx32g \\
             -bamtool $(type -p sambamba) \\
             -sample {params.sample_id} \\
             -input_bam {input.bam} \\
