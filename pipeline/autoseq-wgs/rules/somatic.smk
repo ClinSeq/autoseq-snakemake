@@ -64,7 +64,7 @@ rule mutect2_vcfmerge:
         " -O z {input} > {output} 2> {log} && "
         " tabix -p vcf {output} && "
         " rm {params.vcf_prefix}000*.vcf.gz* "
-        " {params.vcf_prefix}000*.ba* {input}* "
+        " {params.vcf_prefix}000*.ba* "
 
 
 rule mutect2_normalize:
@@ -218,7 +218,7 @@ rule picard_vcfmerge:
     shell:
         """
         InputBams={input}
-        ibams=`for i in ${InputBams[@]}; echo "I="$i; done | tr '\n' '\t' `
+        ibams=`for i in ${{InputBams[@]}}; echo "I="$i; done | tr '\n' '\t' `
         picard MergeVcfs $ibams O={output.vcf} 2> {log}
         """
 

@@ -35,6 +35,7 @@ class GenerateSymlink():
         try:
             if self.is_wgs:
                 symlinks = (('variants','.vep.vcf.gz'),('bams','nodups.bam'), ('bams','nodups.bam.bai'),
+                            ('bams', 'markdups.bam'), ('bams', 'markdups.bam.bai'),
                             ('bams','clipoverlap.bam'), ('bams','clipoverlap.bai'), ('cnv', '.bedGraph'),
                             ('variants', '.bedGraph'), ('svs/igv','.mut'), ('svs','.gtf'), 
                             ('svs/gridss', 'evidence.bam'), ('svs/gridss', 'evidence.bam.bai'), 
@@ -88,7 +89,8 @@ class GenerateSymlink():
                      ]
             
         if self.is_wgs:
-            all_files.extend([('snps', 'vep', '.*.all.(somatic|germline).vep.vcf.gz$'),
+            all_files.extend([('bam_hmftools', 'bam_markdups', '.*markdups.bam$'),
+                              ('snps', 'vep', '.*.all.(somatic|germline).vep.vcf.gz$'),
                               ('sv', 'bam_gridss_normal', '^(?:(?!CFDNA|T).)*evidence.bam$'),
                               ('sv', 'bam_gridss_tumor', '.*-(T|CFDNA).*evidence.bam$')
                             ])
@@ -197,7 +199,8 @@ class GenerateSymlink():
                          ('snps', 'vep')]
 
         if self.is_wgs:
-            all_snp_files.append(('bam_common', 'bam_nodups'))
+            all_snp_files.extend([('bam_common', 'bam_nodups'),
+                                  ('bam_hmftools', 'bam_markdups')])
 
         for track_type, each_track in all_snp_files:
             for each_file in igv_session_files[track_type][each_track]:
@@ -240,17 +243,16 @@ class GenerateSymlink():
                     snp_vep += snp_vcf.format(vcf_full_file_path=full_path, vcf_file_path=vcf_file_name)
 
         #session file for structural variants
-        all_sv_files=[('bam_common', 'bam_nodups'),('sv', 'bam_cfdna'), ('sv', 'bam_normal'),
-                    ('cnv', 'flank_cnv_normal'),
-                    ('cnv', 'flank_profile_normal'),
-                    ('cnv', 'flank_cnv_cfdna'),
-                    ('cnv', 'flank_profile_cfdna'),
-                    ('asf', 'flank_asf'),
-                    ('sv', 'mut_svaba_somatic'),  ('sv', 'mut_svcaller_cfdna'), ('sv', 'mut_gridss_cfdna'),
-                    ('sv', 'mut_lumpy'), ('sv', 'gtf_cfdna'),
-                    ('sv', 'mut_svaba_germline'), ('sv', 'mut_svcaller_normal'), ('sv', 'mut_gridss_normal'),
-                    ('sv', 'gtf_normal'), ('sv', 'bam_gridss_normal'), 
-                    ('sv', 'bam_gridss_tumor')]
+        all_sv_files=[('bam_common', 'bam_nodups'), ('bam_hmftools', 'bam_markdups'),
+                      ('sv', 'bam_cfdna'), ('sv', 'bam_normal'), 
+                      ('cnv', 'flank_cnv_normal'), ('cnv', 'flank_profile_normal'),
+                      ('cnv', 'flank_cnv_cfdna'), ('cnv', 'flank_profile_cfdna'),
+                      ('asf', 'flank_asf'), ('sv', 'mut_svaba_somatic'), 
+                      ('sv', 'mut_svcaller_cfdna'), ('sv', 'mut_gridss_cfdna'),
+                      ('sv', 'mut_lumpy'), ('sv', 'gtf_cfdna'),
+                      ('sv', 'mut_svaba_germline'), ('sv', 'mut_svcaller_normal'), 
+                      ('sv', 'mut_gridss_normal'), ('sv', 'gtf_normal'), 
+                      ('sv', 'bam_gridss_normal'), ('sv', 'bam_gridss_tumor')]
 
         sv_resource= ""
         sv_bam_panel= ""
