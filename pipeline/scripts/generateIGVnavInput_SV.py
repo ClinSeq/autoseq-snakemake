@@ -327,6 +327,19 @@ def check_targets(chrom, start, end, targets):
     return False
 
 
+def add_cgcann(gene, cgc):
+    """
+    Add CGC annotation
+    """
+    genes = gene.split() if ',' in gene else list(gene)
+    cgc_ann = [cgc[i][0] for i in genes if i in cgc]
+
+    if len(cgc_ann) == 0:
+        return [None]
+
+    return cgc_ann
+
+
 def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output, exons):
     """
     Parsing combined sv list and apply gene annotation for each SV
@@ -404,9 +417,9 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
             else:
                 gene_b = 'NA'    
             
-            cgcann = set()
-            cgcann.add(cgc_ann[gene_a][0] if gene_a in cgc_ann else None) 
-            cgcann.add(cgc_ann[gene_b][0] if gene_b in cgc_ann else None)
+            cgcann = list()
+            cgcann.extend(add_cgcann(gene_a, cgc_ann)) 
+            cgcann.extend(add_cgcann(gene_b, cgc_ann))
 
             if capture == "WG":
                 curator = "NO"

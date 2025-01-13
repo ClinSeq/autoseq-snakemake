@@ -285,15 +285,11 @@ rule bcftools_merge:
         germline_vcf = "{}/variants/{}-all.germline.vep.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
         genotyped_tvcf = "{}/variants/{}-haplotypecaller.genotyped.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
     output:
-        vcf = "{}/variants/{}-{}.germline_variants_with_taf.vcf".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
-    params:
-        gvcf = "{}/variants/{}-all.germline.vep.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
+        vcf = "{}/variants/{}-{}.germline_variants_with_taf.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     threads: params['gatk4']['threads']
     log:
        "{}/logs/variants/{}-{}-bcftools-merge.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)  
     shell:
-        "bgzip -c {input.germline_vcf} > {params.gvcf} && "
-        "tabix -p vcf {params.gvcf} && "
-        "bcftools merge {params.gvcf} {input.genotyped_tvcf} "
-        " -O v -o {output.vcf} 2> {log} && "
-        " rm {params.gvcf} "
+        "bcftools merge {input.germline_vcf} "
+        " {input.genotyped_tvcf} "
+        " -O z -o {output.vcf} 2> {log} "

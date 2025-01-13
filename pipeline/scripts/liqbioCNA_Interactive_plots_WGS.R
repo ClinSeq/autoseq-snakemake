@@ -198,11 +198,11 @@ data2_exon <- data2[data2$Feature == 'exon',]
         
         salf$FILTER <- rowRanges(vcf)$FILTER
         
-        salf$AF.T <- as.numeric(g$VAF[,2])
-        salf$AO.T <- as.numeric(apply(g$DP4[,2,3:4],1,sum))  # sum alt forward and alt reverse
-        salf$DP.T <- as.numeric(apply(g$DP4[,2,],1,sum))  # sum ref forward, ref reverse, alt forward and alt reverse
-        salf$AO.N <- as.numeric(apply(g$DP4[,1,3:4],1,sum))  # sum alt forward and alt reverse
-        salf$DP.N <- as.numeric(apply(g$DP4[,1,],1,sum))  # sum ref forward, ref reverse, alt forward and alt reverse
+        salf$AF.T <- as.numeric(g$AF[,2])
+        salf$AO.T <- as.numeric(sapply(g$AD[, 1], function(x) x[2]))  # sum alt forward and alt reverse
+        salf$DP.T <- as.numeric(g$DP[,1])  # sum ref forward, ref reverse, alt forward and alt reverse
+        salf$AO.N <- as.numeric(sapply(g$AD[, 2], function(x) x[2]))  # sum alt forward and alt reverse
+        salf$DP.N <- as.numeric(g$DP[,2])  # sum ref forward, ref reverse, alt forward and alt reverse
         
         salf$type='other'
         salf$type[isSNV(vcf)]='snv'

@@ -235,7 +235,7 @@ for record in vcf_reader:
                                                   clinsig, rsid, gnomAD, brcaEx, oncogenicity, cgcann, num_tools])) + "\n")
 
         # filter for WGS samples
-        if wgs and num_tools >= 2 and tumor_alt >= 5 and (impact == 'HIGH' or impact == 'MODERATE'):
+        if wgs and tumor_alt >= 5 and (impact == 'HIGH' or impact == 'MODERATE'):
             
             output_file.write('\t'.join(map(str, [record.CHROM, record.POS-1, record.POS,
                                                   record.REF, record.ALT, '', '', '', gene, ensembl_id,
