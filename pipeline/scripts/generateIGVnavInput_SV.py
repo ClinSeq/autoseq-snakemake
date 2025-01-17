@@ -331,10 +331,13 @@ def add_cgcann(gene, cgc):
     """
     Add CGC annotation
     """
-    genes = gene.split() if ',' in gene else list(gene)
-    cgc_ann = [cgc[i][0] for i in genes if i in cgc]
-
-    if len(cgc_ann) == 0:
+    if ',' in gene:
+        genes = gene.split(',') 
+        cgc_ann = [cgc[i][0] for i in genes if i in cgc]
+    else:
+        cgc_ann = [cgc[gene][0] if gene in cgc else None]
+            
+    if not cgc_ann:
         return [None]
 
     return cgc_ann
@@ -448,7 +451,7 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
 
             summary_sv.append([chrom_a, start_a, end_a, chrom_b, start_b, end_b, igv_coord, svtype,
                                 svlength, sup_reads, tool, sdid, sample, gene_a, 
-                                gene_b, gene_a_b_sorted, ",".join(list(filter(None, cgcann))), curator])
+                                gene_b, gene_a_b_sorted, ",".join(list(filter(None, set(cgcann)))), curator])
         
         svs_df = pd.DataFrame(summary_sv, columns = summary_columns)
         # hard filter for gridss germline svs
