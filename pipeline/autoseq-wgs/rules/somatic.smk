@@ -47,20 +47,24 @@ rule gatk4_mutect2:
         " FilterMutectCalls  -R {input.reference} "
         " -V {output.vcf}  "
         " -O {output.filtered_vcf} 2>> {log} "
-      
+
 
 rule mutect2_vcfmerge:
     input:
         expand(mutect_vcf_prefix + "{suf}-filtered.vcf.gz", suf=suffix)
     output:
         mutect_vcf_prefix + "-filtered.vcf.gz"     
+    params:
+        vcf_prefix = mutect_vcf_prefix
     threads: params['bcftools']['threads']
     log:
         "{}/logs/variants/{}-{}-mutect-somatic-merge.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR) 
     shell:
-        "bcftools concat --threads {threads} -a "
+        "bcftools concat --threads {threads} -a -D "
         " -O z {input} > {output} 2> {log} && "
-        " tabix -p vcf {output} "
+        " tabix -p vcf {output} && "
+        " rm {params.vcf_prefix}000*.vcf.gz* "
+        " {params.vcf_prefix}000*.ba* "
 
 
 rule mutect2_normalize:
@@ -115,71 +119,44 @@ rule sage_somatic:
         " -out {output} 2> {log} "
 
 
-rule sage_splitvcf:
+rule bcftools_filter:
     input:
-        "{}/variants/{}-{}-hartwig-sage-somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        sage_vcf = "{}/variants/{}-{}-hartwig-sage-somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        mutect_vcf = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered-normalized.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     output:
-        snv = "{}/variants/{}-{}-hartwig-sage-somatic.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-        indel =  "{}/variants/{}-{}-hartwig-sage-somatic.indels.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
-    threads: 1
-    container: containers['somaticseq']
-    log:
-        "{}/logs/variants/{}-{}-sage-somatic-splitvcf.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
-    shell:
-        "source activate somaticseqenv && "
-        "splitVcf.py -infile {input} -snv {output.snv} -indel {output.indel}"
-
-
-somatic_vcf['sage_snv'] = "{}/variants/{}-{}-hartwig-sage-somatic.snvs.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
-somatic_vcf['sage_indel'] = "{}/variants/{}-{}-hartwig-sage-somatic.indels.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
-
-
-rule somaticseq_merge:
-    input:
-        **somatic_vcf,
-        reference = reference['reference_genome'],
-        normal_bam = normalBam,
-        tumor_bam = cancerBam
-    output:
-        rundir = directory("{}/variants/{}-{}-somaticseq".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)),
-        consensus_snv = "{}/variants/{}-{}-somaticseq/Consensus.sSNV.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-        consensus_indel = "{}/variants/{}-{}-somaticseq/Consensus.sINDEL.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        sage_vcf = "{}/variants/{}-{}-hartwig-sage-somatic.pass.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        mutect_vcf = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered.pass.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    threads: 4
     params:
-        tmpdir = params['scratch']
-    threads: 16
-    container: containers['somaticseq']
+        tmp_sage_vcf = "{}/variants/{}-{}-hartwig-sage-somatic.pass.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        tmp_mutect_vcf = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered.pass.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     log:
-        "{}/logs/variants/{}-{}-somaticseq.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        "{}/logs/variants/{}-{}-sage-somatic-filter.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:
-        "source activate somaticseqenv && "
-        "somaticseq_parallel.py  --output-directory {output.rundir} "
-        " --genome-reference {input.reference} "
-        " --threads {threads} paired "
-        " --tumor-bam-file {input.tumor_bam} " 
-        " --normal-bam-file {input.normal_bam} " 
-        " --mutect2-vcf {input.mutect2} " 
-        " --arbitrary-snvs {input.sage_snv} "
-        " --arbitrary-indels {input.sage_indel} "
+        "bcftools filter -e 'FILTER!=\"PASS\"' {input.sage_vcf} > {params.tmp_sage_vcf} && "
+        "bcftools filter -e 'FILTER!=\"PASS\"' {input.mutect_vcf} > {params.tmp_mutect_vcf} && "
+        "bgzip {params.tmp_sage_vcf} && tabix -p vcf {output.sage_vcf} && "
+        "bgzip {params.tmp_mutect_vcf} && tabix -p vcf {output.mutect_vcf} "
 
 
-rule gatk3_combinevariants:
+rule bcftools_concat:
     input:
-        reference = reference['reference_genome'],
-        consensus_snv = "{}/variants/{}-{}-somaticseq/Consensus.sSNV.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
-        consensus_indel = "{}/variants/{}-{}-somaticseq/Consensus.sINDEL.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        sage_vcf = "{}/variants/{}-{}-hartwig-sage-somatic.pass.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        mutect_vcf = "{}/variants/mutect/{}-{}-gatk-mutect-somatic-filtered.pass.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     output:
         "{}/variants/{}-{}-all.somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     threads: 8
-    container: containers['gatk3']
+    params:
+        ordered_vcf = "{}/variants/{}-{}-hartwig-sage-somatic.pass.reordered.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
     log:
-        "{}/logs/variants/{}-{}-somaticseq-vcfmerge.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        "{}/logs/variants/{}-{}-bcftools-concat.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:
-        " source activate gatk_3 && "
-        " gatk3 -T CombineVariants "
-        " -R {input.reference} --variant {input.consensus_snv} " 
-        " --variant {input.consensus_indel} " 
-        " --assumeIdenticalSamples  | bgzip > {output} 2> {log} && "
-        " tabix -p vcf {output} 2>> {log} "
+        "bcftools query -l {input.sage_vcf} | sort > sample_names.txt && "
+        "bcftools view -Oz -S sample_names.txt {input.sage_vcf} -o {params.ordered_vcf} && "
+        "tabix -p vcf {params.ordered_vcf} &&  "
+        "bcftools concat -a -D {input.mutect_vcf} {params.ordered_vcf} "
+        " | bgzip > {output}  2> {log} && " 
+        "tabix -p vcf {output} && rm sample_names.txt {params.ordered_vcf}* "
 
 
 rule somatic_generateIGVnav:
@@ -238,10 +215,12 @@ rule picard_vcfmerge:
     threads: params["gatk4"]["threads"]
     log:
         haplotype_jc_log_prefix + ".log"
-    run:
-        input_bams = ["I="+i for i in input]
-        ibams = " ".join(input_bams)
-        shell("picard MergeVcfs {ibams} O={output.vcf} 2> {log}")
+    shell:
+        """
+        InputBams={input}
+        ibams=`for i in ${{InputBams[@]}}; echo "I="$i; done | tr '\n' '\t' `
+        picard MergeVcfs $ibams O={output.vcf} 2> {log}
+        """
 
 
 rule make_allelic_fraction_track:
@@ -255,3 +234,62 @@ rule make_allelic_fraction_track:
     shell:
         "generate_allelic_fraction_bedGraph.py  --output {output}  {input.vcf} 2> {log} "
 
+
+rule gatk4_haplotypecaller_tumor:
+    input:
+        reference = reference["reference_genome"],
+        tumor_bam = cancerBam,
+        germline_vcf = "{}/variants/{}-all.germline.vep.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
+    output:
+        vcf = "{}/variants/{}-haplotypecaller.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
+    params:
+        java_options = params["gatk4"]["haplotypecaller"]["java_options"],
+        tmpdir = params['scratch']
+    threads: params['gatk4']['threads']
+    log:
+        "{}/logs/variants/{}-{}-gatk4-haplotypecaller-tumor.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR) 
+    shell:
+        "gatk --java-options '{params.java_options}' "
+        " HaplotypeCaller -R {input.reference} "
+        " -I {input.tumor_bam} "
+        " -O {output.vcf} "
+        " -ERC GVCF "
+        " -L {input.germline_vcf} 2> {log} "
+
+
+rule gatk4_haplotypecaller_genotype_tumor:
+    input:
+        reference = reference["reference_genome"],
+        vcf = "{}/variants/{}-haplotypecaller.vcf.gz".format(outdir, CANCER_CAPTURE_STR),
+        germline_vcf = "{}/variants/{}-all.germline.vep.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
+    output:
+        vcf = "{}/variants/{}-haplotypecaller.genotyped.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
+    params:
+        java_options = params["gatk4"]["haplotypecaller"]["java_options"],
+        vcf = "{}/variants/{}-haplotypecaller.genotyped.vcf".format(outdir, CANCER_CAPTURE_STR)
+    threads: params['gatk4']['threads']
+    log: 
+        "{}/logs/variants/{}-{}-haplotypecaller-tumor-genotyped.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR) 
+    shell:
+        "gatk --java-options '{params.java_options}' "
+        " GenotypeGVCFs -R {input.reference} "
+        "  -V {input.vcf}  "
+        "  -O {params.vcf} "
+        "  -L {input.germline_vcf} 2> {log} && "
+        " bgzip {params.vcf} && "
+        " tabix -p vcf {output.vcf} 2>> {log} "
+    
+
+rule bcftools_merge:
+    input:
+        germline_vcf = "{}/variants/{}-all.germline.vep.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
+        genotyped_tvcf = "{}/variants/{}-haplotypecaller.genotyped.vcf.gz".format(outdir, CANCER_CAPTURE_STR)
+    output:
+        vcf = "{}/variants/{}-{}.germline_variants_with_taf.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+    threads: params['gatk4']['threads']
+    log:
+       "{}/logs/variants/{}-{}-bcftools-merge.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)  
+    shell:
+        "bcftools merge {input.germline_vcf} "
+        " {input.genotyped_tvcf} "
+        " -O z -o {output.vcf} 2> {log} "

@@ -2,7 +2,7 @@
 
 rule svcaller_run:
     input:
-        bam = outdir + "/bams/{sample}_nodups.bam",
+        bam = outdir + "/bams/{sample}_markdups.bam",
         reference = reference["reference_genome"]
     output:
         gtf = outdir + "/svs/svcaller/{sample}-{events}.gtf"
