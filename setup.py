@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '3.6.2'
+version = '3.7.0'
 
 setup(name='autoseq',
       version=version,
