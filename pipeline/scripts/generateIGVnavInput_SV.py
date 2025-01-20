@@ -327,22 +327,6 @@ def check_targets(chrom, start, end, targets):
     return False
 
 
-def add_cgcann(gene, cgc):
-    """
-    Add CGC annotation
-    """
-    if ',' in gene:
-        genes = gene.split(',') 
-        cgc_ann = [cgc[i][0] for i in genes if i in cgc]
-    else:
-        cgc_ann = [cgc[gene][0] if gene in cgc else None]
-            
-    if not cgc_ann:
-        return [None]
-
-    return cgc_ann
-
-
 def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output, exons):
     """
     Parsing combined sv list and apply gene annotation for each SV
@@ -420,9 +404,9 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
             else:
                 gene_b = 'NA'    
             
-            cgcann = list()
-            cgcann.extend(add_cgcann(gene_a, cgc_ann)) 
-            cgcann.extend(add_cgcann(gene_b, cgc_ann))
+            cgcann = set()
+            cgcann.add(cgc_ann[gene_a][0] if gene_a in cgc_ann else None) 
+            cgcann.add(cgc_ann[gene_b][0] if gene_b in cgc_ann else None)
 
             if capture == "WG":
                 curator = "NO"
@@ -451,7 +435,7 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
 
             summary_sv.append([chrom_a, start_a, end_a, chrom_b, start_b, end_b, igv_coord, svtype,
                                 svlength, sup_reads, tool, sdid, sample, gene_a, 
-                                gene_b, gene_a_b_sorted, ",".join(list(filter(None, set(cgcann)))), curator])
+                                gene_b, gene_a_b_sorted, ",".join(list(filter(None, cgcann))), curator])
         
         svs_df = pd.DataFrame(summary_sv, columns = summary_columns)
         # hard filter for gridss germline svs

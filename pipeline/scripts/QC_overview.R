@@ -140,7 +140,7 @@ if (!wgs){
   wgsMetrics$FOLD_80_BASE_PENALTY = as.numeric(wgsMetrics$FOLD_80_BASE_PENALTY)
 }
 
-is_rerun = ifelse(length(markduplicates_files) == 0 && !wgs, TRUE, FALSE)
+is_rerun = ifelse(length(markduplicates_files) == 0, TRUE, FALSE)
 MarkDuplicates = data.frame()
 for (f in markduplicates_files) {
   tryCatch({
@@ -297,17 +297,9 @@ process_samp <- function(sample) {
 
 # merge the QC tables 
 if (wgs) {
-  ## FIX: New WGS PIPELINE - doesnot contain MARKDUPLICATES report
-  if (nrow(MarkDuplicates) != 0){
-    qc_merge = merge(merge(merge(merge(wgsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
+  qc_merge = merge(merge(merge(merge(wgsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
                 InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")), 
                 flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
-  } else {
-    qc_merge = merge(merge(merge(wgsMetrics, InsertSize, by = c("SAMP", "DIR")), 
-                ContEst, by = c("SAMP", "DIR")), 
-                flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
-  }
-  
 } else if (is_rerun) {
   qc_merge = merge(merge(merge(merge(HsMetrics, InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")), 
                 msings, by = c("SAMP", "DIR"), all.x = TRUE), flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
@@ -345,17 +337,13 @@ qc_merge$doi = qc_merge$DIR == Sys.glob(analysis_dir)
 InsertSize_histogram$soi = InsertSize_histogram$SAMP %in% samples
 InsertSize_histogram$doi = InsertSize_histogram$DIR == Sys.glob(analysis_dir)
 
+#print(qc_merge)
+
 # create an ouput table for the samples of interest
 if (wgs){
-  if ("READ_PAIRS_EXAMINED" %in% colnames(qc_merge)){
-    soi_table = data.table(qc_merge)[i = soi&doi, 
+  soi_table = data.table(qc_merge)[i = soi&doi, 
                                  j =list(SAMP, MEAN_COVERAGE, FOLD_80_BASE_PENALTY,
                                          READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
-  } else {
-    soi_table = data.table(qc_merge)[i = soi&doi, 
-                                 j =list(SAMP, MEAN_COVERAGE, FOLD_80_BASE_PENALTY,
-                                        "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
-  }
 } else if (isTRUE(is_sd)){
   soi_table = data.table(qc_merge)[i = soi&doi, 
                                     j =list(SAMP, MEAN_TARGET_COVERAGE_snv_indel_regions, MEAN_TARGET_COVERAGE_baseline_regions, FOLD_ENRICHMENT_snv_indel_regions, FOLD_ENRICHMENT_baseline_regions, 
@@ -429,7 +417,7 @@ my_scatter = function(x, y, xbreaks, ybreaks, x_string, y_string, title_string) 
 cat(paste0("Create plots (saved in ", outfile, ") ...\n"))
 # TODO: fix issue that only last plot generated in each if clause is saved to pdf due to unknown reason
 pdf(file = outfile, width=14)
-if (!is_rerun && !wgs) {
+if (!is_rerun) {
   # duplication vs read count scatter plot
   my_scatter(x = "READ_PAIRS_EXAMINED", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 1, 0.1),
             x_string = "number of read pairs", y_string = "duplication rate", title_string = "Duplication rate vs Read count")
@@ -444,10 +432,15 @@ if (!is_rerun && !wgs) {
                xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5e4, 500),
                x_string = "number of read pairs", y_string = "mean target coverage, baseline regions", title_string = "Baseline coverage vs Total read count")
     
-  } else {
+  } else if (!wgs) {
     # coverage vs read count scatter plot
     my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_TARGET_COVERAGE", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5000, 500),
               x_string = "number of read pairs", y_string = "mean target coverage", title_string = "Coverage vs Read count")
+  } else {
+    # coverage vs read count scatter plot
+    my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_COVERAGE", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5000, 500),
+              x_string = "number of read pairs", y_string = "mean coverage", title_string = "Coverage vs Read count")
+
   }
 }
 

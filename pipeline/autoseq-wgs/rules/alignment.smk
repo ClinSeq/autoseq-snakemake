@@ -9,176 +9,131 @@ with open(fchrsizes, 'r') as fh:
         data = line.strip().split()
         chrsizes[data[0]] = "-".join(['1', str(data[1])])
 
-rule bwa_mem2_alignment_normal:
+rule bwa_mem_alignment_normal:
     input:
         fq1 = os.path.join(nskewer_outdir, "{prefix}" + ns1),
         fq2 = os.path.join(nskewer_outdir, "{prefix}" + ns2),
-        bwa_index = reference['bwa-mem2-idx']
+        bwa_index = reference['bwaIndex']
     output:
         bamfile = outdir + "/bams/"+ normal_barcode + "/{prefix}.bam"
     wildcard_constraints:
         prefix = "|".join(nfq_prefix)
     params:
-        readgroup = get_readgroup(normal_barcode)
-    threads: 16
-    container: containers['mulled-v2']
+        readgroup = get_readgroup(normal_barcode),
+        remove_duplicates = params['samblaster']['rm_dup'],
+        tmpprefix = os.path.join(params['scratch'], 
+                                "samtools-{}".format(str(uuid.uuid4())))
+    threads: params['bwa']['threads']
     log:
-        outdir + "/logs/bwa_{prefix}.log",
+        bwalog = outdir + "/logs/bwa_{prefix}.log",
+        samblasterlog = outdir + "/logs/samblaster_{prefix}.log"
     shell:
-        """
-        bwa-mem2 mem \\
-            -Y \\
-            -K 100000000 \\
-            -R {params.readgroup} \\
-            -t {threads} \\
-            {input.bwa_index} \\
-            {input.fq1} \\
-            {input.fq2} | \\
-            sambamba view \\
-                --sam-input \\
-                --format bam \\
-                --compression-level 0 \\
-                --nthreads {threads} \\
-                /dev/stdin | \\
-            sambamba sort \\
-                --nthreads {threads} \\
-                --out {output.bamfile} \\
-                /dev/stdin 2> {log}
-        rm {input.fq1} {input.fq2}
-        """
+        "bwa mem -M -v 1 -R  {params.readgroup} -t  {threads}"  
+            " {input.bwa_index}  {input.fq1} {input.fq2}  2> {log.bwalog} "
+            " | samblaster -M --addMateTags  {params.remove_duplicates} 2> {log.samblasterlog} "
+            " | samtools view -Sb -u - | samtools sort -T {params.tmpprefix} -@ {threads} -m 2G "
+            " -o  {output.bamfile}  -  && samtools index {output.bamfile} && "
+            " rm {input.fq1} {input.fq2} "
 
 
-rule bwa_mem2_alignment_tumor:
+rule bwa_mem_alignment_tumor:
     input:
         fq1 = os.path.join(tskewer_outdir, "{prefix}" + ts1),
         fq2 = os.path.join(tskewer_outdir, "{prefix}" + ts2),
-        bwa_index = reference['bwa-mem2-idx']
+        bwa_index = reference['bwaIndex']
     output:
         bamfile = outdir + "/bams/" + tumor_barcode + "/{prefix}.bam"
     wildcard_constraints:
         prefix = "|".join(tfq_prefix)
     params:
         readgroup = get_readgroup(tumor_barcode),
-    threads: 16
-    container: containers['mulled-v2']
+        remove_duplicates = params['samblaster']['rm_dup'],
+        bwa_bam = outdir + "/bams/" + tumor_barcode + "/tmp_{prefix}.bam",
+        tmpprefix = os.path.join(params['scratch'], 
+                                "samtools-{}".format(str(uuid.uuid4())))
+    threads: 12
     log:
-        outdir + "/logs/bwa_{prefix}.log"
+        bwalog = outdir + "/logs/bwa_{prefix}.log",
+        samblasterlog = outdir + "/logs/samblaster_{prefix}.log"
     shell:
-        """
-        bwa-mem2 mem \\
-            -Y \\
-            -K 100000000 \\
-            -R {params.readgroup} \\
-            -t {threads} \\
-            {input.bwa_index} \\
-            {input.fq1} \\
-            {input.fq2} | \\
-            sambamba view \\
-                --sam-input \\
-                --format bam \\
-                --compression-level 0 \\
-                --nthreads {threads} \\
-                /dev/stdin | \\
-            sambamba sort \\
-                --nthreads {threads} \\
-                --out {output.bamfile} \\
-                /dev/stdin 2> {log}
-        rm {input.fq1} {input.fq2}
-        """
+        "bwa mem -M -v 1 -R  {params.readgroup} -t  {threads}"  
+        " {input.bwa_index}  {input.fq1} {input.fq2} "
+        "  | samtools view -bS - > {params.bwa_bam} 2> {log.bwalog} && "
+        "samtools view -h {params.bwa_bam} | samblaster -M --addMateTags  {params.remove_duplicates} 2> {log.samblasterlog} "
+        " | samtools view -Sb -u - | samtools sort  -T {params.tmpprefix} -@ {threads} -m 5G "
+        " -o  {output.bamfile} - && samtools index {output.bamfile} && "
+        " rm {input.fq1} {input.fq2} {params.bwa_bam} "
 
 
-rule sambamba_merge_normal:
+rule samtools_merge_normal:
     input:
         expand(outdir + "/bams/" + normal_barcode + "/{prefix}.bam", prefix = nfq_prefix)
     output:
         bam = outdir + "/bams/{}.bam".format(normal_barcode)
-    params:
-        extra = '',
-        bamdir = outdir + "/bams/{}".format(normal_barcode)
     threads: 8
-    container: containers['mulled-v2']
-    log:
-        outdir + "/logs/sambamba_merge_{}.log".format(normal_barcode)
     shell:
         """
         InputBams=({input})
         bamfiles=${{InputBams[*]}}
-        sambamba merge \\
-            --nthreads {threads} \\
-            {output.bam} \\
-            ${{bamfiles}} 2> {log}
-        sambamba index {output.bam}
-        rm ${{bamfiles}} && rm -rf {params.bamdir}
+        samtools merge -@ {threads} -c -p {output.bam} ${{bamfiles}}
+        samtools index {output.bam}
+        rm ${{bamfiles}}
         """
 
 
-rule sambamba_merge_tumor:
+rule samtools_merge_tumor:
     input:
         expand(outdir + "/bams/" + tumor_barcode + "/{prefix}.bam", prefix = tfq_prefix)
     output:
         bam = outdir + "/bams/{}.bam".format(tumor_barcode)
-    params:
-        extra = '',
-        bamdir = outdir + "/bams/{}".format(tumor_barcode)
     threads: 8
-    container: containers['mulled-v2']
-    log: 
-        outdir + "/logs/sambamba_merge_{}.log".format(tumor_barcode)
     shell:
         """
         InputBams=({input})
         bamfiles=${{InputBams[*]}}
-        sambamba merge \\
-            --nthreads {threads} \\
-            {output.bam} \\
-            ${{bamfiles}} 2> {log}
-        sambamba index {output.bam}
-        rm ${{bamfiles}} && rm -rf {params.bamdir}
+        samtools merge -@ {threads} -c -p {output.bam} ${{bamfiles}}
+        samtools index {output.bam}
+        rm ${{bamfiles}}
         """
 
 
-rule hmftools_redux:
+rule picard_markdups:
     input:
-        bam = outdir + "/bams/{sample}.bam",
-        unmap_regions = reference['unmap_regions'],
-        ref_genome = reference['reference_genome']
+        bam = outdir + "/bams/{sample}.bam"
     output:
-        bam = outdir + "/bams/{sample}_markdups.bam"
+        bam = outdir + "/bams/{sample}_nodups.bam",
+        metrics = outdir + "/qc/picard/{sample}-picard-markdup.metrics.txt"
     params:
-        sample_id = "{sample}",
-        ref_genome_ver = "37",
-        extra = ""
+        rmdups = params['picard']['markdup']['rmdups'],
+        java_options = params['picard']['markdup']['java_options'],
+        extra = params['picard']['markdup']['extra'],
+        tmpdir = os.path.join(params['scratch'], 
+                                "picard-markdups-{}".format(str(uuid.uuid4())))
     threads: 8
-    container: containers['hmftools-redux']
-    log: outdir + "/logs/hmftools_markdups_{sample}.log"
+    log: outdir + "/logs/picard_markdups_{sample}.log"
     shell:
-        """
-        redux \\
-            -Xmx32g \\
-            -bamtool $(type -p sambamba) \\
-            -sample {params.sample_id} \\
-            -input_bam {input.bam} \\
-            -form_consensus \\
-            -unmap_regions {input.unmap_regions} \\
-            -ref_genome {input.ref_genome} \\
-            -ref_genome_version {params.ref_genome_ver} \\
-            -write_stats \\
-            -threads {threads} \\
-            -output_bam {output.bam} 2> {log}
-        sambamba index {output.bam}
-        """
+        "picard {params.java_options} -Djava.io.tmpdir={params.tmpdir} "
+            " MarkDuplicates "
+            " INPUT={input.bam} " 
+            " METRICS_FILE={output.metrics} "
+            " {params.extra} "
+            " OUTPUT=/dev/stdout REMOVE_DUPLICATES={params.rmdups} "
+            " | samtools sort -m 2G -@ {threads} -T {params.tmpdir} -o {output.bam} 2> {log}"
+            " && samtools index {output.bam} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule rm_interbamfiles:
     input:
         expand(outdir + "/bams/{sample}.bam", sample=all_clinseq_barcodes),
-        expand(outdir + "/bams/{sample}_markdups.bam", sample=all_clinseq_barcodes)
+        expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes)
+        # expand(outdir + "/bams/{sample}_realigned.bam", sample=all_clinseq_barcodes),
     output:
         outdir + "/bams/intermediate_bamfiles.removed"
     log:
         outdir + "/logs/remove_intermediate_{sample}.log".format(sample="_".join(all_clinseq_barcodes))
     run:
-        del_bam = [bam for bam in input if 'markdups' not in bam]
+        del_bam = [bam for bam in input if 'nodups' not in bam]
         bamfiles = " ".join(del_bam)
         shell("rm {bamfiles} 2> {log} ")
         shell("touch {output} ")
