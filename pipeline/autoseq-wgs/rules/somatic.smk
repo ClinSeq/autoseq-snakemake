@@ -218,7 +218,7 @@ rule picard_vcfmerge:
     shell:
         """
         InputBams={input}
-        ibams=`for i in ${{InputBams[@]}}; echo "I="$i; done | tr '\n' '\t' `
+        ibams=`for i in ${{InputBams[@]}}; echo "I="$i; done | tr '\\n' '\\t' `
         picard MergeVcfs $ibams O={output.vcf} 2> {log}
         """
 
