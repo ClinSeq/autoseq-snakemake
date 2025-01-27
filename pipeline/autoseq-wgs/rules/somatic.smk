@@ -217,8 +217,8 @@ rule picard_vcfmerge:
         haplotype_jc_log_prefix + ".log"
     shell:
         """
-        InputBams={input}
-        ibams=`for i in ${{InputBams[@]}}; echo "I="$i; done | tr '\\n' '\\t' `
+        InputBams=({input})
+        ibams=`for i in ${{InputBams[@]}}; do echo "I="$i; done | tr '\\n' '\\t' `
         picard MergeVcfs $ibams O={output.vcf} 2> {log}
         """
 
