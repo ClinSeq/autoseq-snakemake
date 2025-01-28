@@ -37,7 +37,7 @@ def is_indel(variant):
 
 def adj_base(variant):
     """
-    
+    Adjust bases in small indels
     """
     ref = variant[3]
     alt = variant[4]
@@ -55,6 +55,7 @@ def adj_base(variant):
 
 def create_batch_script_snv(vars, xml, outdir):
     """
+    Create igv batch script for SNVs
     """
     cmds = list()
     cmds.extend(_default_ops)
@@ -84,13 +85,27 @@ def create_batch_script_snv(vars, xml, outdir):
     return(batch_script_path)
 
 
+def adj_window(start, end, d):
+    """
+    """
+    diff = end - start
+    center = start + round(diff/2)
+    if d == '+':
+        return center + 150
+    else:
+        return center - 150
+
+
+
 def create_batch_script_sv(vars, xml, outdir):
     """
+    Create igv batch script for SVs
     """
     cmds = list()
     cmds.extend(_default_ops)
     cmds.append(f"snapshotDirectory {outdir}")
     cmds.append(f"load {xml}")
+    cmds.append("squish tb_simpleRepeat ")
     with open(vars, 'r') as fh:
         header = fh.readline()
         for line in fh:
@@ -99,18 +114,30 @@ def create_batch_script_sv(vars, xml, outdir):
             if data[12] == "NO":
                 continue
             chr_a = data[0] 
-            start_a = data[1]
-            end_a = line[2]
+            start_a = int(data[1])
+            end_a = int(data[2])
             chr_b = data[3] 
-            start_b = data[4]
-            end_b = line[5]
+            start_b = int(data[4])
+            end_b = int(data[5])
+            if data[10] == "gridss":
+                bp1_start = end_a - 50
+                bp1_end = end_a + 50
+                bp2_start = end_b - 50
+                bp2_end = end_b + 50
+            else:
+                bp1_start = start_a if (end_a - start_a < 300) else adj_window(start_a, end_a, '-')
+                bp1_end = end_a if (end_a - start_a < 300) else adj_window(start_a, end_a, '+')
+                bp2_start = end_b if (end_b - start_b < 300) else adj_window(start_b, end_b, '-')
+                bp2_end = end_b if (end_b - start_b < 300) else adj_window(start_b, end_b, '+')
 
-            a_pos = start_a if (end_a - start_a == 1) else round((end_a - start_a)/2)
-            b_pos = start_b if (end_b - start_b == 1) else round((end_b - start_b)/2)
-            cmds.append(f"goto chr{chr_a}:{a_pos}")
+            # a_pos = start_a if (end_a - start_a == 1) else round((end_a - start_a)/2)
+            # b_pos = start_b if (end_b - start_b == 1) else round((end_b - start_b)/2)
+            #cmds.append(f"goto chr{chr_a}:{end_a}")
+            cmds.append(f"goto chr{chr_a}:{bp1_start}-{bp1_end}")
             cmds.append("sort base")
             cmds.append(f"snapshot chr{chr_a}_{start_a}-{end_a}.png")
-            cmds.append(f"goto chr{chr_b}:{b_pos}")
+            #cmds.append(f"goto chr{chr_b}:{end_b}")
+            cmds.append(f"goto chr{chr_b}:{bp2_start}-{bp2_end}")
             cmds.append("sort base")
             cmds.append(f"snapshot chr{chr_b}_{start_b}-{end_b}.png")
     
