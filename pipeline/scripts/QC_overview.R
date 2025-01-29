@@ -298,15 +298,15 @@ process_samp <- function(sample) {
 # merge the QC tables 
 if (wgs) {
   ## FIX: New WGS PIPELINE - doesnot contain MARKDUPLICATES report
-  if (nrow(MarkDuplicates) != 0){
-    qc_merge = merge(merge(merge(merge(wgsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
-                InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")), 
-                flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
-  } else {
-    qc_merge = merge(merge(merge(wgsMetrics, InsertSize, by = c("SAMP", "DIR")), 
-                ContEst, by = c("SAMP", "DIR")), 
-                flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
-  }
+  # if (nrow(MarkDuplicates) != 0){
+  #   qc_merge = merge(merge(merge(merge(wgsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
+  #               InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")), 
+  #               flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
+  # } else {
+  qc_merge = merge(merge(merge(wgsMetrics, InsertSize, by = c("SAMP", "DIR")), 
+              ContEst, by = c("SAMP", "DIR")), 
+              flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
+  # }
   
 } else if (is_rerun) {
   qc_merge = merge(merge(merge(merge(HsMetrics, InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")), 
@@ -347,15 +347,15 @@ InsertSize_histogram$doi = InsertSize_histogram$DIR == Sys.glob(analysis_dir)
 
 # create an ouput table for the samples of interest
 if (wgs){
-  if ("READ_PAIRS_EXAMINED" %in% colnames(qc_merge)){
-    soi_table = data.table(qc_merge)[i = soi&doi, 
-                                 j =list(SAMP, MEAN_COVERAGE, FOLD_80_BASE_PENALTY,
-                                         READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
-  } else {
-    soi_table = data.table(qc_merge)[i = soi&doi, 
-                                 j =list(SAMP, MEAN_COVERAGE, FOLD_80_BASE_PENALTY,
-                                        "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
-  }
+  # soi_table = data.table(qc_merge)[i = soi&doi, 
+  #                                j =list(SAMP, MEAN_COVERAGE, FOLD_80_BASE_PENALTY,
+  #                                        READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
+  # if (nrow(soi_table) <= 1){
+  
+  soi_table = data.table(qc_merge)[i = soi&doi, 
+                                j =list(SAMP, MEAN_COVERAGE, FOLD_80_BASE_PENALTY,
+                                      "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
+  # }
 } else if (isTRUE(is_sd)){
   soi_table = data.table(qc_merge)[i = soi&doi, 
                                     j =list(SAMP, MEAN_TARGET_COVERAGE_snv_indel_regions, MEAN_TARGET_COVERAGE_baseline_regions, FOLD_ENRICHMENT_snv_indel_regions, FOLD_ENRICHMENT_baseline_regions, 
