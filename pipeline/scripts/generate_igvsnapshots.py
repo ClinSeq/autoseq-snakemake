@@ -120,23 +120,19 @@ def create_batch_script_sv(vars, xml, outdir):
             start_b = int(data[4])
             end_b = int(data[5])
             if data[10] == "gridss":
-                bp1_start = end_a - 50
-                bp1_end = end_a + 50
-                bp2_start = end_b - 50
-                bp2_end = end_b + 50
+                bp1_start = end_a - 150
+                bp1_end = end_a + 150
+                bp2_start = end_b - 150
+                bp2_end = end_b + 150
             else:
                 bp1_start = start_a if (end_a - start_a < 300) else adj_window(start_a, end_a, '-')
                 bp1_end = end_a if (end_a - start_a < 300) else adj_window(start_a, end_a, '+')
                 bp2_start = end_b if (end_b - start_b < 300) else adj_window(start_b, end_b, '-')
                 bp2_end = end_b if (end_b - start_b < 300) else adj_window(start_b, end_b, '+')
-
-            # a_pos = start_a if (end_a - start_a == 1) else round((end_a - start_a)/2)
-            # b_pos = start_b if (end_b - start_b == 1) else round((end_b - start_b)/2)
-            #cmds.append(f"goto chr{chr_a}:{end_a}")
+            
             cmds.append(f"goto chr{chr_a}:{bp1_start}-{bp1_end}")
             cmds.append("sort base")
             cmds.append(f"snapshot chr{chr_a}_{start_a}-{end_a}.png")
-            #cmds.append(f"goto chr{chr_b}:{end_b}")
             cmds.append(f"goto chr{chr_b}:{bp2_start}-{bp2_end}")
             cmds.append("sort base")
             cmds.append(f"snapshot chr{chr_b}_{start_b}-{end_b}.png")
