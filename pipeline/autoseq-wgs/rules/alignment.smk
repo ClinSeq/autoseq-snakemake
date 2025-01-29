@@ -201,8 +201,7 @@ rule generate_oncoanalyzer_input:
 
 rule run_oncoanalyzer:
     input:
-        t_file = outdir + "/bams/{}_markdups.bam".format(tumor_barcode),
-        n_file = outdir + "/bams/{}_markdups.bam".format(normal_barcode)
+        outdir + "/oncoanalyzer/{sample}.sh".format(sample=samples['sdid'])
     output:
         directory(f"{outdir}/oncoanalyzer/{samples['sdid']}/orange/")
     params:
@@ -210,34 +209,7 @@ rule run_oncoanalyzer:
     log:
         f"{outdir}/logs/oncoanalyzer_{samples['sdid']}.log"
     run:
-        import sys
-        t_file = str({input.n_file}).replace("{","").replace("}","").replace("'","")
-        n_file = str({input.t_file}).replace("{","").replace("}","").replace("'","")
-        out_path1 = {params.onco_out}
-        out_path = str(out_path1).replace("{","").replace("}","").replace("'","") + "/oncoanalyzer/"
-        
-        header = "group_id,subject_id,sample_id,sample_type,sequence_type,filetype,filepath\n"
-        group_id = t_file.split("/")[-4]
-        subject_id = group_id.replace("P-","")
-        
-        sample_id_tumor="SARC-"+group_id+"-T-"+subject_id
-        sample_id_normal="SARC-"+group_id+"-N-"+n_file.split("/")[-3].split("-")[10]
-        n_type=",normal,dna,bam"
-        t_type=",tumor,dna,bam"
-        
-        onco_file = str(out_path)+group_id+".csv"
-        
-        oncoanalyzer_csv=open(onco_file,'w')
-        oncoanalyzer_csv.write(header)
-        content_n=group_id+","+subject_id+","+sample_id_normal+n_type+","+n_file+"\n"
-        content_t=group_id+","+subject_id+","+sample_id_tumor+t_type+","+t_file+"\n"
-        
-        oncoanalyzer_csv.write(content_n)
-        oncoanalyzer_csv.write(content_t)
-        oncoanalyzer_csv.close()
+        cmd = str({input}).replace("{","").replace("}","").replace("'","").replace("[","").replace("]","")
         log_file = str({log}).replace("{","").replace("}","").replace("'","").replace("[","").replace("]","")
-        slurm_content1="#!/bin/bash\n#SBATCH --nodes=1\n#SBATCH --tasks-per-node=25\n#SBATCH --job-name=oncoanalyzer_"+group_id+"\n#SBATCH --time=5-15:00:00\n"
-        slurm_content2="nextflow run /home/jospat/projects/oncoanalyzer/workflow/main.nf -profile singularity -config /home/jospat/projects/oncoanalyzer/reference/reference.config --mode wgts --genome CustomGenome --genome_type no_alt --genome_version 37 --force_genome --ref_data_genome_gtf /home/jospat/projects/oncoanalyzer/reference/reference_data/1.1.0dev/20241012_202424/2.7.3a/gencode.v38.annotation_corrected.gtf --input "+onco_file+" --outdir "+out_path
-        slurm_content = slurm_content1 + slurm_content2
         shell("bash -c ' . $HOME/.bashrc '")
-        shell("bash -c ' source /home/jospat/miniconda3/bin/activate && conda activate oncoanalyzer && {slurm_content2} 2> {log_file} '")
+        shell("bash -c ' source /home/jospat/miniconda3/bin/activate && conda activate oncoanalyzer && {cmd} 2> {log_file} '")
