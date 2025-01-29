@@ -1,4 +1,5 @@
-
+import json
+samples = json.load(open(config['samples']))
 ## read chrsize file for target regions in indelrealigner
 
 chrsizes = dict()
@@ -182,3 +183,33 @@ rule rm_interbamfiles:
         bamfiles = " ".join(del_bam)
         shell("rm {bamfiles} 2> {log} ")
         shell("touch {output} ")
+
+
+rule generate_oncoanalyzer_input:
+    input:
+        t_file = outdir + "/bams/{}_markdups.bam".format(tumor_barcode),
+        n_file = outdir + "/bams/{}_markdups.bam".format(normal_barcode)
+    output:
+        outdir + "/oncoanalyzer/{sample}.sh".format(sample=samples['sdid'])
+    params:
+        onco_out = outdir
+    log:
+        outdir + "/logs/oncoanalyzer_input_{sample}.log".format(sample=samples['sdid'])
+    run:
+        shell("python3 /home/jospat/softwares/autoseq-snakemake/pipeline/scripts/generate_oncoanalyzer_input_csv.py {input.n_file} {input.t_file} {params.onco_out}/oncoanalyzer/")
+
+
+rule run_oncoanalyzer:
+    input:
+        f"{outdir}/oncoanalyzer/{samples['sdid']}.sh"
+    output:
+        directory(f"{outdir}/oncoanalyzer/{samples['sdid']}/orange/")
+    log:
+        f"{outdir}/logs/oncoanalyzer_{samples['sdid']}.log"
+    conda:
+        "../../../env/oncoanalyzer.yml"
+    shell:
+        """
+        chmod +x {input}
+        bash {input}
+        """

@@ -1,0 +1,10 @@
+name: oncoanalyzer_env
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - nextflow
+  - nf-core
+  - ncurses=6.2
+  - bash

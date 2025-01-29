@@ -15,6 +15,7 @@ from pipeline.utils.clinseq_barcodes import data_available_for_clinseq_barcode, 
     extract_clinseq_barcodes, validate_clinseq_barcodes, convert_barcodes_to_sampledict, \
     check_sampledata, normpath, parse_project, clinseq_barcode_is_valid
 
+os.environ["AUTOSEQ_BASE_PATH"] = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def console_autoseq():
     console = Console()

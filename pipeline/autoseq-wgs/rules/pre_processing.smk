@@ -32,7 +32,7 @@ rule skewer_trim_pe_normal:
     log:
         outdir + "/logs/skewer/{prefix}-skewer.log"
     shell:
-        " mkdir {params.tmpdir} && "
+        " mkdir -p {params.tmpdir} && "
         " mkdir -p {params.nout} && "
         " skewer -z -t {threads} --quiet "
         " -o {params.tmpdir}/skewer "
@@ -58,7 +58,7 @@ rule skewer_trim_pe_tumor:
     log:
         outdir + "/logs/skewer/{prefix}-skewer.log"
     shell:
-        " mkdir {params.tmpdir} && "
+        " mkdir -p {params.tmpdir} && "
         " mkdir -p {params.nout} && "
         " skewer -z -t {threads} --quiet "
         " -o {params.tmpdir}/skewer "

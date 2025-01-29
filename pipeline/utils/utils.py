@@ -1,6 +1,8 @@
 import os, re
 import glob
 import sys
+
+sys.path.append(os.environ.get("AUTOSEQ_BASE_PATH"))
 from pipeline.utils.clinseq_barcodes import parse_prep_id, compose_sample_str, \
     extract_unique_capture, find_fastqs, compose_lib_capture_str
 
@@ -69,6 +71,7 @@ def get_containers(_path):
         "mulled-v2": os.path.join(_path, "autoseq-mulled-v2.sif"),
         "hmftools-markdups": os.path.join(_path, "autoseq-hmftools-markdups.sif"),
         "hmftools-redux": os.path.join(_path, "autoseq-hmftools-redux_1.0.sif"),
+        "oncoanalyzer": os.path.join(_path, "autoseq-oncoanalyzer.sif"),
         "igv": os.path.join(_path, "autoseq-igvbatch.sif")
     }
 
