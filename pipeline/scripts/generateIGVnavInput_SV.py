@@ -163,7 +163,7 @@ def parse_gridss(input_vcf, SDID, output, vcftype):
 
             support_reads = record.INFO['VF']
             if vcftype == "somatic":
-                vaf = ",".join(map(str, record.INFO['VAF']))
+                vaf = ",".join(map(str, record.INFO['TAF']))
             else:
                 vaf = str(record.samples[0]['AF'])
 
@@ -362,7 +362,7 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
             sdid = data[5].split('_')[0]
             sample = data[6]
             alt = data[7]
-            sup_reads = data[8] if len(data) == 9 else '.'
+            sup_reads = data[8]
             vaf = data[9]
             svlength = 'NA'
             chrom_b = 'NA'
