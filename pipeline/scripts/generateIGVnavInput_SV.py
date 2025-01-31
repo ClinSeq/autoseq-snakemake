@@ -435,12 +435,9 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
                     if check_targets(chrom_a, start_a, end_b, targets):
                         curator = "YES"
 
-            if tool == 'gridss' and chrom_b == 'NA':
-                svlength = abs(int(end_a)-int(start_a))
-                # calculation for gridss INS svlength
-                if svtype == "INS":
-                    alt_seq = ''.join(list(filter(str.isalpha, alt)))
-                    svlength = len(alt_seq)
+            if tool == 'gridss' and svtype == "INS":
+                alt_seq = ''.join(list(filter(str.isalpha, alt)))
+                svlength = len(alt_seq)
     
             gene_a_b = [gene_a, gene_b]
             gene_a_b.sort()

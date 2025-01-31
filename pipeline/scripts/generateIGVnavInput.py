@@ -177,6 +177,24 @@ def hotspot_splice(gene, one_aa, gpos, aa_range, hs_lookup):
     return ann
 
 
+def check_noncoding_hotspot(chr, pos):
+    """
+    """
+    gpos = ":".join(map(str, [chr, pos]))
+    lookup_loci = ['5:1295228', '5:1295250']
+    lookup_interval = {"7" : (116411709, 116411902)}
+    
+    if gpos in lookup_loci:
+        return True
+
+    if chr in lookup_interval:
+        start, end = lookup_interval[chr]
+        if start <= pos <= end:
+            return True
+
+    return False
+
+
 def annotate_hotspot(query, vartype, conseq, hotspot_lookup, gpos = ''):
     """
     Annotate each variant with cancer hotspot information
@@ -197,10 +215,7 @@ def annotate_hotspot(query, vartype, conseq, hotspot_lookup, gpos = ''):
             ann = hotspot_aapos(gene, one_aa, aa_range, hotspot_lookup)
     
     if 'splice' in conseq:
-        if gpos in ['5:1295228', '5:1295250']:
-            ann = 'Hotspot'
-        else:
-            ann = hotspot_splice(gene, one_aa, aa_range, gpos, hotspot_lookup)
+        ann = hotspot_splice(gene, one_aa, aa_range, gpos, hotspot_lookup)
 
     return ann
 
@@ -324,7 +339,7 @@ if __name__ == "__main__":
         if ensembl_id in cgc_ann:
             cgcann = cgc_ann[ensembl_id][0]
         
-        ann_hotspot = ''
+        ann_hotspot = 'Hotspot' if check_noncoding_hotspot(record.CHROM, record.POS) else ''
         if hgvsp and not (hotspot_snv.empty and hotspot_indel.empty):
             if record.is_snp:
                 gpos = ":".join(map(str, [record.CHROM, record.POS]))
