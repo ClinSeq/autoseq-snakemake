@@ -37,7 +37,7 @@ def is_indel(variant):
 
 def adj_base(variant):
     """
-    
+    Adjust bases in small indels
     """
     ref = variant[3]
     alt = variant[4]
@@ -53,8 +53,9 @@ def adj_base(variant):
     return None
 
 
-def create_batch_script(vars, xml, outdir):
+def create_batch_script_snv(vars, xml, outdir):
     """
+    Create igv batch script for SNVs
     """
     cmds = list()
     cmds.extend(_default_ops)
@@ -84,6 +85,67 @@ def create_batch_script(vars, xml, outdir):
     return(batch_script_path)
 
 
+def adj_window(start, end, d):
+    """
+    """
+    diff = end - start
+    center = start + round(diff/2)
+    if d == '+':
+        return center + 150
+    else:
+        return center - 150
+
+
+
+def create_batch_script_sv(vars, xml, outdir):
+    """
+    Create igv batch script for SVs
+    """
+    cmds = list()
+    cmds.extend(_default_ops)
+    cmds.append(f"snapshotDirectory {outdir}")
+    cmds.append(f"load {xml}")
+    cmds.append("squish tb_simpleRepeat ")
+    with open(vars, 'r') as fh:
+        header = fh.readline()
+        for line in fh:
+            data = line.strip().split('\t')
+            # skip GSR not in curator
+            if data[12] == "NO":
+                continue
+            chr_a = data[0] 
+            start_a = int(data[1])
+            end_a = int(data[2])
+            chr_b = data[3] 
+            start_b = int(data[4])
+            end_b = int(data[5])
+            if data[10] == "gridss":
+                bp1_start = end_a - 150
+                bp1_end = end_a + 150
+                bp2_start = end_b - 150
+                bp2_end = end_b + 150
+            else:
+                bp1_start = start_a if (end_a - start_a < 300) else adj_window(start_a, end_a, '-')
+                bp1_end = end_a if (end_a - start_a < 300) else adj_window(start_a, end_a, '+')
+                bp2_start = end_b if (end_b - start_b < 300) else adj_window(start_b, end_b, '-')
+                bp2_end = end_b if (end_b - start_b < 300) else adj_window(start_b, end_b, '+')
+            
+            cmds.append(f"goto chr{chr_a}:{bp1_start}-{bp1_end}")
+            cmds.append("sort base")
+            cmds.append(f"snapshot chr{chr_a}_{start_a}-{end_a}.png")
+            cmds.append(f"goto chr{chr_b}:{bp2_start}-{bp2_end}")
+            cmds.append("sort base")
+            cmds.append(f"snapshot chr{chr_b}_{start_b}-{end_b}.png")
+    
+    cmds.append("exit")
+
+    batch_script_path = outdir + "/igv_batch_sv.sh"
+    with open(batch_script_path, 'w') as fh:
+        fh.write("\n".join(cmds))
+
+    return(batch_script_path)
+
+
 def setup_logging(loglevel="INFO"):
     """
     Set up logging
@@ -102,7 +164,8 @@ def main():
     parser = argparse.ArgumentParser(description=
         'Generate IGVsnapshots for single nucleotide variants')
     parser.add_argument('--xml', required=True, help="IGV session xml file ")
-    parser.add_argument('-i', '--input', required=True, help="SNVs txt file as input")
+    parser.add_argument('-i', '--input', required=True, help="SNVs or SVs txt file as input")
+    parser.add_argument('-t', '--type', choices = ['snv', 'sv'], help="Variant type SNV or SV")
     parser.add_argument('-p', '--preferences', required=True, help="Preferences for IGV batch")
     parser.add_argument('--output', help="output directory to store all images")
     args = parser.parse_args()
@@ -116,7 +179,11 @@ def main():
     if not os.path.exists(args.output):
         os.makedirs(args.output, exist_ok=True)
     
-    batch_script = create_batch_script(args.input, args.xml, args.output)
+    if args.type == 'snv':
+        batch_script = create_batch_script_snv(args.input, args.xml, args.output)
+    else:
+        batch_script = create_batch_script_sv(args.input, args.xml, args.output)
+
     igv_cmd = f"igv.sh -b {batch_script} --preferences {args.preferences} " 
 
     try:

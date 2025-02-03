@@ -260,7 +260,9 @@ rule somatic_generateIGVnav:
     input:
         somatic = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
         oncokb = reference['oncokb'],
-        cgcann = reference['cgcann']
+        cgcann = reference['cgcann'],
+        cancer_hotspot_snv = reference['cancer_hotspot_snv'],
+        cancer_hotspot_indel = reference['cancer_hotspot_indel']
     output:
         "{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     params:
@@ -268,6 +270,8 @@ rule somatic_generateIGVnav:
     shell:
         "generateIGVnavInput.py {input.somatic} {input.oncokb} "
         " {params.vcftype} --cgc {input.cgcann} --output {output} "
+        " --hotspot-snv {input.cancer_hotspot_snv} "
+        " --hotspot-indel {input.cancer_hotspot_indel} "
 
 
 rule gatk4_haplotypecaller_tumor:

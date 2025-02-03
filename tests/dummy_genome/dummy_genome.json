@@ -27,6 +27,8 @@
     "no_chr":"genome/human_g1k_v37_decoy_non_chr.bed",
     "gene_track": "gene_track_output.csv",
     "unmap_regions": "genome/unmap_regions.tsv",
+    "cancer_hotspot_snv": "variants/cancer_hotspot_v2_snv.csv",
+    "cancer_hotspot_indel": "variants/cancer_hotspot_v2_indel.csv",
     "small_design": {
         "probio_biomarkersignature2": {
             "targets-bed": "intervals/targets/probio_biomarkersignature2.bed",

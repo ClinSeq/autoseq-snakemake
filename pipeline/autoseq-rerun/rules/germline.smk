@@ -29,11 +29,15 @@ rule germline_generateIGVnav:
         vcf = "{}/variants/{}-{}.germline_variants_with_taf.vcf".format(outdir, 
                 NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         oncokb = reference['oncokb'],
-        cgcann = reference["cgcann"]
+        cgcann = reference["cgcann"],
+        cancer_hotspot_snv = reference['cancer_hotspot_snv'],
+        cancer_hotspot_indel = reference['cancer_hotspot_indel']
     output:
         "{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR)
     params:
         vcftype = "germline"
     shell:
         "generateIGVnavInput.py {input.vcf} {input.oncokb} {params.vcftype} "
+        " --hotspot-snv {input.cancer_hotspot_snv} "
+        " --hotspot-indel {input.cancer_hotspot_indel} "
         " --cgc {input.cgcann} --output {output} "
