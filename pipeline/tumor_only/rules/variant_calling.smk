@@ -284,7 +284,9 @@ rule somatic_generateIGVnav:
         somatic = "{}/variants/{}-{}-all.somatic.gnomADg.noSNPs.brcaEx.vep.vcf.gz".format(outdir, 
                                                             CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
         oncokb = reference['oncokb'],
-        cgcann = reference['cgcann']
+        cgcann = reference['cgcann'],
+        cancer_hotspot_snv = reference['cancer_hotspot_snv'],
+        cancer_hotspot_indel = reference['cancer_hotspot_indel']
     output:
         "{}/{}-somatic-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR)
     params:
@@ -296,6 +298,8 @@ rule somatic_generateIGVnav:
     shell:
         "zcat {input.somatic} > {params.tmp_vcf} && "
         "generateIGVnavInput.py {params.tmp_vcf} {input.oncokb} {params.vcftype} "
+        " --hotspot-snv {input.cancer_hotspot_snv} "
+        " --hotspot-indel {input.cancer_hotspot_indel} "
         " --cgc {input.cgcann} --output {output} 2> {log} "
 
 
@@ -304,7 +308,9 @@ rule germline_generateIGVnav:
         vcf = "{}/variants/{}-merged.germline.split_norm.brcaEx.vep.vcf.gz".format(outdir, 
                                                                         CANCER_CAPTURE_STR),
         oncokb = reference['oncokb'],
-        cgcann = reference['cgcann']
+        cgcann = reference['cgcann'],
+        cancer_hotspot_snv = reference['cancer_hotspot_snv'],
+        cancer_hotspot_indel = reference['cancer_hotspot_indel']
     output:
         "{}/{}-germline-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR)
     params:
@@ -317,6 +323,8 @@ rule germline_generateIGVnav:
         "zcat {input.vcf} | awk -F '\\t' -v OFS='\\t' '{{if ($1 ~ /^#/) print $0; else if ($5 != \"*\") {{print $0}}}}' " 
         " | bcftools view --exclude 'FORMAT/AD=\".\"' -Ov > {params.tmp_vcf} && "
         "generateIGVnavInput.py {params.tmp_vcf} {input.oncokb} {params.vcftype} "
+        " --hotspot-snv {input.cancer_hotspot_snv} "
+        " --hotspot-indel {input.cancer_hotspot_indel} "
         " --cgc {input.cgcann} --output {output} 2> {log} && "
         "rm -v {params.tmp_vcf} "
         
