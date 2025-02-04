@@ -140,7 +140,7 @@ if (!wgs){
   wgsMetrics$FOLD_80_BASE_PENALTY = as.numeric(wgsMetrics$FOLD_80_BASE_PENALTY)
 }
 
-is_rerun = ifelse(length(markduplicates_files) == 0, TRUE, FALSE)
+is_rerun = ifelse(length(markduplicates_files) == 0 && !wgs, TRUE, FALSE)
 MarkDuplicates = data.frame()
 for (f in markduplicates_files) {
   tryCatch({
@@ -179,7 +179,7 @@ for (f in contest_files) {
   tryCatch({
     fname = strsplit(basename(f), split = "\\.")[[1]][1]
     project = unlist(strsplit(fname, split = "-"))[1]
-    if (project == "AL") {
+    if (project == "AL" && is_rerun) {
       SAMP = fname
     } else {
       clinseq_barcodes = rev(strsplit(f, split = "/")[[1]])[3]
@@ -297,9 +297,17 @@ process_samp <- function(sample) {
 
 # merge the QC tables 
 if (wgs) {
-  qc_merge = merge(merge(merge(merge(wgsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
-                InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")), 
-                flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
+  ## FIX: New WGS PIPELINE - doesnot contain MARKDUPLICATES report
+  # if (nrow(MarkDuplicates) != 0){
+  #   qc_merge = merge(merge(merge(merge(wgsMetrics, MarkDuplicates, by = c("SAMP", "DIR")), 
+  #               InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")), 
+  #               flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
+  # } else {
+  qc_merge = merge(merge(merge(wgsMetrics, InsertSize, by = c("SAMP", "DIR")), 
+              ContEst, by = c("SAMP", "DIR")), 
+              flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
+  # }
+  
 } else if (is_rerun) {
   qc_merge = merge(merge(merge(merge(HsMetrics, InsertSize, by = c("SAMP", "DIR")), ContEst, by = c("SAMP", "DIR")), 
                 msings, by = c("SAMP", "DIR"), all.x = TRUE), flagstat_data, by = c("SAMP", "DIR"), all.x = TRUE)
@@ -337,13 +345,17 @@ qc_merge$doi = qc_merge$DIR == Sys.glob(analysis_dir)
 InsertSize_histogram$soi = InsertSize_histogram$SAMP %in% samples
 InsertSize_histogram$doi = InsertSize_histogram$DIR == Sys.glob(analysis_dir)
 
-#print(qc_merge)
-
 # create an ouput table for the samples of interest
 if (wgs){
+  # soi_table = data.table(qc_merge)[i = soi&doi, 
+  #                                j =list(SAMP, MEAN_COVERAGE, FOLD_80_BASE_PENALTY,
+  #                                        READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
+  # if (nrow(soi_table) <= 1){
+  
   soi_table = data.table(qc_merge)[i = soi&doi, 
-                                 j =list(SAMP, MEAN_COVERAGE, FOLD_80_BASE_PENALTY,
-                                         READ_PAIRS_EXAMINED, PERCENT_DUPLICATION, "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
+                                j =list(SAMP, MEAN_COVERAGE, FOLD_80_BASE_PENALTY,
+                                      "contamination_%"=contamination, MEDIAN_INSERT_SIZE)]
+  # }
 } else if (isTRUE(is_sd)){
   soi_table = data.table(qc_merge)[i = soi&doi, 
                                     j =list(SAMP, MEAN_TARGET_COVERAGE_snv_indel_regions, MEAN_TARGET_COVERAGE_baseline_regions, FOLD_ENRICHMENT_snv_indel_regions, FOLD_ENRICHMENT_baseline_regions, 
@@ -379,13 +391,16 @@ write.table(x = soi_table, file = table_outfile, quote = FALSE, sep = "\t", row.
 theme_update(plot.title = element_text(hjust = 0.5))
 theme_update(plot.subtitle = element_text(hjust = 0.5))
 
+n_capture = length(levels(factor(qc_merge$capture)))
+
 # plotting function to create desired histograms 
 my_barplot = function(x, ybreaks, x_string, title_string) {
+  scale_fill_values = c("antiquewhite", "aliceblue", "lightpink", "palegreen", "plum2", "lightsalmon", "lavenderblush")
   p = ggplot(qc_merge, aes_string(x = x)) +
     geom_bar(aes(group = capture, fill = capture), width = 0.5, alpha = 0.7, color = "black") +
     geom_bar(data = subset(qc_merge, soi), width = 0.5, fill = "blue", show.legend = FALSE) + # the sample of interest
     geom_bar(data = subset(qc_merge, soi&doi), width = 0.5, fill = "red", show.legend = FALSE) + # the sample of interest
-    scale_fill_manual(values = c("antiquewhite", "aliceblue", "lightpink", "palegreen", "plum2")) +
+    scale_fill_manual(values = scale_fill_values[1:n_capture]) +
     scale_y_continuous(breaks = ybreaks) +
     scale_x_discrete(name = x_string) +
     facet_wrap(~sample_type, ncol = 1) +
@@ -395,12 +410,13 @@ my_barplot = function(x, ybreaks, x_string, title_string) {
 
 # plotting function to create desired scatter plots
 my_scatter = function(x, y, xbreaks, ybreaks, x_string, y_string, title_string) {
+  shape_values = c(24, 25, 21, 22, 23, 8, 10, 11)
   p = ggplot(qc_merge, aes(shape = capture)) +
     geom_point(aes_string(x = x, y = y), size = 3) +
     geom_point(data = subset(qc_merge, soi), aes_string(x = x, y = y), fill = "blue", size = 3, show.legend = FALSE) +
     geom_point(data = subset(qc_merge, soi&doi), aes_string(x = x, y = y), fill = "red", size = 3, show.legend = FALSE) +
     scale_alpha_manual(values = c(0.7, 1)) +
-    scale_shape_manual(values = c(24, 25, 21, 22, 23), guide = guide_legend(override.aes = list(fill = NA))) +
+    scale_shape_manual(values = shape_values[1:n_capture], guide = guide_legend(override.aes = list(fill = NA))) +
     scale_x_continuous(name = x_string, breaks = xbreaks) +
     scale_y_continuous(name = y_string, breaks = ybreaks) +
     facet_wrap(~sample_type, ncol = 1) +
@@ -413,7 +429,7 @@ my_scatter = function(x, y, xbreaks, ybreaks, x_string, y_string, title_string) 
 cat(paste0("Create plots (saved in ", outfile, ") ...\n"))
 # TODO: fix issue that only last plot generated in each if clause is saved to pdf due to unknown reason
 pdf(file = outfile, width=14)
-if (!is_rerun) {
+if (!is_rerun && !wgs) {
   # duplication vs read count scatter plot
   my_scatter(x = "READ_PAIRS_EXAMINED", y = "PERCENT_DUPLICATION", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 1, 0.1),
             x_string = "number of read pairs", y_string = "duplication rate", title_string = "Duplication rate vs Read count")
@@ -428,15 +444,10 @@ if (!is_rerun) {
                xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5e4, 500),
                x_string = "number of read pairs", y_string = "mean target coverage, baseline regions", title_string = "Baseline coverage vs Total read count")
     
-  } else if (!wgs) {
+  } else {
     # coverage vs read count scatter plot
     my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_TARGET_COVERAGE", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5000, 500),
               x_string = "number of read pairs", y_string = "mean target coverage", title_string = "Coverage vs Read count")
-  } else {
-    # coverage vs read count scatter plot
-    my_scatter(x = "READ_PAIRS_EXAMINED", y = "MEAN_COVERAGE", xbreaks = seq(0, 1e12, 1e7), ybreaks = seq(0, 5000, 500),
-              x_string = "number of read pairs", y_string = "mean coverage", title_string = "Coverage vs Read count")
-
   }
 }
 

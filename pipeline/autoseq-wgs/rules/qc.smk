@@ -28,7 +28,7 @@ rule fastqc:
 
 rule picard_collectinsertsize:
     input:
-        bam = outdir + "/bams/{sample}_nodups.bam"
+        bam = outdir + "/bams/{sample}_markdups.bam"
     output:
         metrics = outdir + "/qc/picard/{sample}.picard-insertsize.txt"
     params:
@@ -47,7 +47,7 @@ rule picard_collectinsertsize:
 
 rule picard_collectoxog:
     input:
-        bam = outdir + "/bams/{sample}_nodups.bam",
+        bam = outdir + "/bams/{sample}_markdups.bam",
         reference_genome = reference['reference_genome']
     output:
         metrics = outdir + "/qc/picard/{sample}.picard-oxog.txt"
@@ -69,7 +69,7 @@ rule picard_collectoxog:
 
 rule samtools_flagstat:
     input:
-        bam = outdir + "/bams/{sample}_nodups.bam"
+        bam = outdir + "/bams/{sample}_markdups.bam"
     output:
         outdir + "/qc/samtools/{sample}-flagstats.json"
     threads: params['samtools']['flagstat']['threads']
@@ -81,7 +81,7 @@ rule samtools_flagstat:
 
 rule picard_wgsmetrics:
     input:
-        bam = outdir + "/bams/{sample}_nodups.bam",
+        bam = outdir + "/bams/{sample}_markdups.bam",
         reference_genome = reference['reference_genome']
     output:
         metrics = outdir + "/qc/picard/{sample}.picard-wgsmetrics.txt"

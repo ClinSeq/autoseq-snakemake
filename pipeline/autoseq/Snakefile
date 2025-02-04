@@ -149,7 +149,9 @@ rule all:
     input: 
         OUTPUT,
         outdir + "/bams/intermediate_bamfiles.removed",
-        "{}/multiqc/".format(outdir),
+        directory("{}/multiqc".format(outdir)),
+        directory(outdir + "/IGVsnapshots/somatic/"),
+        directory(outdir + "/IGVsnapshots/germline/"),
         "{}/IGVnav/igv_session_sv.xml".format(outdir),
         "{}/IGVnav/igv_session_snps.xml".format(outdir)
     output:
@@ -171,6 +173,30 @@ rule generate_symlinks:
         "{}/logs/generate_symlinks.log".format(outdir)
     shell:
         "generate_symlinks.py --targets {params.target_bed} --outdir {params.outdir}  2> {log} " 
+
+
+rule generate_IGVSnapshots_snv:
+    input:
+        xml = "{}/IGVnav/igv_session_snps.xml".format(outdir),
+        somatic_snvs = "{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        germline_snvs = "{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR)
+    output:
+        somatic_snvs = directory(outdir + "/IGVsnapshots/somatic/"),
+        germline_snvs = directory(outdir + "/IGVsnapshots/germline/")
+    container: containers['igv']
+    threads: 8
+    log:
+        "{}/logs/generate_igvsnapshots_snvs.log".format(outdir)
+    shell:
+        "generate_igvsnapshots.py --xml {input.xml} "
+        " --preferences $IGV_PREFS "
+        " --input  {input.somatic_snvs} "
+        " --output {output.somatic_snvs} 2> {log}  && "
+        "generate_igvsnapshots.py --xml {input.xml} "
+        " --preferences $IGV_PREFS "
+        " --input  {input.germline_snvs} "
+        " --output {output.germline_snvs}  2>> {log} "
+
 
 
 include: "rules/pre_processing.smk"

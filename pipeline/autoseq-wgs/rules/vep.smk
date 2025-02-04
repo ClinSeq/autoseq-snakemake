@@ -1,24 +1,20 @@
 
 
-rule vep_annotation:
+rule vep_annotation_germline:
     input:
         reference = reference["reference_genome"],
         brca_exchange = reference["brca_exchange"],
         vep_dir = reference['vep_dir'],
-        germline = "{}/variants/{}-all.germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
-        somatic = "{}/variants/{}-{}-all.somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        germline = "{}/variants/{}-all.germline.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
     output:
-        germline = "{}/variants/{}-all.germline.vep.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
-        somatic = "{}/variants/{}-{}-all.somatic.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        germline = "{}/variants/{}-all.germline.vep.vcf.gz".format(outdir, NORMAL_CAPTURE_STR)
     params:
-        germline = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR),
-        somatic = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        germline = "{}/variants/{}-all.germline.vep.vcf".format(outdir, NORMAL_CAPTURE_STR)
     threads: params['vep']['threads']
     container: containers['ensemblvep']
     log:
-        outdir + "/logs/{}-{}-vep-annotation.log".format(CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        outdir + "/logs/{}-vep-annotation.log".format(NORMAL_CAPTURE_STR)
     shell:
-        "source activate ensembl-vep && "
         "vep --vcf --output_file STDOUT " 
             " --pick --dir {input.vep_dir} "
             " --fasta {input.reference} --filter_common "
@@ -27,7 +23,24 @@ rule vep_annotation:
             " --custom {input.brca_exchange},BrcaEx,vcf,exact,0,ClinicalSignificance "
             " --fork {threads} "
             " -i {input.germline} > {params.germline} 2> {log} && "
-            " bgzip {params.germline} && tabix -p vcf {output.germline} && "
+            " bgzip {params.germline} && tabix -p vcf {output.germline} "
+
+
+rule vep_annotation_somatic:
+    input:
+        reference = reference["reference_genome"],
+        brca_exchange = reference["brca_exchange"],
+        vep_dir = reference['vep_dir'],
+        somatic = "{}/variants/{}-{}-all.somatic.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    output:
+        somatic = "{}/variants/{}-{}-all.somatic.vep.vcf.gz".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    params:
+        somatic = "{}/variants/{}-{}-all.somatic.vep.vcf".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    threads: params['vep']['threads']
+    container: containers['ensemblvep']
+    log:
+        outdir + "/logs/{}-{}-vep-annotation.log".format(CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    shell:
         "vep --vcf --output_file STDOUT " 
             " --pick --dir {input.vep_dir} "
             " --fasta {input.reference} --filter_common "
@@ -35,6 +48,5 @@ rule vep_annotation:
             " --no_escape --no_stats --everything --offline "
             " --custom {input.brca_exchange},BrcaEx,vcf,exact,0,ClinicalSignificance "
             " --fork {threads} "
-            " -i {input.somatic} > {params.somatic} 2> {log} && "
+            " -i {input.somatic} > {params.somatic} 2>> {log} && "
             " bgzip {params.somatic} && tabix -p vcf {output.somatic} "
-

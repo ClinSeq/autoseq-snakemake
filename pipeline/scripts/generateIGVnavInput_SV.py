@@ -135,19 +135,10 @@ def parse_gridss(input_vcf, SDID, output, vcftype):
     """
     GRIDSS - vcf parsing 
     """
-    # header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-    #                   " > " + output + "_" + vcftype + "_pass_gridss.mut.tmp"
-
-    # gridss_cmd = "less " + input_vcf  + " | vawk '{ if($7 == \"PASS\")  print $1, $2, $2+1, \""+ SDID + '_gridss_' + vcftype +"\", I$SIMPLE_TYPE, $5, I$VF}' " \
-    #              " >> " + output + "_" + vcftype +"_pass_gridss.mut.tmp"
-    
-    # tmp_mut = output + "_" + vcftype + "_pass_gridss.mut.tmp"
-    # subprocess.call(" && ".join([header, gridss_cmd]), shell=True)
-    # get_igvcolortype(tmp_mut, "gridss")
     output_fname = "_".join([output, vcftype, "pass_gridss.mut"])
     outfile = open(output_fname, "w")
 
-    outfile.write("\t".join(['CHROM','START','END','SDID','TYPE','SVTYPE','ALT','SUPPORT_READS']) + '\n')
+    outfile.write("\t".join(['CHROM','START','END','SDID','TYPE','SVTYPE','ALT','SUPPORT_READS', 'VAF']) + '\n')
 
     vcf_reader = vcf.Reader(filename=input_vcf)
     events = set()
@@ -171,9 +162,13 @@ def parse_gridss(input_vcf, SDID, output, vcftype):
                 end = ''.join(list(filter(str.isdigit, alt.split(':')[1])))
 
             support_reads = record.INFO['VF']
+            if vcftype == "somatic":
+                vaf = ",".join(map(str, record.INFO['TAF']))
+            else:
+                vaf = str(record.samples[0]['AF'])
 
             outfile.write("\t".join(map(str, [chrom, start, end, sdid, 
-                                     igv_color_map[svtype], svtype, alt, support_reads])) + "\n")
+                                     igv_color_map[svtype], svtype, alt, support_reads, vaf])) + "\n")
     
 
 def parse_gtf(gtf, sdid, vcftype):
@@ -255,28 +250,20 @@ def combine_mut(input_dir, output_dir):
         print("annotate_combined_sv.txt file already exists!")
         return output_dir + "/annotate_combined_sv.txt"
     
-    header2 = "echo \"CHROM\tSTART\tEND\tSVTYPE\tTOOL\tSDID\tSAMPLE\tALT\tSUPPORT_READS\"" + " >> " + output_dir + "/annotate_combined_sv.txt"
+    header2 = "echo \"CHROM\tSTART\tEND\tSVTYPE\tTOOL\tSDID\tSAMPLE\tALT\tSUPPORT_READS\tVAF\"" + " >> " + output_dir + "/annotate_combined_sv.txt"
     subprocess.call(header2, shell=True)
 
     for file in files:
         vcftype = ''
         sup_reads = ''
         filebase = os.path.basename(file)
-        if 'lumpy_len500_SU24' in file:
-            cmd.append("awk -F'\\t' 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $6,\"lumpy\", $4, \"somatic\", $7, $8}' " \
-                        + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
-        elif 'svaba.mut' in file:
-            vcftype = 'somatic' if 'somatic' in filebase else 'germline'
-            sup_reads = '$9' if vcftype == 'SOMATIC' else '$8'
-            cmd.append("awk -F'\\t' 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $6,\"svaba\", $4, \"" + vcftype + "\", $7, " + sup_reads + "}' " +\
-                file + " >> " + output_dir + "/annotate_combined_sv.txt")
-        elif 'svcaller.mut' in file:
+        if 'svcaller.mut' in file:
             vcftype = 'cfdna' if '-CFDNA-' in filebase else 'tumor' if '-T-' in filebase else 'germline'
-            cmd.append("awk -F'\\t' 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $6,\"svcaller\", $4, \"" + vcftype + "\", $7, $8}' " \
+            cmd.append("awk -F'\\t' 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $6,\"svcaller\", $4, \"" + vcftype + "\", $7, $8, \"NA\"}' " \
                         + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
         elif 'gridss.mut' in file:
             vcftype = 'somatic' if 'somatic' in filebase else 'tumor' if 'tumor' in filebase else 'germline'            
-            cmd.append("awk -F'\\t' 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $6,\"gridss\", $4, \"" + vcftype + "\", $7, $8}' " \
+            cmd.append("awk -F'\\t' 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $6,\"gridss\", $4, \"" + vcftype + "\", $7, $8, $9}' " \
                         + file +  " >> " + output_dir + "/annotate_combined_sv.txt")
 
     subprocess.call(" && ".join(cmd), shell=True)
@@ -336,6 +323,21 @@ def check_targets(chrom, start, end, targets):
     return False
 
 
+def add_cgcann(gene, cgc):
+    """
+    Add CGC annotation
+    """
+    if ',' in gene:
+        genes = gene.split(',') 
+        cgc_ann = [cgc[i][0] for i in genes if i in cgc]
+    else:
+        cgc_ann = [cgc[gene][0] if gene in cgc else None]
+            
+    if not cgc_ann:
+        return [None]
+
+    return cgc_ann
+
 
 def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output, exons):
     """
@@ -343,8 +345,8 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
     """
     # output_file = open(output, 'w')
     summary_columns = ['CHROM_A', 'START_A', 'END_A', 'CHROM_B', 'START_B', 'END_B',
-                       'IGV_COORD', 'SVTYPE', 'SV_LENGTH', 'SUPPORT_READS', 'TOOL', 'SDID', 'SAMPLE',
-                       'GENE_A', 'GENE_B', "GENE_A-GENE_B-sorted", "CGC_ANN", "CURATOR"]
+                       'IGV_COORD', 'SVTYPE', 'SV_LENGTH', 'SUPPORT_READS', 'VAF', 'TOOL', 'SDID',
+                       'SAMPLE', 'GENE_A', 'GENE_B', "GENE_A-GENE_B-sorted", "CGC_ANN", "CURATOR"]
     summary_sv = list()
     with open(combined_file, 'r') as fh:
         header = fh.readline()
@@ -360,7 +362,8 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
             sdid = data[5].split('_')[0]
             sample = data[6]
             alt = data[7]
-            sup_reads = data[8] if len(data) == 9 else '.'
+            sup_reads = data[8]
+            vaf = data[9]
             svlength = 'NA'
             chrom_b = 'NA'
 
@@ -414,9 +417,9 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
             else:
                 gene_b = 'NA'    
             
-            cgcann = set()
-            cgcann.add(cgc_ann[gene_a][0] if gene_a in cgc_ann else None) 
-            cgcann.add(cgc_ann[gene_b][0] if gene_b in cgc_ann else None)
+            cgcann = list()
+            cgcann.extend(add_cgcann(gene_a, cgc_ann)) 
+            cgcann.extend(add_cgcann(gene_b, cgc_ann))
 
             if capture == "WG":
                 curator = "NO"
@@ -432,20 +435,17 @@ def annotate_combined_sv(combined_file, genes, targets, capture, cgc_ann, output
                     if check_targets(chrom_a, start_a, end_b, targets):
                         curator = "YES"
 
-            if tool == 'gridss' and chrom_b == 'NA':
-                svlength = abs(int(end_a)-int(start_a))
-                # calculation for gridss INS svlength
-                if svtype == "INS":
-                    alt_seq = ''.join(list(filter(str.isalpha, alt)))
-                    svlength = len(alt_seq)
+            if tool == 'gridss' and svtype == "INS":
+                alt_seq = ''.join(list(filter(str.isalpha, alt)))
+                svlength = len(alt_seq)
     
             gene_a_b = [gene_a, gene_b]
             gene_a_b.sort()
             gene_a_b_sorted = ",".join(gene_a_b)
 
             summary_sv.append([chrom_a, start_a, end_a, chrom_b, start_b, end_b, igv_coord, svtype,
-                                svlength, sup_reads, tool, sdid, sample, gene_a, 
-                                gene_b, gene_a_b_sorted, ",".join(list(filter(None, cgcann))), curator])
+                                svlength, sup_reads, vaf, tool, sdid, sample, gene_a, 
+                                gene_b, gene_a_b_sorted, ",".join(list(filter(None, set(cgcann)))), curator])
         
         svs_df = pd.DataFrame(summary_sv, columns = summary_columns)
         # hard filter for gridss germline svs

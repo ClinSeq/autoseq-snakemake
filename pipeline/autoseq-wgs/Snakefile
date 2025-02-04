@@ -45,7 +45,7 @@ capture_to_results = collections.defaultdict(SinglePanelResults)
 OUTPUT = list()
 
 if 'ALL' in steps or 'preprocess' in steps:
-    BAM_FILES = expand(outdir + "/bams/{sample}_nodups.bam", sample=all_clinseq_barcodes)
+    BAM_FILES = expand(outdir + "/bams/{sample}_markdups.bam", sample=all_clinseq_barcodes)
     OUTPUT.append(BAM_FILES)
 
     capture_to_results[NORMAL_CAPTURE].bamfile = get_capture_bam(NORMAL_CAPTURE, BAM_FILES)

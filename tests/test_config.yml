@@ -17,8 +17,13 @@ container:
     jumble: False
     purecn: False
     ensemblvep: False
+    ensemblvep_v112: False
     somaticseq: False
     svcaller: False
+    mulled-v2: False
+    hmftools-markdups: False
+    hmftools-redux: False
+    igv: False
 
 outdir: tests
 

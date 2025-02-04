@@ -1,5 +1,6 @@
 import os, re
 import glob
+import sys
 from pipeline.utils.clinseq_barcodes import parse_prep_id, compose_sample_str, \
     extract_unique_capture, find_fastqs, compose_lib_capture_str
 
@@ -42,6 +43,14 @@ def extract_bam(sample, libdir, umi = False):
         raise ValueError(" ".join(["Invalid bam : ", sample, nodups_bam]))
 
 
+def get_fastqs(wildcards):
+    """
+    helper function to get all fq files 
+    """
+    r1, r2 = find_fastqs(wildcards.sample, libdir)
+    return r1 + r2
+
+
 def get_containers(_path):
     """
     fetch containers for each conda env 
@@ -54,9 +63,13 @@ def get_containers(_path):
         "gridss": os.path.join(_path, "autoseq-gridss.sif"),
         "jumble": os.path.join(_path, "autoseq-jumble.sif"),
         "purecn": os.path.join(_path, "autoseq-purecn.sif"),
-        "ensemblvep": os.path.join(_path, "autoseq-ensemblvep.sif"),
+        "ensemblvep": os.path.join(_path, "autoseq-ensemblvep-v113.1.sif"),
         "somaticseq": os.path.join(_path, "autoseq-somaticseq.sif"),
-        "svcaller": os.path.join(_path, "autoseq-svcaller.sif")
+        "svcaller": os.path.join(_path, "autoseq-svcaller.sif"),
+        "mulled-v2": os.path.join(_path, "autoseq-mulled-v2.sif"),
+        "hmftools-markdups": os.path.join(_path, "autoseq-hmftools-markdups.sif"),
+        "hmftools-redux": os.path.join(_path, "autoseq-hmftools-redux_1.0.sif"),
+        "igv": os.path.join(_path, "autoseq-igvbatch.sif")
     }
 
     for k, v in containers.items():

@@ -84,7 +84,7 @@ def apply_filters(vcf, name_indexed):
             rn = set(record.info['BPNAMES'])
         except KeyError:
             logging.error("Need to add BPNAMES to INFO column in vcf file")
-            exit 
+            exit()
 
         read_names.extend(rn)
         mpos = set()
@@ -126,17 +126,19 @@ def main():
         'Generate evidence bam for structural variants ')
     parser.add_argument('--bam', required=True, help="Input bam file ")
     parser.add_argument('--vcf', required=True, help="structural variants vcf as input")
+    parser.add_argument('--readnames', help="export only readnames into txt file")
     parser.add_argument('--filter-vcf', action='store_true', help="Apply SAME_START_READS filter on input vcf file")
     parser.add_argument('--output', help="evidence bam for gridss variants")
     args = parser.parse_args()
     
     setup_logging()
 
-    logging.info(f"Loading {args.bam} ..")
-    samfile = pysam.AlignmentFile(args.bam, "rb")
-    logging.info(f"Indexing by read names {args.bam} ")
-    name_indexed = pysam.IndexedReads(samfile)
-    name_indexed.build()
+    if not args.readnames:
+        logging.info(f"Loading {args.bam} ..")
+        samfile = pysam.AlignmentFile(args.bam, "rb")
+        logging.info(f"Indexing by read names {args.bam} ")
+        name_indexed = pysam.IndexedReads(samfile)
+        name_indexed.build()
 
     if args.filter_vcf:
         logging.info(f"Applying filters on {args.vcf} and extracting read names")
@@ -144,6 +146,14 @@ def main():
     else:
         logging.info(f"Extracting variants supporting reads - {args.vcf} ")
         read_names = extract_readnames(args.vcf)
+
+    if args.readnames:
+        if read_names:
+            with open(args.readnames, 'w') as rn_out:
+                rn_out.write("\n".join(list(read_names)))
+
+        logging.info(f"Exporting Read names into {args.readnames}")
+        exit()
 
     logging.info(f"Generating evidence Bam {args.output}")
     extract_reads(samfile, name_indexed, read_names, args.output)

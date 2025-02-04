@@ -20,6 +20,10 @@ container:
     ensemblvep: False
     somaticseq: False
     svcaller: False
+    mulled-v2: False
+    hmftools-markdups: False
+    hmftools-redux: False
+    igv: False
 
 
 outdir: tests
