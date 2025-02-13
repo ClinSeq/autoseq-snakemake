@@ -164,7 +164,7 @@ def hotspot_aarange(gene, one_aa, aa_range, hs_lookup):
     return ann
 
 
-def hotspot_splice(gene, one_aa, gpos, aa_range, hs_lookup):
+def hotspot_splice(gene, one_aa, aa_range, gpos, hs_lookup):
     """
     """
     ann = ''
@@ -214,7 +214,7 @@ def annotate_hotspot(query, vartype, conseq, hotspot_lookup, gpos = ''):
         else:
             ann = hotspot_aapos(gene, one_aa, aa_range, hotspot_lookup)
     
-    if 'splice' in conseq:
+    if 'splice' in conseq and vartype == "snv":
         ann = hotspot_splice(gene, one_aa, aa_range, gpos, hotspot_lookup)
 
     return ann
