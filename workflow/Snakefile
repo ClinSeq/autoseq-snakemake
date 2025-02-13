@@ -1,0 +1,18 @@
+import pandas as pd
+
+include: "rules/utils.smk"
+
+##################### Load config  ##################################
+configfile: "config.yaml" 
+
+##################### Load Reference Files ##########################
+ref_json = config['reference'] if 'reference' in config else None
+
+## TODO add reference rules 
+if not ref_json:
+    include: "rules/reference.smk"
+
+##################### Load Samples  ##################################
+
+samples = pd.read_csv(config['samples'], sep = "\t").set_index("sample_name")
+

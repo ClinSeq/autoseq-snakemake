@@ -1,0 +1,3 @@
+sample_id   sample_name   sample_type unit_id fq1   fq2
+P-NA12877   LB-P-NA12877-N-03098850-TD1-C31 Normal  1   /nfs/TEST/autoseq-snakemake/tests/libraries/LB-P-NA12877-N-03098850-TD1-C31/2_LB-P-NA12877-N-03098850-TD1-TT1_1.fastq.gz    /nfs/TEST/autoseq-snakemake/tests/libraries/LB-P-NA12877-N-03098850-TD1-C31/2_LB-P-NA12877-N-03098850-TD1-TT1_2.fastq.gz
+P-NA12877   LB-P-NA12877-CFDNA-03098850-TD1-C31 Tumor   1   /nfs/TEST/autoseq-snakemake/tests/libraries/LB-P-NA12877-CFDNA-03098850-TD1-C31/1_LB-P-NA12877-CFDNA-03098850-TD1-TT1_1.fastq.gz    /nfs/TEST/autoseq-snakemake/tests/libraries/LB-P-NA12877-CFDNA-03098850-TD1-C31/1_LB-P-NA12877-CFDNA-03098850-TD1-TT1_2.fastq.gz

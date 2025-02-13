@@ -1,0 +1,4 @@
+
+samples: "samples.tsv"
+
+reference: "autoseq-genome.json"

@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-__author__ = "Sarath Murugan"
-__copyright__ = "Copyright 2024, Sarath Murugan"
 __maintainer__ = "Sarath Murugan"
 __email__ = "sarath.murugan@outlook.com"
 

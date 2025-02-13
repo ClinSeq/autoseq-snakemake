@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-__author__ = "Sarath Murugan"
-__copyright__ = "Copyright 2024, Sarath Murugan"
 __maintainer__ = "Sarath Murugan"
 __email__ = "sarath.murugan@outlook.com"
 
@@ -12,6 +10,7 @@ extra = snakemake.params.get("extra", "")
 tmpdir = snakemake.params.get("tmpdir", "")
 log = snakemake.log_fmt_shell(stdout=False, stderr=True)
 
+
 bwa_index = snakemake.input.bwa_index
 
 
@@ -19,6 +18,7 @@ if not isinstance(bwa_index, str):
     raise ValueError(
         "BWA Index must be given in the Inputs ! "
     )
+
 
 
 shell(
