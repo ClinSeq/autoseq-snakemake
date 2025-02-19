@@ -87,50 +87,6 @@ def get_igvcolortype(mutfile, tool):
     subprocess.call("rm {}".format(mutfile), shell=True)
 
 
-def parse_svaba(input_vcf, SDID, output, vcftype):
-    """
-    vawk '{print $1, $2, $2+1, "P-00356971_svaba", "BND", $5, S$*$AD, S$*$DP}'
-    """
-    header = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_normal\tSUPPORT_tumor \
-             \tDPnormal\tDPtumor\tGENES\"" + " > " + output + "_" + vcftype + "_svaba.mut"
-    svaba_cmd = "vawk '{print $1, $2, $2+1, \"" + SDID + '_svaba_' + vcftype +"\",I$SVTYPE, $5, S$*$AD,S$*$DP}'" + \
-                " " + input_vcf + " >> " + output + "_" + vcftype + "_svaba.mut.tmp"
-    
-    tmp_mut = output + "_" + vcftype + "_svaba.mut.tmp"
-    subprocess.call(" && ".join([header, svaba_cmd]), shell=True)
-    get_igvcolortype(tmp_mut, "svaba")
-
-
-def parse_lumpy(input_vcf, SDID, output, vcftype):
-    """
-    ##CHROM START   END SDID    SVTYPE  ALT SVLENGTH    SUPPORT_READS    NOTES   GENES
-    vawk '{if ((I$SVLEN>1000 || I$SVLEN<-1000) && $1 != "hs37d5" && $1 !~ "GL" && $5 !~ "hs37d5" &&
-    I$SU>50 && I$SVTYPE ~ "BND") print $1, $2, $2+1, "P-00356971_lumpy", I$SVTYPE, $5, "NA", I$SU
-    else if ((I$SVLEN>1000 || I$SVLEN<-1000) && $1 != "hs37d5" && $1 !~ "GL" && $5 !~ "hs37d5"
-    && I$SU>50 && I$SVTYPE !~ "BND") print $1, $2, I$END, "P-00356971_lumpy", I$SVTYPE, $5, I$SVLEN, I$SU}
-    """
-    header1k_sup_50 = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-                      " > " + output + "_lumpy_len1k_SU50.mut.tmp"
-    header500_sup_24 = "echo \"CHROM\tSTART\tEND\tSDID\tSVTYPE\tALT\tSUPPORT_READS\"" + \
-                       " > " + output + "_lumpy_len500_SU24.mut.tmp"
-
-    len1k_sup_50 = "vawk '{if ((I$SVLEN>1000 || I$SVLEN<-1000) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>50 && I$SVTYPE ~ \"BND\") print $1, $2, $2+1, \""+ SDID + '_lumpy_' + vcftype +"\", I$SVTYPE, $5, \"NA\", I$SU ;"  + \
-                " else if ((I$SVLEN>1000 || I$SVLEN<-1000) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>50 && I$SVTYPE !~ \"BND\") print $1, $2, I$END, \""+ SDID + '_lumpy_' + vcftype +"\", I$SVTYPE, $5, I$SU}' " + input_vcf + \
-                " >> " + output + "_lumpy_len1k_SU50.mut.tmp"
-
-    len500_sup_24 = "vawk '{if ((I$SVLEN>500 || I$SVLEN<-500) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>24 && I$SVTYPE ~ \"BND\") print $1, $2, $2+1, \"" + SDID + '_lumpy_' + vcftype + "\", I$SVTYPE, $5, I$SU ;" + \
-                " else if ((I$SVLEN>500 || I$SVLEN<-500) && $1 != \"hs37d5\" && $1 !~ \"GL\" && $5 !~ \"hs37d5\" && I$SU>24 && I$SVTYPE !~ \"BND\") print $1, $2, I$END, \"" + SDID + '_lumpy_' + vcftype + "\", I$SVTYPE, $5, I$SU }' " + input_vcf + \
-                " >> " + output + "_lumpy_len500_SU24.mut.tmp"
-  
-    # cmd = "awk 'NR>1 {OFS=\"\\t\";print $1, $2, $3, $5,\"lumpy\", $4, \"" + vcftype + "\", $6, $7}' " + output + "_lumpy_len500_SU24.mut" +  " >> " + output_dir + "/annotate_combined_sv.txt"
-
-    tmp_len500_SU24 = output + "_lumpy_len500_SU24.mut.tmp"
-    tmp_len1k_SU50 = output + "_lumpy_len1k_SU50.mut.tmp"
-    subprocess.call(" && ".join([header1k_sup_50, header500_sup_24, len1k_sup_50, len500_sup_24]), shell=True)
-    get_igvcolortype(tmp_len500_SU24, "lumpy")
-    get_igvcolortype(tmp_len1k_SU50, "lumpy")
-
-
 def parse_gridss(input_vcf, SDID, output, vcftype):
     """
     GRIDSS - vcf parsing 

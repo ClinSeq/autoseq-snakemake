@@ -377,9 +377,9 @@ if __name__ == "__main__":
                 ann_hotspot = annotate_hotspot((gene, hgvsp), "indel", consequence, hotspot_indel)
         
         curation_tag = ''
-        if curation_ann:
+        if args.curation_ann:
             curation_tag = annoate_curate_tag(project, gene, vcftype, curation_ann)
-                                              
+
         # processing somatic vcf file
         if vcftype == "somatic":
             try:
