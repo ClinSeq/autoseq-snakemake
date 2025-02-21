@@ -25,6 +25,18 @@ rule jumblerun_cnv:
         "mv {params.prefix}_dnacopy.seg {output.seg} "
 
 
+rule cnv_annotation:
+    input:
+        cns = outdir + "/cnv/{sample}.cns",
+        curation_ann = reference['curation_ann'],
+    output:
+        outdir + "/cnv/{sample}_ann.cns"
+    threads: 2
+    log: outdir + "/logs/variants/{sample}-cnv-annotation.log"
+    shell:
+        "annotate_cnvs.py -i {input.cns} -n {input.curation_ann} -o {output} 2> {log} "
+
+
 rule cnvkit_tracks:
     input:
         cns = outdir + "/cnv/{sample}.cns",

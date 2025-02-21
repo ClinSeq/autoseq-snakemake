@@ -9,7 +9,7 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-def annotate_cnvs(input_file, curation_ann_file, output_file, type):
+def annotate_cnvs(input_file, curation_ann_file, output_file):
     """
     Annotate CNVs with cancer gene specific information for curation
     
@@ -28,6 +28,8 @@ def annotate_cnvs(input_file, curation_ann_file, output_file, type):
 
     logging.info(f"Read {len(ann_df)} rows from annotation file")
     project = os.path.basename(input_file).split('-')[0]
+    sample_type = os.path.basename(input_file).split('-')[3]
+    type = 'somatic' if sample_type in ['T', 'CFDNA'] else 'germline'
 
     logging.info(f"Project identified as {project}")
     ## filter the annotation file based on the project and type
@@ -59,9 +61,8 @@ if __name__ == "__main__":
         'Annotate CNVs with cancer gene specific information for curation')
     parser.add_argument('-i', '--input', required=True, help="Input CNV segmentations file")
     parser.add_argument('-c', '--curation-ann', help="Annotation file for curation")
-    parser.add_argument('-t', '--type', help="Sample Type - Normal, Tumor, CFDNA to be added")
     parser.add_argument('-o', '--output', required=True,
                         help="output segmentation file with curate column in the end")
     args = parser.parse_args()
 
-    annotate_cnvs(args.input, args.curation_ann, args.output, args.type)
+    annotate_cnvs(args.input, args.curation_ann, args.output)

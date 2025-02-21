@@ -199,6 +199,7 @@ rule annotate_generateIGVnavInput:
         genes = reference["genes_bed"],
         targets = reference['sv_filter'],
         cgcann = reference['cgcann'],
+        curation_ann = reference['curation_ann'],
         exons = reference['exons_gtf']
     output:
         "{}/svs/igv/{}-sv-annotated.txt".format(outdir, CANCER_CAPTURE_STR)
@@ -209,5 +210,6 @@ rule annotate_generateIGVnavInput:
         outdir + "/logs/generateIGVnavInput_annotate-{}.log".format(CANCER_CAPTURE_STR)
     shell:        
         "generateIGVnavInput_SV.py --input {params.svs_dir} --cgc {input.cgcann} "
-            " --annotBed {input.genes} --target {params.capture_kit_id} {input.targets} "
+            " -c {input.curation_ann} --annotBed {input.genes} "
+            " --target {params.capture_kit_id} {input.targets} "
             " --exons {input.exons} --output {output} 2> {log} "

@@ -49,6 +49,7 @@ rule germline_generateIGVnav:
         vcf = "{}/variants/{}-all.germline.vep.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
         oncokb = reference['oncokb'],
         cgcann = reference['cgcann'],
+        curation_ann = reference['curation_ann'],
         cancer_hotspot_snv = reference['cancer_hotspot_snv'],
         cancer_hotspot_indel = reference['cancer_hotspot_indel']
     output:
@@ -57,6 +58,7 @@ rule germline_generateIGVnav:
         vcftype = "germline"
     shell:
         "generateIGVnavInput.py {input.vcf} {input.oncokb} {params.vcftype} "
+        " -c {input.curation_ann} "
         " --hotspot-snv {input.cancer_hotspot_snv} "
         " --hotspot-indel {input.cancer_hotspot_indel} "
         " --wgs --cgc {input.cgcann} --output {output} "
