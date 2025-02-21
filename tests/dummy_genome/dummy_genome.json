@@ -49,6 +49,7 @@
     "sv_filter": "variants/svfilter_2022-07-11.json",
     "cgcann": "genes/cgcann_filter_v1.txt",
     "exons_gtf": "genes/Homo_sapiens.GRCh37.87.exons-only.gtf",
+    "curation_ann": "genes/curation_table.csv",
     "targets": {  
         "probio_comprehensive3": {
             "blacklist-bed": null, 
