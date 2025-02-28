@@ -280,6 +280,7 @@ rule annotate_generateIGVnavInput:
         targets = reference['sv_filter'],
         cgcann = reference['cgcann'],
         exons = reference['exons_gtf'],
+        curation_ann = reference['curation_ann'],
         gridss_somatic = "{}/svs/igv/{}_somatic_pass_gridss.mut".format(outdir, CANCER_CAPTURE_STR),
         gridss_normal = "{}/svs/igv/{}_normal_pass_gridss.mut".format(outdir, NORMAL_CAPTURE_STR)
     output:
@@ -289,5 +290,6 @@ rule annotate_generateIGVnavInput:
         capture_kit_id = CANCER_CAPTURE.capture_kit_id
     shell:        
         "generateIGVnavInput_SV.py --input {params.svs_dir} --cgc {input.cgcann} "
-            " --annotBed {input.genes} --target {params.capture_kit_id} {input.targets} "
+            " -c {input.curation_ann} --annotBed {input.genes} "
+            " --target {params.capture_kit_id} {input.targets} "
             " --exons {input.exons} --output {output} "

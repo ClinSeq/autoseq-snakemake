@@ -257,7 +257,7 @@ rule gatk3_indelrealigner_umi_2:
 
 rule fgbio_filterconsensus:
     input:
-        bam = outdir + "/bams/{sample}_realigned-2.bam",
+        bam = outdir + "/bams/{sample}_realigned-2_filtered.bam",
         reference_genome = reference['reference_genome']
     output:
         bam = outdir + "/bams/{sample}_consensus_filtered.bam",
@@ -367,4 +367,28 @@ rule rm_interbamfiles:
         shell("rm -rf {params.split_targets} 2>> {log} ")
         shell("touch {output} ")
         
-        
+
+######### QUICK FIX FOR THE FGBIO filterconsensus #####################
+######### TODO: Update the fgbio                  #####################
+#### Error message: Expected the AB-strand to have depth > 0 for read: KH20250211:45517088 1/2 1b unmapped read
+
+
+rule fgbio_filterconsensus_fix:
+    input:
+        bam = outdir + "/bams/{sample}_realigned-2.bam",
+    output:
+        bam = outdir + "/bams/{sample}_realigned-2_filtered.bam"
+    params:
+        read_names = outdir + "/bams/n_reads_{sample}.txt",
+    threads: params['fgbio']['filterconsensus']['threads']
+    log: outdir + "/logs/fgbio_filter_consensus_{sample}.log"
+    shell:
+        """
+        samtools view {input.bam} | awk '\$10 ~ /^N+$/ {{print \$1}}' > {params.read_names}
+        if [ -s {params.read_names} ]; then
+            picard FilterSamReads I={input.bam} O=${output.bam}  READ_LIST_FILE={params.read_names}  FILTER=excludeReadList 
+        else
+            cp {input.bam} {output.bam}
+        fi
+        samtools index {output.bam}
+        """

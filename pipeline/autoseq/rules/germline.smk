@@ -29,7 +29,8 @@ rule germline_generateIGVnav:
         vcf = "{}/variants/{}-{}.germline_variants_with_taf.vcf".format(outdir, 
                 NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         oncokb = reference['oncokb'],
-        cgcann = reference["cgcann"],
+        cgcann = reference["cgcann"], ## cancer gene census annotation
+        curation_ann = reference["curation_ann"], # cancer specific curation annotation
         cancer_hotspot_snv = reference['cancer_hotspot_snv'],
         cancer_hotspot_indel = reference['cancer_hotspot_indel']
     output:
@@ -39,5 +40,6 @@ rule germline_generateIGVnav:
     shell:
         "generateIGVnavInput.py {input.vcf} {input.oncokb} {params.vcftype} "
         " --cgc {input.cgcann} --output {output} "
+        " -c {input.curation_ann} "
         " --hotspot-snv {input.cancer_hotspot_snv} "
         " --hotspot-indel {input.cancer_hotspot_indel} "
