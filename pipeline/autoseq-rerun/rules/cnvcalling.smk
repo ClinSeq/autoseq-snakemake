@@ -32,7 +32,7 @@ rule cnv_annotation:
     threads: 2
     log: outdir + "/logs/variants/{sample}-cnv-annotation.log"
     shell:
-        "annotate_cnvs.py -i {input.cns} -n {input.curation_ann} -o {output} "
+        "annotate_cnvs.py -i {input.cns} -c {input.curation_ann} -o {output} "
 
 
 rule cnv_tracks:
