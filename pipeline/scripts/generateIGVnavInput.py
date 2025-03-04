@@ -228,7 +228,7 @@ def annoate_curate_tag(prefix, gene, vartype, curation_lookup):
 
     if len(res) > 0:
         res.reset_index(drop=True, inplace=True)
-        curate_tag = res.iloc[0, 'comment']
+        curate_tag = res.iloc[0, 3]
         return " ".join([gene, curate_tag])
 
     return ''
