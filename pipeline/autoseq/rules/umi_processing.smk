@@ -386,7 +386,7 @@ rule fgbio_filterconsensus_fix:
         """
         samtools view {input.bam} | awk '$10 ~ /^N+$/ {{print $1}}' > {params.read_names}
         if [ -s {params.read_names} ]; then
-            picard FilterSamReads I={input.bam} O=${output.bam}  READ_LIST_FILE={params.read_names}  FILTER=excludeReadList 
+            picard FilterSamReads I={input.bam} O={output.bam}  READ_LIST_FILE={params.read_names}  FILTER=excludeReadList 
         else
             cp {input.bam} {output.bam}
         fi
