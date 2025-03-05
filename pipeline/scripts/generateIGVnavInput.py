@@ -301,7 +301,7 @@ if __name__ == "__main__":
                                      'NOTES', 'GENE',  'ENSEMBLID', 'IMPACT', 'CONSEQUENCE',     \
                                      'TRANSCRIPT', 'HGVSc', 'HGVSp', 'HOTSPOT', 'T_DP', 'T_ALT',  \
                                      'T_VAF', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID',       \
-                                     'gnomAD', 'BRCAEx', 'OncoKB', 'CGC_ANN', 'CURATE' 'NUM_TOOLS']) + "\n")
+                                     'gnomAD', 'BRCAEx', 'OncoKB', 'CGC_ANN', 'CURATE', 'NUM_TOOLS']) + "\n")
     elif vcftype == "germline":
         output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', \
                                      'GENE', 'ENSEMBLID', 'IMPACT', 'CONSEQUENCE', 'TRANSCRIPT', \
