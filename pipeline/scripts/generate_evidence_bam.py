@@ -7,6 +7,7 @@ __email__ = "sarath.murugan@outlook.com"
 import os
 import argparse
 import shutil
+from collections import Counter
 import logging
 
 import pysam
@@ -87,19 +88,26 @@ def apply_filters(vcf, name_indexed):
             exit()
 
         read_names.extend(rn)
-        mpos = set()
+        mpos = Counter()
         for name in rn:
             try:
                 iterator = name_indexed.find(name)
-                mpos.update(set([":".join(map(str, [x.reference_name, x.reference_start, x.reference_end]))
-                                  for x in iterator if not x.is_supplementary]))
+                _mpos = [":".join(map(str, [x.reference_name, x.reference_start, x.reference_end]))
+                                  for x in iterator if not x.is_supplementary]
+                _mpos = ["-".join(_mpos)] if len(_mpos) > 1 else _mpos
+                mpos.update(_mpos)
             except KeyError:
                 print(f"Reads could not find: {name}")
                 pass
 
-        if len(mpos) == 1:
-            record.filter.add("SAME_START_READS")
+        cutoff = len(rn) * 0.7
+        check_cutoff = [1 if v > cutoff else 0 for k, v in mpos.items()]
         
+        if any(check_cutoff):
+            record.filter.add("SAME_START_READS")
+        else:
+            record.filter.add("PASS")
+
         tmpvcf.write(record)
     
     shutil.move(tmppath, vcf)

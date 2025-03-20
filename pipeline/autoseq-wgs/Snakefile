@@ -166,6 +166,71 @@ rule generate_symlinks:
         "generate_symlinks.py --outdir {params.outdir}  2> {log} " 
 
 
+############ Generate IGV Snapshot #############################
+
+rule generate_IGVSnapshots_somaticsnv:
+    input:
+        xml = "{}/IGVnav/igv_session_snps.xml".format(outdir),
+        somatic_snvs = "{}/{}-{}-igvnav-input.txt".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+    output:
+        somatic_snvs = directory(outdir + "/IGVsnapshots/somatic/")
+    params:
+        vartype = "snv"
+    container: containers['igv']
+    threads: 8
+    log:
+        "{}/logs/generate_igvsnapshots_somatic_snvs.log".format(outdir)
+    shell:
+        """
+        generate_igvsnapshots.py --xml {input.xml} 
+            --preferences $IGV_PREFS -t {params.vartype} 
+            --input  {input.somatic_snvs} 
+            --output {output.somatic_snvs} 2> {log} 
+        """
+
+
+rule generate_IGVSnapshots_germlinesnv:
+    input:
+        xml = "{}/IGVnav/igv_session_snps.xml".format(outdir),
+        germline_snvs = "{}/{}-igvnav-input.txt".format(outdir, NORMAL_CAPTURE_STR)
+    output:
+        germline_snvs = directory(outdir + "/IGVsnapshots/germline/")
+    params:
+        vartype = "snv"
+    container: containers['igv']
+    threads: 8
+    log:
+        "{}/logs/generate_igvsnapshots_germline_snvs.log".format(outdir)
+    shell:
+        """
+        generate_igvsnapshots.py --xml {input.xml} \
+            --preferences $IGV_PREFS -t {params.vartype} \
+            --input  {input.germline_snvs} \
+            --output {output.germline_snvs}  2> {log} 
+        """
+
+
+rule generate_IGVSnapshots_sv:
+    input:
+        xml = "{}/IGVnav/igv_session_sv.xml".format(outdir),
+        svs = "{}/svs/igv/{}-{}-sv-annotated.txt".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+    output:
+        directory(outdir + "/IGVsnapshots/svs/")
+    params:
+        vartype = "sv"
+    container: containers['igv']
+    threads: 8
+    log:
+        "{}/logs/generate_igvsnapshots_svs.log".format(outdir)
+    shell:
+        """
+        generate_igvsnapshots.py --xml {input.xml} \
+            --preferences $IGV_PREFS -t {params.vartype} \ 
+            --input  {input.svs} \
+            --output {output} 2> {log} 
+        """
+
+
 include: "rules/pre_processing.smk"
 include: "rules/alignment.smk"
 include: "rules/qc.smk"

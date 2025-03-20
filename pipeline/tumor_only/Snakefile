@@ -162,7 +162,8 @@ rule all:
         "{}/IGVnav/igv_session_sv.xml".format(outdir),
         "{}/IGVnav/igv_session_snps.xml".format(outdir),
         directory(outdir + "/IGVsnapshots/somatic/"),
-        directory(outdir + "/IGVsnapshots/germline/")
+        directory(outdir + "/IGVsnapshots/germline/"),
+        directory(outdir + "/IGVsnapshots/svs/")
     output:
         outdir + "/analysis_finished"
     shell:
@@ -192,19 +193,42 @@ rule generate_IGVSnapshots_snv:
     output:
         somatic_snvs = directory(outdir + "/IGVsnapshots/somatic/"),
         germline_snvs = directory(outdir + "/IGVsnapshots/germline/")
+    params:
+        vartype = "snv"
     container: containers['igv']
     threads: 8
     log:
         "{}/logs/generate_igvsnapshots_snvs.log".format(outdir)
     shell:
         "generate_igvsnapshots.py --xml {input.xml} "
-        " --preferences $IGV_PREFS "
+        " --preferences $IGV_PREFS -t {params.vartype} "
         " --input  {input.somatic_snvs} "
         " --output {output.somatic_snvs} 2> {log}  && "
         "generate_igvsnapshots.py --xml {input.xml} "
-        " --preferences $IGV_PREFS "
+        " --preferences $IGV_PREFS -t {params.vartype} "
         " --input  {input.germline_snvs} "
         " --output {output.germline_snvs}  2>> {log} "
+
+
+rule generate_IGVSnapshots_sv:
+    input:
+        xml = "{}/IGVnav/igv_session_sv.xml".format(outdir),
+        svs = "{}/svs/igv/{}-sv-annotated.txt".format(outdir, CANCER_CAPTURE_STR)
+    output:
+        directory(outdir + "/IGVsnapshots/svs/")
+    params:
+        vartype = "sv"
+    container: containers['igv']
+    threads: 8
+    log:
+        "{}/logs/generate_igvsnapshots_svs.log".format(outdir)
+    shell:
+        """
+        generate_igvsnapshots.py --xml {input.xml} \
+            --preferences $IGV_PREFS -t {params.vartype} \ 
+            --input  {input.svs} \
+            --output {output} 2> {log} 
+        """
 
 
 rule remove_bamfiles:

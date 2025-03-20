@@ -87,6 +87,7 @@ def create_batch_script_snv(vars, xml, outdir):
 
 def adj_window(start, end, d):
     """
+    Adjust window size based on the distance between the variant and the end of the window
     """
     diff = end - start
     center = start + round(diff/2)
