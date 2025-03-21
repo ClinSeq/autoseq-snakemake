@@ -106,7 +106,8 @@ def apply_filters(vcf, name_indexed):
         if any(check_cutoff):
             record.filter.add("SAME_START_READS")
         else:
-            record.filter.add("PASS")
+            if 'PASS' in list(record.filter): 
+                record.filter.add("PASS")
 
         tmpvcf.write(record)
     
