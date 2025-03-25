@@ -187,10 +187,10 @@ def main():
 
     igv_cmd = f"igv.sh -b {batch_script} --preferences {args.preferences} " 
 
-    # try:
-    #     subprocess.run(igv_cmd, shell=True)
-    # except Exception as err:
-    #     logging.error(err)
+    try:
+        subprocess.run(igv_cmd, shell=True)
+    except Exception as err:
+        logging.error(err)
 
 
 if __name__ == "__main__":
