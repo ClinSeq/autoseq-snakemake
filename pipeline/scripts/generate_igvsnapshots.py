@@ -112,7 +112,7 @@ def create_batch_script_sv(vars, xml, outdir):
         for line in fh:
             data = line.strip().split('\t')
             # skip GSR not in curator
-            if data[19] == "NO":
+            if data[18] == "NO":
                 continue
             chr_a = data[0] 
             start_a = int(data[1])
@@ -120,7 +120,7 @@ def create_batch_script_sv(vars, xml, outdir):
             chr_b = data[3] 
             start_b = int(data[4])
             end_b = int(data[5])
-            if data[10] == "gridss":
+            if data[11] == "gridss":
                 bp1_start = end_a - 150
                 bp1_end = end_a + 150
                 bp2_start = end_b - 150
@@ -187,10 +187,10 @@ def main():
 
     igv_cmd = f"igv.sh -b {batch_script} --preferences {args.preferences} " 
 
-    try:
-        subprocess.run(igv_cmd, shell=True)
-    except Exception as err:
-        logging.error(err)
+    # try:
+    #     subprocess.run(igv_cmd, shell=True)
+    # except Exception as err:
+    #     logging.error(err)
 
 
 if __name__ == "__main__":
