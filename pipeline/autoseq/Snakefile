@@ -217,7 +217,7 @@ rule generate_IGVSnapshots_sv:
     shell:
         """
         generate_igvsnapshots.py --xml {input.xml} \
-            --preferences $IGV_PREFS -t {params.vartype} \ 
+            --preferences $IGV_PREFS -t {params.vartype}  \
             --input  {input.svs} \
             --output {output} 2> {log} 
         """

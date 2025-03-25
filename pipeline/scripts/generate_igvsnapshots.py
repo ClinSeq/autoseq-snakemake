@@ -112,7 +112,7 @@ def create_batch_script_sv(vars, xml, outdir):
         for line in fh:
             data = line.strip().split('\t')
             # skip GSR not in curator
-            if data[12] == "NO":
+            if data[19] == "NO":
                 continue
             chr_a = data[0] 
             start_a = int(data[1])
