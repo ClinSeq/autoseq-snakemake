@@ -285,7 +285,7 @@ def sdid_valid(sdid_str):
 
 
 def sample_type_valid(sample_type_str):
-    return sample_type_str in ["N", "T", "CFDNA"]
+    return sample_type_str in ["N", "T", "CFDNA", "RNA"]
 
 
 def sample_id_valid(sample_id_str):

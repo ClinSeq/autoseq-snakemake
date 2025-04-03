@@ -83,6 +83,9 @@ def config(context, barcodes_file, outdir):
 @click.option("--profile", default='shell', help="job schedulers eg. SLURM")
 @click.option("--pipeline", default='autoseq', help="Pipeline to be launched")
 @click.option("-n", "--normal-bam", default=None, help="Normal bam files dir, Applicable only to tumor only pipeline")
+@click.option("--run-oncoanalyser", is_flag=True, help="To run nfcore oncoanalyser pipeline, with WGS")
+@click.option("--onco-rna", help="RNA clinseq barcode for RNA pipeline")
+@click.option("--nf-reference", help="Nextflow reference config file from HMF")
 @click.option("--use-singularity", is_flag=True, help="To use singularity")
 @click.option("--singularity", help="Path to singularity image")
 @click.option("--smk-opt", help="snakemake option")
@@ -90,8 +93,8 @@ def config(context, barcodes_file, outdir):
 @click.pass_context
 def launch(context, ref, samples, outdir, libdir, 
             configfile, cluster_config, scratch, dryrun, umi, 
-            profile, pipeline, normal_bam, use_singularity, 
-            singularity, cores, smk_opt):
+            profile, pipeline, normal_bam, run_oncoanalyser,
+            onco_rna, nf_reference, use_singularity, singularity, smk_opt, cores):
     """
     launch the respective pipeline with samples json 
     """
@@ -144,6 +147,12 @@ def launch(context, ref, samples, outdir, libdir,
     config_dict['outdir'] = normpath(outdir)
     config_dict['libdir'] = normpath(libdir)
     config_dict['umi'] = umi
+
+    ### Oncoanalyser pipeline for WGS
+    if run_oncoanalyser:
+        config_dict['oncoanalyser'] = True
+        config_dict['rna_barcode'] = onco_rna if onco_rna else None
+        config_dict['nf_reference'] = nf_reference 
 
     if use_singularity:
         config_dict['container'] = get_containers(singularity)
