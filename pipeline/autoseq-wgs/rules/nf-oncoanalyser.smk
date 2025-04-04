@@ -6,7 +6,7 @@ nf_input = {
     "tumor_bam": outdir + "/bams/{}_markdups.bam".format(tumor_barcode),
 }
 
-if rna_barcode:
+if rna_barcode != "":
     include: "rna-alignment.smk"
     nf_input["rna_bam"] = outdir + "/bams/{}.dedup.bam".format(rna_barcode)
 
@@ -31,7 +31,7 @@ rule prepare_samplesheet:
         shell(f"echo {header} > {output}")
         shell(f"echo {n_entry} >> {output}")
         shell(f"echo {t_entry} >> {output}")
-        if "rna_bam" in input:
+        if "rna_bam" in nf_input:
             r_entry = f"{params.group_id},{params.subject_id},{params.rna_id},tumor,rna,bam_markdups,{input.rna_bam}"
             shell(f"echo {r_entry} >> {output}")
 
@@ -46,6 +46,7 @@ rule run_oncoanalyser:
         oncoanalyser_base = "/nfs/PIPELINE/oncoanalyser",
         genome_gtf = reference['gencode_gtf'],
         nf_reference = config['nf_reference'],
+        rerun = config['rerun-incomplete'],
     threads: 22
     log:
         outdir + "/logs/run_oncoanalyser_{}.log".format(sdid)
