@@ -46,7 +46,7 @@ rule run_oncoanalyser:
         oncoanalyser_base = "/nfs/PIPELINE/oncoanalyser",
         genome_gtf = reference['gencode_gtf'],
         nf_reference = config['nf_reference'],
-        rerun = config['rerun-incomplete'],
+        rerun = config['rerun'],
     threads: 22
     log:
         outdir + "/logs/run_oncoanalyser_{}.log".format(sdid)
@@ -59,5 +59,7 @@ rule run_oncoanalyser:
         cmd += "  --ref_data_genome_gtf {} ".format(params.genome_gtf)
         cmd += " --input {} ".format(input)
         cmd += " --outdir {} ".format(params.outdir)
+        if params.rerun:
+            cmd += " --resume "
 
         shell(f"{conda_cmd} {cmd} 2> {log}")

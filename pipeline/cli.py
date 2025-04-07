@@ -153,6 +153,7 @@ def launch(context, ref, samples, outdir, libdir,
         config_dict['oncoanalyser'] = True
         config_dict['rna_barcode'] = onco_rna if onco_rna else None
         config_dict['nf_reference'] = nf_reference 
+        config_dict['rerun'] = True if "rerun-incomplete" in smk_opt else False
 
     if use_singularity:
         config_dict['container'] = get_containers(singularity)

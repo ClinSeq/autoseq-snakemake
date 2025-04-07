@@ -10,6 +10,7 @@ umi: True
 oncoanalyser: True
 rna_barcode: LB-P-NA12877-RNA-03098850-TD1-C31
 nf_reference: tests/dummy_genome/nf_reference.config
+rerun: False
 
 container: 
     base: False
