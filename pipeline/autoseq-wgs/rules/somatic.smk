@@ -107,7 +107,7 @@ rule sage_somatic:
         "{}/logs/variants/{}-{}-sage-somatic.log".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     shell:
         " source activate gridss-env && "
-        " java -Xms4G -Xmx32G -cp {params.jarfile} "
+        " java -Xms4G -Xmx32G -cp $SAGE_JAR "
         " com.hartwig.hmftools.sage.SageApplication -threads 16 "
         " -reference {params.normalid} -reference_bam {input.normal_bam}"
         " -tumor {params.tumorid} -tumor_bam {input.tumor_bam} "
