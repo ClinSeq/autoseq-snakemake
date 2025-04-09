@@ -51,8 +51,9 @@ rule star_alignment:
             --outSAMattrRGline ID:{params.sample_id} SM:{params.sample_id} \\
             --outSAMtype BAM Unsorted \\
             --outSAMunmapped Within \\
-            --outFileNamePrefix {output.bam} \\
+            --outFileNamePrefix {params.output_prefix} \\
             --runRNGseed 0
+        mv {params.output_prefix}Aligned.out.bam {output.bam}
         """
 
 
@@ -107,6 +108,7 @@ rule gatk4_markduplicates:
         bam = outdir + "/bams/{}.dedup.bam".format(rna_barcode),
         metrics = outdir + "/bams/{}.dedup.metrics".format(rna_barcode)
     params:
+        bai = outdir + "/bams/{}.dedup.bai".format(rna_barcode),
         tmpdir = params['scratch'],
         java_options = '"-Xmx16G"',
     threads: 8
@@ -120,4 +122,5 @@ rule gatk4_markduplicates:
             --METRICS_FILE {output.metrics} \\
             --TMP_DIR {params.tmpdir} \\
             --CREATE_INDEX 
+        mv {params.bai} {output.bam}.bai
         """

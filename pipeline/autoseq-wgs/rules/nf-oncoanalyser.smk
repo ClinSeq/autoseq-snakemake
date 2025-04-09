@@ -32,7 +32,7 @@ rule prepare_samplesheet:
         shell(f"echo {n_entry} >> {output}")
         shell(f"echo {t_entry} >> {output}")
         if "rna_bam" in nf_input:
-            r_entry = f"{params.group_id},{params.subject_id},{params.rna_id},tumor,rna,bam_markdups,{input.rna_bam}"
+            r_entry = f"{params.group_id},{params.subject_id},{params.rna_id},tumor,rna,bam,{input.rna_bam}"
             shell(f"echo {r_entry} >> {output}")
 
 
@@ -43,7 +43,7 @@ rule run_oncoanalyser:
         outdir + "/nf-oncoanalyser/{group}/orange/{tumor}.orange.pdf".format(group=group_id, tumor=tumor_barcode)
     params:
         outdir = outdir + "/nf-oncoanalyser/",
-        oncoanalyser_base = "/nfs/PIPELINE/oncoanalyser",
+        oncoanalyser_base = os.environ.get("ONCOANALYSER_BASE"),
         genome_gtf = reference['gencode_gtf'],
         nf_reference = config['nf_reference'],
         rerun = config['rerun'],
@@ -51,7 +51,7 @@ rule run_oncoanalyser:
     log:
         outdir + "/logs/run_oncoanalyser_{}.log".format(sdid)
     run:
-        conda_cmd = "source activate oncoanalyser && "
+        conda_cmd = "source activate nfcore-oncoanalyser && "
         cmd = "nextflow run {}/main.nf ".format(params.oncoanalyser_base)
         cmd += " -profile singularity  "
         cmd += " -config  {} ".format(params.nf_reference)
@@ -60,6 +60,6 @@ rule run_oncoanalyser:
         cmd += " --input {} ".format(input)
         cmd += " --outdir {} ".format(params.outdir)
         if params.rerun:
-            cmd += " --resume "
+            cmd += " -resume "
 
         shell(f"{conda_cmd} {cmd} 2> {log}")
