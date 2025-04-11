@@ -207,6 +207,11 @@ class GenerateSymlink():
                 full_path = igvnav_dir + '/' + each_file
                 if not os.path.exists(full_path) or not os.path.getsize(full_path):
                     continue
+                ### Skip vep.vcf.gz file for WGS because it is taking longer time to load 
+                ### Due to millions of records
+                ### TODO filter out variants from vep.vcf.gz file
+                if self.is_wgs and each_track.startswith('vep'):
+                    continue
                 snp_resource += resource_path.format(path_name=full_path)
                 if each_track.startswith('bam'):
                     regex = ".*-(N|CFDNA|T)-.*(DEL|DUP|INV|TRA).bam$"

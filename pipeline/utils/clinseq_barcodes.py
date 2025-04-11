@@ -277,7 +277,7 @@ def extract_kit_id(kit_string, validation = True):
 
 
 def project_valid(project_str):
-    return project_str in ["AL", "LB", "OT", "PB", "PSFF", "UL", "iPCM", "CRCR", "SARC", "CPC", "BM", "KA", "UM", "COV", "GMCK"]
+    return project_str in ["AL", "LB", "OT", "PB", "PSFF", "UL", "iPCM", "CRCR", "SARC", "CPC", "BM", "KA", "UM", "COV", "GMCK", "CEC"]
 
 
 def sdid_valid(sdid_str):

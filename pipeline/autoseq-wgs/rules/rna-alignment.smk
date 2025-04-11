@@ -87,7 +87,7 @@ rule sambamba_merge:
     threads: 8
     container: containers['hmftools-redux']
     log:
-        outdir + "/log/sambamba_rna_merge_{}.log".format(rna_barcode)
+        outdir + "/logs/sambamba_rna_merge_{}.log".format(rna_barcode)
     shell:
         """
         InputBams=({input})
@@ -113,7 +113,7 @@ rule gatk4_markduplicates:
         java_options = '"-Xmx16G"',
     threads: 8
     log:
-        outdir + "/log/gatk4_markduplicates_{}.log".format(rna_barcode)
+        outdir + "/logs/gatk4_markduplicates_{}.log".format(rna_barcode)
     shell:
         """
         gatk --java-options {params.java_options} MarkDuplicates \\
