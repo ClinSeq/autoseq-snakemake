@@ -14,8 +14,17 @@ import os
 import argparse
 import logging
 import subprocess
+import random
 
 _default_ops = ["new", "genome hg19"]
+
+
+def get_random_port():
+    """
+    Generate a random port number in the range 1024–65535.
+    :return: A random port number.
+    """
+    return random.randint(1024, 65535)
 
 
 def is_indel(variant):
@@ -185,7 +194,8 @@ def main():
     else:
         batch_script = create_batch_script_sv(args.input, args.xml, args.output)
 
-    igv_cmd = f"igv.sh -b {batch_script} --preferences {args.preferences} " 
+    port = get_random_port()
+    igv_cmd = f"igv.sh -b {batch_script} --preferences {args.preferences} -p {port} --igvDirectory {args.output} " 
 
     try:
         subprocess.run(igv_cmd, shell=True)

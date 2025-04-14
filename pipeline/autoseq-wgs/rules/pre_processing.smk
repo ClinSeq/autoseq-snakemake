@@ -1,13 +1,5 @@
 
 
-
-for sample in all_clinseq_barcodes:
-    if '-N-' in sample:
-        normal_barcode = sample
-    if '-CFDNA-' or '-T-' in sample:
-        tumor_barcode = sample
-
-
 nfq_prefix, ns1, ns2 = get_fqwildcards(normal_barcode, libdir)
 tfq_prefix, ts1, ts2 = get_fqwildcards(tumor_barcode, libdir)
 
