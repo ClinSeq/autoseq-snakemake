@@ -46,7 +46,7 @@ rule haplotypecaller_vcfmerge:
 
 rule germline_generateIGVnav:
     input:
-        vcf = "{}/variants/{}-all.germline.vep.vcf.gz".format(outdir, NORMAL_CAPTURE_STR),
+        vcf = "{}/variants/{}-{}.germline_variants_with_taf.vcf.gz".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
         oncokb = reference['oncokb'],
         cgcann = reference['cgcann'],
         curation_ann = reference['curation_ann'],

@@ -201,7 +201,7 @@ class SinglePanelResults():
         self.msings_output = None
 
 
-def get_fqwildcards(sample_barcode, libdir):
+def get_fqwildcards(sample_barcode, libdir, p_only = False):
     """
     function to extract fastq prefix and suffix
 
@@ -226,6 +226,10 @@ def get_fqwildcards(sample_barcode, libdir):
     _fq_ = [i for i in re.split(regex_fq2, fq2_abs[0]) if i != '']
     s2 = _fq_[1]
 
+    if p_only:
+        # only return prefix for p-only
+        return fq_prefix[0]
+    
     return fq_prefix, s1, s2
 
 
