@@ -102,6 +102,7 @@ rule skewer_trim_pe_normal:
         cp {params.tmpdir}/skewer-trimmed-pair1.fastq.gz {output.out_fq1} 
         cp {params.tmpdir}/skewer-trimmed-pair2.fastq.gz {output.out_fq2} 
         rm -rf {params.tmpdir} 2> {log} 
+        rm {input.fq1} {input.fq2}
         """
 
 
@@ -131,4 +132,5 @@ rule skewer_trim_pe_tumor:
         cp {params.tmpdir}/skewer-trimmed-pair1.fastq.gz {output.out_fq1}
         cp {params.tmpdir}/skewer-trimmed-pair2.fastq.gz {output.out_fq2}
         rm -rf {params.tmpdir} 2>> {log} 
+        rm {input.fq1} {input.fq2}
         """

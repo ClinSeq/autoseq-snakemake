@@ -97,13 +97,15 @@ def apply_filters(vcf, name_indexed):
                 _mpos = ["-".join(_mpos)] if len(_mpos) > 1 else _mpos
                 mpos.update(_mpos)
             except KeyError:
-                print(f"Reads could not find: {name}")
+                #print(f"Reads could not find: {name}")
                 pass
-
-        cutoff = len(rn) * 0.7
-        check_cutoff = [1 if v > cutoff else 0 for k, v in mpos.items()]
         
-        if any(check_cutoff):
+        cutoff = len(rn) * 0.6
+        check_cutoff = [1 if v >= cutoff else 0 for k, v in mpos.items()]
+
+        # to reduce FP, variant should have at least 3 supporting reads 
+        # with different start-end positions
+        if any(check_cutoff) or len(mpos) < 3: 
             record.filter.add("SAME_START_READS")
         else:
             if 'PASS' in list(record.filter): 
