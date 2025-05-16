@@ -151,7 +151,7 @@ def launch(context, ref, samples, outdir, libdir,
     ### Oncoanalyser pipeline for WGS
     if run_oncoanalyser:
         config_dict['oncoanalyser'] = True
-        config_dict['rna_barcode'] = onco_rna if onco_rna else None
+        config_dict['rna_barcode'] = onco_rna if onco_rna else ""
         config_dict['nf_reference'] = nf_reference 
         config_dict['rerun'] = True if "rerun-incomplete" in smk_opt else False
 

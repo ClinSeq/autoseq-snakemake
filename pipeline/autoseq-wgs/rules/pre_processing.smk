@@ -29,13 +29,13 @@ rule fastp_splitfq_normal:
     shell:
         """
         fastp --in1 {input.fq1} \\
-            --in2  {input.fq2}    \\ 
+            --in2  {input.fq2}    \\
             --disable_quality_filtering \\
             --disable_length_filtering   \\
             --disable_adapter_trimming   \\
             --disable_trim_poly_g  \\
             --split_prefix_digits=4 \\
-            --split  {params.n_split}  \\  
+            --split  {params.n_split}  \\
             --thread {threads}      \\
             --out1 {params.out_fq1}    \\
             --out2 {params.out_fq2}  2> {log} 
@@ -62,13 +62,13 @@ rule fastp_splitfq_tumor:
     shell:
         """
         fastp --in1 {input.fq1} \\
-            --in2  {input.fq2}    \\ 
+            --in2  {input.fq2}  \\
             --disable_quality_filtering \\
             --disable_length_filtering   \\
             --disable_adapter_trimming   \\
             --disable_trim_poly_g  \\
             --split_prefix_digits=4 \\
-            --split  {params.n_split}  \\  
+            --split  {params.n_split}  \\
             --thread {threads}      \\
             --out1 {params.out_fq1}    \\
             --out2 {params.out_fq2}  2> {log} 
