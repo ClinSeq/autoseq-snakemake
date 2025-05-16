@@ -225,7 +225,7 @@ def get_fqwildcards(sample_barcode, libdir):
 
     _fq_ = [i for i in re.split(regex_fq2, fq2_abs[0]) if i != '']
     s2 = _fq_[1]
-
+    
     return fq_prefix, s1, s2
 
 

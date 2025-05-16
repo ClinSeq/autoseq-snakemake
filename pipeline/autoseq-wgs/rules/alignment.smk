@@ -11,19 +11,20 @@ with open(fchrsizes, 'r') as fh:
 
 rule bwa_mem2_alignment_normal:
     input:
-        fq1 = os.path.join(nskewer_outdir, "{prefix}" + ns1),
-        fq2 = os.path.join(nskewer_outdir, "{prefix}" + ns2),
+        fq1 = os.path.join(nskewer_outdir, "{n}.{prefix}" + ns1),
+        fq2 = os.path.join(nskewer_outdir, "{n}.{prefix}" + ns2),
         bwa_index = reference['bwa-mem2-idx']
     output:
-        bamfile = outdir + "/bams/"+ normal_barcode + "/{prefix}.bam"
+        bamfile = outdir + "/bams/"+ normal_barcode + "/{n}.{prefix}.bam"
     wildcard_constraints:
-        prefix = "|".join(nfq_prefix)
+        prefix = "|".join(nfq_prefix),
+        n = "|".join(fastp_split[0:nsplit])
     params:
         readgroup = get_readgroup(normal_barcode)
-    threads: 16
+    threads: 12
     container: containers['mulled-v2']
     log:
-        outdir + "/logs/bwa_{prefix}.log",
+        outdir + "/logs/bwa_{n}.{prefix}.log",
     shell:
         """
         bwa-mem2 mem \\
@@ -50,19 +51,20 @@ rule bwa_mem2_alignment_normal:
 
 rule bwa_mem2_alignment_tumor:
     input:
-        fq1 = os.path.join(tskewer_outdir, "{prefix}" + ts1),
-        fq2 = os.path.join(tskewer_outdir, "{prefix}" + ts2),
+        fq1 = os.path.join(tskewer_outdir, "{n}.{prefix}" + ts1),
+        fq2 = os.path.join(tskewer_outdir, "{n}.{prefix}" + ts2),
         bwa_index = reference['bwa-mem2-idx']
     output:
-        bamfile = outdir + "/bams/" + tumor_barcode + "/{prefix}.bam"
+        bamfile = outdir + "/bams/" + tumor_barcode + "/{n}.{prefix}.bam"
     wildcard_constraints:
-        prefix = "|".join(tfq_prefix)
+        prefix = "|".join(tfq_prefix),
+        n = "|".join(fastp_split)
     params:
         readgroup = get_readgroup(tumor_barcode),
     threads: 16
     container: containers['mulled-v2']
     log:
-        outdir + "/logs/bwa_{prefix}.log"
+        outdir + "/logs/bwa_{n}.{prefix}.log"
     shell:
         """
         bwa-mem2 mem \\
@@ -89,7 +91,7 @@ rule bwa_mem2_alignment_tumor:
 
 rule sambamba_merge_normal:
     input:
-        expand(outdir + "/bams/" + normal_barcode + "/{prefix}.bam", prefix = nfq_prefix)
+        expand(outdir + "/bams/" + normal_barcode + "/{n}.{prefix}.bam", n = fastp_split[0:nsplit], prefix = nfq_prefix)
     output:
         bam = outdir + "/bams/{}.bam".format(normal_barcode)
     params:
@@ -114,7 +116,7 @@ rule sambamba_merge_normal:
 
 rule sambamba_merge_tumor:
     input:
-        expand(outdir + "/bams/" + tumor_barcode + "/{prefix}.bam", prefix = tfq_prefix)
+        expand(outdir + "/bams/" + tumor_barcode + "/{n}.{prefix}.bam", n = fastp_split, prefix = tfq_prefix)
     output:
         bam = outdir + "/bams/{}.bam".format(tumor_barcode)
     params:
