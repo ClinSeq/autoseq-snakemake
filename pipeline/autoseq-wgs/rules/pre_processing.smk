@@ -27,8 +27,8 @@ rule fastp_splitfq_normal:
         prefix = "|".join(nfq_prefix)
     params:
         nout = outdir + "/fastqs/",
-        out_fq1 = os.path.join(outdir, "fastqs", normal_barcode, "{prefix}" + ns1),
-        out_fq2 = os.path.join(outdir, "fastqs", normal_barcode, "{prefix}" + ns2),
+        out_fq1 = os.path.join(outdir, "fastqs", "{prefix}" + ns1),
+        out_fq2 = os.path.join(outdir, "fastqs", "{prefix}" + ns2),
         n_split = nsplit
     threads: nsplit
     log:
@@ -68,8 +68,8 @@ rule fastp_splitfq_tumor:
         prefix = "|".join(tfq_prefix)
     params:
         nout = outdir + "/fastqs/",
-        out_fq1 = os.path.join(outdir, "fastqs", tumor_barcode, "{prefix}" + ts1),
-        out_fq2 = os.path.join(outdir, "fastqs", tumor_barcode, "{prefix}" + ts2),
+        out_fq1 = os.path.join(outdir, "fastqs", "{prefix}" + ts1),
+        out_fq2 = os.path.join(outdir, "fastqs", "{prefix}" + ts2),
         n_split = len(fastp_split)
     threads: len(fastp_split)
     log:
