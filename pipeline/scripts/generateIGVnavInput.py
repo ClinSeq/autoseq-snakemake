@@ -405,7 +405,8 @@ if __name__ == "__main__":
             rsid = canonical_trans['Existing_variation']
 
             if (filter_col == 'PASS' or filter_col == 'LowQual') and \
-                (impact == 'HIGH' or impact == 'MODERATE' or is_splice_variant) and not wgs:
+                (impact == 'HIGH' or impact == 'MODERATE' or is_splice_variant \
+                 or ann_hotspot == "Hotspot") and not wgs:
                 # forming variant string to remove duplicates
                 # eg: 3-113275658-G-TTTTTTT
                 tmp_str = "-".join(map(str, [record.CHROM, record.POS, record.REF, record.ALT[0]]))
