@@ -82,6 +82,7 @@ rule bwa_mem2_alignment_tumor:
                 --nthreads {threads} \\
                 /dev/stdin | \\
             sambamba sort \\
+                -m 1G  \\
                 --nthreads {threads} \\
                 --out {output.bamfile} \\
                 /dev/stdin 2> {log}
@@ -156,7 +157,7 @@ rule hmftools_redux:
     shell:
         """
         redux \\
-            -Xmx32g \\
+            -Xmx64g \\
             -bamtool $(type -p sambamba) \\
             -sample {params.sample_id} \\
             -input_bam {input.bam} \\
