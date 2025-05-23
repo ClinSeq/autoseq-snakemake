@@ -83,6 +83,7 @@ def config(context, barcodes_file, outdir):
 @click.option("--profile", default='shell', help="job schedulers eg. SLURM")
 @click.option("--pipeline", default='autoseq', help="Pipeline to be launched")
 @click.option("-n", "--normal-bam", default=None, help="Normal bam files dir, Applicable only to tumor only pipeline")
+@click.option("--fq-split", is_flag=True, help="To split large fastqs into smaller, only applicable in WGS")
 @click.option("--run-oncoanalyser", is_flag=True, help="To run nfcore oncoanalyser pipeline, with WGS")
 @click.option("--onco-rna", help="RNA clinseq barcode for RNA pipeline")
 @click.option("--nf-reference", help="Nextflow reference config file from HMF")
@@ -93,7 +94,7 @@ def config(context, barcodes_file, outdir):
 @click.pass_context
 def launch(context, ref, samples, outdir, libdir, 
             configfile, cluster_config, scratch, dryrun, umi, 
-            profile, pipeline, normal_bam, run_oncoanalyser,
+            profile, pipeline, normal_bam, fq_split, run_oncoanalyser,
             onco_rna, nf_reference, use_singularity, singularity, smk_opt, cores):
     """
     launch the respective pipeline with samples json 
@@ -147,6 +148,7 @@ def launch(context, ref, samples, outdir, libdir,
     config_dict['outdir'] = normpath(outdir)
     config_dict['libdir'] = normpath(libdir)
     config_dict['umi'] = umi
+    config_dict['fq_split'] = fq_split
 
     ### Oncoanalyser pipeline for WGS
     if run_oncoanalyser:
@@ -187,7 +189,7 @@ def launch(context, ref, samples, outdir, libdir,
         
 
     out_configpath = os.path.join(normpath(outdir), f"config_{sample_str}.yml")
-    jobdb = os.path.join(normpath(outdir), f"{sample_str}_jobdb.json")
+    jobdb = os.path.join(normpath(outdir), f"{sample_str}_jobdb.txt")
 
     if not os.path.exists(outdir):
         os.makedirs(outdir, exist_ok=True)

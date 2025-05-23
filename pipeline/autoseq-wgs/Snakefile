@@ -22,6 +22,7 @@ reference = make_paths_absolute(refjson, basepath)
 umi = config['umi']
 libdir = config['libdir']
 steps = config['steps']
+fq_split = config['fq_split']
 
 # Need to check clinseq_barcodes and data available for those valid barcodes
 sampledata, all_clinseq_barcodes = check_sampledata(libdir, samples)
