@@ -1,8 +1,98 @@
 import os, re
 import glob
 import sys
+import requests
+from pipeline.settings import PROJECTS_CODE_TO_NAME
 from pipeline.utils.clinseq_barcodes import parse_prep_id, compose_sample_str, \
     extract_unique_capture, find_fastqs, compose_lib_capture_str
+
+
+
+def check_project_exists(project_id, GET_PROJECT_LIST_API):
+    """
+    """
+    
+    response = requests.get(GET_PROJECT_LIST_API, verify = False)
+    response.raise_for_status()
+    all_projects = response.json()
+
+    for proj in all_projects['data']:
+        if proj['project_name'] == project_id:
+            return True
+    return False
+
+
+def create_project_info(project_id, CREATE_PROJECT_INFO_API):
+    """
+    Create a new project info entry if the project does not exist.
+    """
+    if project_id not in PROJECTS_CODE_TO_NAME:
+        return {"status": "error", "message": f"Project ID '{project_id}' is not recognized."}
+
+    params = {
+        "project_name": PROJECTS_CODE_TO_NAME[project_id],
+        "prefix_name": project_id,
+        "nfs_path": "",
+        "proj_status": 0,
+        "pdf_report": 1,
+        "mtbp_report": 1,
+        "sort_order": 1 
+    }
+
+    response = requests.post(CREATE_PROJECT_INFO_API, params = params, verify=False)
+    response.raise_for_status()
+    
+    if response.status_code != 200:
+        return {"status": "error", "message": "Failed to create project info."}
+    
+    return {"status": "success", "message": f"Project '{project_id}' created successfully."}
+    
+
+
+def update_sample_info(project_id, sdid, capture, status):
+    """
+    Validate the project ID by checking if it exists in the project list.
+    """
+    BASE_URL = os.environ.get("CURATOR_BASE_URL")  # Replace with actual API base URL
+    GET_PROJECT_LIST = f"{BASE_URL}/all_project_list"
+    CREATE_SAMPLE_INFO = f"{BASE_URL}/create-sample-info"
+    CREATE_PROJECT_INFO = f"{BASE_URL}/create-project-info"
+    
+    if project_id not in PROJECTS_CODE_TO_NAME:
+        return {"status": "error", "message": f"Project ID '{project_id}' is not recognized."}
+
+    try:
+        if not check_project_exists(project_id, GET_PROJECT_LIST):
+            create_response = create_project_info(project_id, CREATE_PROJECT_INFO)
+            if create_response['status'] == 'error':
+                return create_response
+        
+        params = {
+            "project_name": PROJECTS_CODE_TO_NAME[project_id],
+            "sample_id": sdid,
+            "capture_id": capture,
+            "sample_status": status
+        }
+
+        response = requests.post(CREATE_SAMPLE_INFO, params=params, verify=False)
+        response.raise_for_status()
+
+        if response.status_code == 200:
+            return {"status": "success", "message": f"Sample info for '{sdid}' updated successfully."}
+        else:
+            return {"status": "error", "message": "Failed to update sample info."}
+    
+    except requests.exceptions.HTTPError as http_err:
+        return {"status": "error", "message": f"HTTP error occurred: {http_err}"}
+    except requests.exceptions.ConnectionError:
+        return {"status": "error", "message": "Connection error. Check your network or API endpoint."}
+    except requests.exceptions.Timeout:
+        return {"status": "error", "message": "Request timed out."}
+    except requests.exceptions.RequestException as e:
+        return {"status": "error", "message": f"An error occurred: {e}"}
+    except ValueError:
+        return {"status": "error", "message": "Failed to decode JSON from response."}
+
 
 
 def extract_bam(sample, libdir, umi = False):

@@ -145,21 +145,6 @@ wildcard_constraints:
 container: config['container']['base']
 
 containers = config['container']
-
-rule all:
-    input: 
-        OUTPUT,
-        outdir + "/bams/intermediate_bamfiles.removed",
-        directory("{}/multiqc".format(outdir)),
-        directory(outdir + "/IGVsnapshots/somatic/"),
-        directory(outdir + "/IGVsnapshots/germline/"),
-        directory(outdir + "/IGVsnapshots/svs/"),
-        "{}/IGVnav/igv_session_sv.xml".format(outdir),
-        "{}/IGVnav/igv_session_snps.xml".format(outdir)
-    output:
-        outdir + "/analysis_finished"
-    shell:
-        "date +'%Y-%m-%d T%T %:z' > {output}"
                                     
 
 rule generate_symlinks:
@@ -235,3 +220,39 @@ include: "rules/germline.smk"
 include: "rules/somatic.smk"
 include: "rules/structuralvariants.smk"
 include: "rules/vep.smk"
+
+
+
+
+rule all:
+    input: 
+        OUTPUT,
+        outdir + "/bams/intermediate_bamfiles.removed",
+        directory("{}/multiqc".format(outdir)),
+        directory(outdir + "/IGVsnapshots/somatic/"),
+        directory(outdir + "/IGVsnapshots/germline/"),
+        directory(outdir + "/IGVsnapshots/svs/"),
+        "{}/IGVnav/igv_session_sv.xml".format(outdir),
+        "{}/IGVnav/igv_session_snps.xml".format(outdir)
+    output:
+        outdir + "/analysis_finished"
+    params:
+        sdid = samples["sdid"],
+        project_id = config['project_id'],
+        capture_id = "_".join(tumor_barcode + normal_barcode)
+    run:
+        try:
+            response = update_sample_info(
+                project_id=params.project_id,
+                sdid=params.sdid,
+                capture=params.capture_id,
+                status=1 
+            )
+
+            if response.get("status") == "error":
+                print(response.get("message", "Failed to update sample info."))
+
+        except Exception as e:
+            print(f"Error updating sample info: {e}")
+        
+        shell("date +'%Y-%m-%d T%T %:z' > {output}")

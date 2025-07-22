@@ -10,7 +10,7 @@ import subprocess
 from loguru import logger as Log
 import pipeline
 from pipeline.settings import SNAKEFILE
-from pipeline.utils.utils import make_paths_absolute, Pipeline, get_containers
+from pipeline.utils.utils import Pipeline, get_containers, update_sample_info
 from pipeline.utils.clinseq_barcodes import data_available_for_clinseq_barcode, \
     extract_clinseq_barcodes, validate_clinseq_barcodes, convert_barcodes_to_sampledict, \
     check_sampledata, normpath, parse_project, clinseq_barcode_is_valid
@@ -149,6 +149,7 @@ def launch(context, ref, samples, outdir, libdir,
     config_dict['libdir'] = normpath(libdir)
     config_dict['umi'] = umi
     config_dict['fq_split'] = fq_split
+    config_dict['project_id'] = project_id
 
     ### Oncoanalyser pipeline for WGS
     if run_oncoanalyser:
@@ -232,6 +233,19 @@ def launch(context, ref, samples, outdir, libdir,
         subprocess.run(cmd, shell=True)
     except Exception as err:
         Log.error(err)
+    
+    ## update sample info into curator database
+    Log.info("Updating sample information into curator database ...")
+    capture_id = sample_str
+    status = 0 # 0 - jobs are submitted and running
+    try:
+        response = update_sample_info(project_id, sdid, capture_id, status)
+        if response.get("status") == "error":
+            Log.error(f"Error updating sample information: {response.get('message')}")
+        else:
+            Log.info(f"Sample information updated successfully for {sdid} in project {project_id}.")
+    except Exception as e:
+        Log.error(f"Failed to update sample information: {e}")
 
 
 if __name__ == "__main__":
