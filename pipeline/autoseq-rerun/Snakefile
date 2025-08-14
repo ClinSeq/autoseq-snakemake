@@ -207,17 +207,19 @@ rule generate_IGVSnapshots_snv:
     output:
         somatic_snvs = directory(outdir + "/IGVsnapshots/somatic/"),
         germline_snvs = directory(outdir + "/IGVsnapshots/germline/")
+    params:
+        vartype = "snv"
     container: containers['igv']
     threads: 8
     log:
         "{}/logs/generate_igvsnapshots_snvs.log".format(outdir)
     shell:
         "generate_igvsnapshots.py --xml {input.xml} "
-        " --preferences $IGV_PREFS "
+        " --preferences $IGV_PREFS -t {params.vartype} "
         " --input  {input.somatic_snvs} "
         " --output {output.somatic_snvs} 2> {log}  && "
         "generate_igvsnapshots.py --xml {input.xml} "
-        " --preferences $IGV_PREFS "
+        " --preferences $IGV_PREFS -t {params.vartype} "
         " --input  {input.germline_snvs} "
         " --output {output.germline_snvs}  2>> {log} "
 
