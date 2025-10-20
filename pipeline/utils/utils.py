@@ -160,7 +160,8 @@ def get_containers(_path):
         "hmftools-markdups": os.path.join(_path, "autoseq-hmftools-markdups.sif"),
         "hmftools-redux": os.path.join(_path, "autoseq-hmftools-redux_1.0.sif"),
         "autoseq-rnastar": os.path.join(_path, "autoseq-rnastar-2.7.3a.sif"),
-        "igv": os.path.join(_path, "autoseq-igvbatch.sif")
+        "igv": os.path.join(_path, "autoseq-igvbatch.sif"),
+        "dpyd": os.path.join(_path, "autoseq-typeDPYD.sif")
     }
 
     for k, v in containers.items():
