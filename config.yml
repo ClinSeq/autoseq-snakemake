@@ -24,6 +24,7 @@ container:
     hmftools-markdups: False
     hmftools-redux: False
     igv: False
+    dpyd: False
 
 
 outdir: tests
