@@ -93,22 +93,23 @@ p <- p[[1]]
 
 #save.image('~/Analysis/ALASCCA/temp.Rdata')
 
-png(filename = opts$output_figure, width = 14, height = 8, units = 'in', res=150)
-
-layout <-  "ABBBB
+if (!is.na(opts$output_figure)) {
+    png(filename = opts$output_figure, width = 14, height = 8, units = 'in', res=150)
+    
+    layout <-  "ABBBB
                 CDDDD
                 EFFFF"
-fig <-
-    p$gc_rawdepth+p$pos_rawdepth+
-    p$gc_log2+p$pos_log2+
-    p$depth_alleleratio+p$pos_alleleratio+
-    plot_layout(design = layout,guides = 'collect')
-
-pa$caption <- NULL
-
-print(fig+pa)
-dev.off()
-
+    fig <-
+        p$gc_rawdepth+p$pos_rawdepth+
+        p$gc_log2+p$pos_log2+
+        p$depth_alleleratio+p$pos_alleleratio+
+        plot_layout(design = layout,guides = 'collect')
+    
+    pa$caption <- NULL
+    
+    print(fig+pa)
+    dev.off()
+}
 ```
 
 
