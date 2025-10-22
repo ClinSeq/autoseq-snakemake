@@ -25,7 +25,7 @@ scriptversion <- '25.10.1'
 args <- rbind(
     c("frankenplot_Rmd", NA, 1, "character", "path to frankenplot.Rmd script"),
     c("output", NA, 1, "character", "output html file including full path"),
-    c("output_figure", NA, 1, "character", "output figure file including full path"),  # <--- new
+    c("output_figure", NA, 2, "character", "output figure file including full path"),  # <--- new
     c("output_hrd", NA, 2, "character", "output HRD text file including full path"),
     c("tumor_cnr", NA, 1, "character", "tumor bin file from Jumble or CNVkit"),
     c("tumor_cns", NA, 1, "character", "tumor segment file from Jumble or CNVkit"),
