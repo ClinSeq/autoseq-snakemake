@@ -1,13 +1,19 @@
 #!/usr/bin/env Rscript
 
-scriptversion <- '24.12.1'
+<<<<<<< Updated upstream
+scriptversion <- '25.10.1'
+=======
+scriptversion <- '24.12.2'
+>>>>>>> Stashed changes
 
 # Dependencies and arguments ----------------------------------------------
 {
     suppressPackageStartupMessages(library(getopt))
+    suppressPackageStartupMessages(library(dplyr))  # <--- new
     suppressPackageStartupMessages(library(stringr))
     suppressPackageStartupMessages(library(VariantAnnotation))
     suppressPackageStartupMessages(library(data.table))
+    suppressPackageStartupMessages(library(kableExtra))  # <--- new
     suppressPackageStartupMessages(library(GenomicRanges))
     suppressPackageStartupMessages(library(BSgenome.Hsapiens.UCSC.hg19))
     suppressPackageStartupMessages(library(BSgenome))
@@ -15,14 +21,16 @@ scriptversion <- '24.12.1'
     suppressPackageStartupMessages(library(org.Hs.eg.db))
     suppressPackageStartupMessages(library(TxDb.Hsapiens.UCSC.hg19.knownGene))
     suppressPackageStartupMessages(library(csaw))
+    suppressPackageStartupMessages(library(RJSONIO))  # <--- new
 }
 
 #long, short(NA), argmask, datatype, desc
 #argmask 0=no arg, 1=req, 2=optional
 args <- rbind(
     c("frankenplot_Rmd", NA, 1, "character", "path to frankenplot.Rmd script"),
-    c("output", NA, 1, "character", "output html file including FULL path"),   
-    c("output_hrd", NA, 2, "character", "output HRD text file including FULL path"),    # added
+    c("output", NA, 1, "character", "output html file including full path"),
+    c("output_figure", NA, 1, "character", "output figure file including full path"),  # <--- new
+    c("output_hrd", NA, 2, "character", "output HRD text file including full path"),
     c("tumor_cnr", NA, 1, "character", "tumor bin file from Jumble or CNVkit"),
     c("tumor_cns", NA, 1, "character", "tumor segment file from Jumble or CNVkit"),
     c("normal_cnr", NA, 2, "character", "normal bin file from Jumble or CNVkit"),
@@ -42,7 +50,11 @@ args <- rbind(
     c("svcaller_N_TRA", NA, 2, "character", "Normal SV caller TRA-events.gtf"),
     c("germline_mut_vcf", NA, 2, "character", "germline mutation vcf file"),
     c("somatic_mut_vcf", NA, 1, "character", "somatic mutation vcf file"),
-    c("purity_model_file", NA, 2, "character", "model file for estimating purity")
+    c("purity_model_file", NA, 2, "character", "model file for estimating purity"),
+    c("dpyd_json_T", NA, 2, "character", "json file for DPYD genotype, tumor sample"),  # <--- new
+    c("dpyd_csv_T", NA, 2, "character", "csv file for DPYD genotype, tumor sample"),  # <--- new
+    c("dpyd_json_N", NA, 2, "character", "json file for DPYD genotype, normal sample"),  # <--- new
+    c("dpyd_csv_N", NA, 2, "character", "csv file for DPYD genotype, normal sample")  # <--- new
 )
 
 
@@ -1316,7 +1328,7 @@ hotspots_splice <- c("17:7578370", "17:7578290", "17:7578291", "17:7578369", "17
 {
     vcf <- readVcf(opts$somatic_mut_vcf,genome = "GRCh37")
     vcf <- vcf[rowRanges(vcf)$FILTER %in% c('PASS','LowQual')]
-    if (length(vcf)>50000) vcf <- vcf[rowRanges(vcf)$FILTER %in% c('PASS')]
+    #if (length(vcf)>10000) vcf <- vcf[rowRanges(vcf)$FILTER %in% c('PASS')]
     
     
     if (any(str_detect(colnames(vcf),'-N-'))) if (which(str_detect(colnames(vcf),'-N-'))==2) vcf <- vcf[,2:1]
@@ -1386,19 +1398,31 @@ hotspots_splice <- c("17:7578370", "17:7578290", "17:7578291", "17:7578369", "17
         rowspermut=unlist(lapply(vep,length))
         table=#data.frame(
             matrix('',nrow = sum(rowspermut),ncol = length(header)+1)#,stringsAsFactors = F)
-        colnames(table)=c('N',header)  # blir detta fel ibland?????
-        for (i in 1:length(vep)) {
-            #if (i %% 100 ==0) cat(i,'..')
-            for (j in 1:length(vep[[i]])) { # for each effect
-                t2=vep[[i]][j]
-                t2=strsplit(t2,'[|]')[[1]] # pipe separated line with one effect of the mutation
-                t2=c((i),t2)
-                thisrow=sum(rowspermut[1:i])-rowspermut[i]+j
-                table[thisrow,1:length(t2)]=t2
-            }
-        }
+        colnames(table)=c('N',header)  
         
         table <- as.data.table(table)
+        vep_split <- strsplit(as.character(vep), '\\|', fixed=F)
+        
+        for (i in 1:length(vep_split)) {
+            t <- t(c(i,vep_split[[i]]))
+            table[i,1:length(t):=as.list(t)]
+        }
+ 
+        
+        # for (i in 1:length(vep)) {
+        #     #if (i %% 100 ==0) cat(i,'..')
+        #     for (j in 1:length(vep[[i]])) { # for each effect
+        #         t2=vep[[i]][j]
+        #         t2=strsplit(t2,'[|]')[[1]] # pipe separated line with one effect of the mutation
+        #         t2=c((i),t2)
+        #         thisrow=sum(rowspermut[1:i])-rowspermut[i]+j
+        #         table[thisrow,1:length(t2)]=t2
+        #     }
+        # }
+        # table <- as.data.table(table)
+        
+        
+        
         table[,N:=as.integer(N)]
         salf=merge(salf,table,by='N',all=T)
         
@@ -1449,7 +1473,7 @@ hotspots_splice <- c("17:7578370", "17:7578290", "17:7578291", "17:7578369", "17
             salf[ix & CLIN_SIG=='pathogenic',effect:='high-impact']
             salf[ix & is_hotspot==T,effect:='hotspot']
         }
-        
+    salf <- salf[FILTER=='PASS' | !is.na(effect)]    
         
     } #end somatic mutations
 }
@@ -1650,17 +1674,18 @@ if (!t_only) {
         galf_t[queryHits(overlap),bin:=bins[subjectHits(overlap)]$bin]
     }
     
+    
+    
+     
+    
+    
+    
     bins_t <- bins
     
-    # and with genes/exons
-    # ucsc_ranges <- makeGRangesFromDataFrame(bins[gene!='Background',.(chromosome,start,end)])
-    # seqlevelsStyle(ucsc_ranges) <- "UCSC"
-    #
-    # d <- detailRanges(ucsc_ranges, orgdb=org.Hs.eg.db,
-    #                   txdb=TxDb.Hsapiens.UCSC.hg19.knownGene)
-    # exonic <- str_detect(d$overlap,'.*E$') | str_detect(d$overlap,'.*E,')
-    # #data.table(gene=d$overlap,exonic)[gene!=''][str_detect(gene,',')]
-    # bins[gene!='Background',exonic:=exonic]
+    
+    
+    
+    
 }
 
 bins_n <- NULL
@@ -1887,6 +1912,45 @@ if (all(!is.null(purecn_files))) try( {
 #save.image('ws_.Rdata')
 
 
+
+
+<<<<<<< Updated upstream
+# Read DPYD files -------------------------------------------------------
+
+dpyd_csv_T <- NULL
+dpyd_json_T <- NULL
+dpyd_csv_N <- NULL
+dpyd_json_N <- NULL
+dpyd_result <- NULL
+
+
+# Tumor sample
+if (!is.na(opts$dpyd_csv_T)) dpyd_csv_T <- fread(opts$dpyd_csv_T)
+if (!is.na(opts$dpyd_json_T)) dpyd_result <- as.data.table(t(readJSONStream(opts$dpyd_json_T)))
+
+# Normal sample
+if (!is.na(opts$dpyd_csv_N)) dpyd_csv_N <- fread(opts$dpyd_csv_N)
+if (!is.na(opts$dpyd_json_N)) dpyd_result <- as.data.table(t(readJSONStream(opts$dpyd_json_N)))
+
+dpyd_table <- rbind(dpyd_csv_T,dpyd_csv_N)
+
+=======
+
+# Mutation summary ---------------------------------------------------------
+
+
+snvs <- salf[type=='snv',.N]
+indels <- salf[type %in% c('ins','del'),.N]
+
+# To compute TMB, we need the coding set of mutations
+coding <- salf[IMPACT %in% c('MODERATE','HIGH') & CANONICAL=='YES'] # canonical did no difference
+#table(coding$type)
+
+# Then we compare these with the sequenced coding footprint (WGS, 30M)
+coding_snvs <- coding[type=='snv',.N]
+coding_indels <- coding[type %in% c('ins','del'),.N]
+wgs_TMB <- round(coding[,.N]/30,1)
+>>>>>>> Stashed changes
 
 
 # HRD metric ---------------------------------------------------------
@@ -2174,12 +2238,15 @@ hrdplot <- function(hrdtable,p) {
 
 # Genome plot function ---------------------------------------------------------
 
-genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NULL, strvs=NULL, purecn=NULL) {
+genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NULL, strvs=NULL, purecn=NULL,dpyd_result=NULL) {
     
     # if all targets > 500, assume WGS.
     wgs <- all(targets$end-targets$start > 500)
     targets[,smooth_log2:=runmed(log2,k = 7),by=chromosome]
     if (wgs) targets[,smooth_log2:=runmed(log2,k = 7),by=chromosome]
+    
+    
+    
     
     
     
@@ -2418,6 +2485,8 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     if (max(cancergenes_here$depth*1.1,na.rm = T)>depthlimits[2]) depthlimits[2] <- max(cancergenes_here$depth,na.rm = T)*1.1
     if (min(cancergenes_here$depth*.9,na.rm = T)<depthlimits[1]) depthlimits[1] <- min(cancergenes_here$depth,na.rm = T)*.9
     p$pos_rawdepth <- ggplot(targets) + xlab('Genomic position') + ylab('Fragments') +
+        geom_point(data=cancergenes, #  <<--- this is a dummy for colors to work out.
+                   mapping = aes(x=1,y=1,fill=`gene_factor`),shape=1,col='#FFFFFF',size=.1,show.legend = F) +
         geom_point(data=targets[is.na(`selected genes`)],mapping = aes(x=gpos,y=depth),fill='#606060',col='#202020',size=1,shape=21,alpha=alpha) +
         geom_point(data=targets[!is.na(`selected genes`)],mapping = aes(x=gpos,y=depth,fill=`selected genes`),
                    show.legend = F,shape=21,col='#00000050',size=1) +
@@ -2519,6 +2588,14 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         }
         
     }
+    
+    # # DPYD
+    # if (!is.null(this_dpyd_table)) if (any(this_dpyd_table[allele=='alt']$count > 2)) {
+    #     p$pos_alleleratio <- p$pos_alleleratio +
+    #         geom_label_repel(data=this_dpyd_table[allele=='alt' & count > 2], aes(x=pos,y=variant_ratio,label=paste('DPYD:',alias)))
+    # }
+    
+    
     # last few items
     p$pos_alleleratio <- p$pos_alleleratio +
         scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
@@ -2532,6 +2609,131 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
               panel.grid.minor.x = element_line(color = 'black'),
               axis.line = element_line(),
               axis.ticks = element_line())
+    
+    
+    ### alleleratio (only snps) ---------------------------------------------------------
+    
+    # allele ratio by pos
+    set.seed(25)
+    snps[,plot:=T]; if (nrow(snps)>300e3) snps[,plot:=runif(.N)<(300e3/.N)]
+    p$pos_alleleratio_snps <- ggplot(snps) + xlab('Genomic position') + ylab('Allele ratio') +
+        geom_point(data=cancergenes, #  <<--- this is a dummy for colors to work out.
+                   mapping = aes(x=1,y=.5,fill=`gene_factor`),shape=1,col='#FFFFFF',size=.1,show.legend = F) +
+        geom_point(data=snps[is.na(`selected genes`) & plot==T],mapping = aes(x=gpos,y=allele_ratio),fill='#606060',col='#202020',shape=21,size=1,alpha=alpha) +
+        geom_point(data=snps[!is.na(`selected genes`)],mapping = aes(x=gpos,y=allele_ratio,fill=`selected genes`),
+                   show.legend = F,shape=21,col='#00000050',size=1) +
+        scale_fill_hue(l=70)
+    
+    # last few items
+    p$pos_alleleratio_snps <- p$pos_alleleratio_snps +
+        scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
+                           limits=c(0,max(targets$gpos+5e6)),
+                           expand = c(.01,.01),labels = chroms$chromosome) +
+        scale_y_continuous(breaks = c(0,.2,.4,.6,.8,1),
+                           minor_breaks = c(.1,.3,.5,.7,.9),
+                           limits = 0:1) +
+        theme(panel.grid.major.x = element_blank(),
+              panel.grid.minor.y = element_line(),
+              panel.grid.minor.x = element_line(color = 'black'),
+              axis.line = element_line(),
+              axis.ticks = element_line())
+    
+    
+    
+    ### alleleratio (only mutations) ---------------------------------------------------------
+    
+    # allele ratio by pos
+    p$pos_alleleratio_muts <- ggplot(snps) + xlab('Genomic position') + ylab('Allele ratio') +
+        geom_point(data=cancergenes, #  <<--- this is a dummy for colors to work out.
+                   mapping = aes(x=1,y=.5,fill=`gene_factor`),shape=1,col='#FFFFFF00',size=.1,show.legend = F) +
+        geom_point(data=snps[is.na(`selected genes`) & plot==T],mapping = aes(x=gpos,y=allele_ratio),fill='#EEEEEE',col='#EEEEEE',shape=21,size=1,alpha=alpha) +
+        scale_fill_hue(l=70)
+    # somatic mutations
+    if (!is.null(somatic)) if (nrow(somatic)>0) {
+        p$pos_alleleratio_muts <- p$pos_alleleratio_muts +
+            geom_point(data=somatic,mapping = aes(x=gpos,y=AF.T,shape=`point mutation`,col=`point mutation`),fill='red',size=ifelse(wgs,.9,1.2),show.legend = F) +
+            scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22)) +
+            scale_color_manual(values = c('snv'='darkred','ins'='red','del'='red','other'='darkred'))
+        
+        labels <- somatic[SYMBOL %in% cancergenes$gene & CANONICAL=='YES' & effect %in% c('hotspot','high-impact')]
+        if (nrow(labels)>0) {
+            labels[,ppos:=str_extract(Protein_position,'[0-9]*')]
+            labels[,aa:=str_extract(Amino_acids,'[A-Z]$')][is.na(aa),aa:='']
+            labels[Consequence=='stop_gained',aa:='*']
+            labels[str_detect(Consequence,'frameshift'),aa:='fs']
+            labels[str_detect(Consequence,'inframe'),aa:='if']
+            labels[str_detect(Consequence,'splice'),aa:='sp']
+            labels[,label:=paste0(SYMBOL,':',ppos,aa)]
+            labels[,nudge:=.1][AF.T>.8,nudge:= -.1]
+            
+            p$pos_alleleratio_muts <- p$pos_alleleratio_muts +
+                geom_label_repel(data = labels,mapping = aes(x=gpos,y=AF.T,label=label),
+                                 show.legend = F,
+                                 fill='white',
+                                 col='darkred',
+                                 nudge_y = labels$nudge,
+                                 size=2.3,
+                                 box.padding = .1,
+                                 label.padding = .1,
+                                 point.padding = .1,
+                                 # Width of the line segments.
+                                 segment.size = 0.5,
+                                 segment.color = 'red')
+        }
+    }
+    # germline mutations
+    if (!is.null(germline)) if (nrow(germline)>0) {
+        p$pos_alleleratio_muts <- p$pos_alleleratio_muts +
+            geom_point(data=germline,mapping = aes(x=gpos,y=allele_ratio,shape=`point mutation`),col='grey',fill='blue',size=ifelse(wgs,.9,1.2),show.legend = F) +
+            scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22))
+        
+        labels <- germline[SYMBOL %in% cancergenes$gene & CANONICAL=='YES' & effect %in% c('hotspot','high-impact')]
+        if (nrow(labels)>0) {
+            labels[,ppos:=str_extract(Protein_position,'[0-9]*')]
+            labels[,aa:=str_extract(Amino_acids,'[A-Z]$')][is.na(aa),aa:='']
+            labels[Consequence=='stop_gained',aa:='*']
+            labels[str_detect(Consequence,'frameshift'),aa:='fs']
+            labels[str_detect(Consequence,'inframe'),aa:='if']
+            labels[str_detect(Consequence,'splice'),aa:='sp']
+            labels[,label:=paste0(SYMBOL,':',ppos,aa)]
+            labels[,nudge:=.1][allele_ratio>.8,nudge:= -.1]
+            
+            p$pos_alleleratio_muts <- p$pos_alleleratio_muts +
+                geom_label_repel(data = labels,mapping = aes(x=gpos,y=allele_ratio,label=label),
+                                 show.legend = F,
+                                 fill='white',
+                                 col='blue',
+                                 nudge_y = labels$nudge,
+                                 size=2.5,
+                                 box.padding = .1,
+                                 label.padding = .1,
+                                 point.padding = .1,
+                                 # Width of the line segments.
+                                 segment.size = 0.5,
+                                 segment.color = 'blue')
+        }
+        
+    }
+    # last few items
+    p$pos_alleleratio_muts <- p$pos_alleleratio_muts +
+        scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
+                           limits=c(0,max(targets$gpos+5e6)),
+                           expand = c(.01,.01),labels = chroms$chromosome) +
+        scale_y_continuous(breaks = c(0,.2,.4,.6,.8,1),
+                           minor_breaks = c(.1,.3,.5,.7,.9),
+                           limits = 0:1) +
+        theme(panel.grid.major.x = element_blank(),
+              panel.grid.minor.y = element_line(),
+              panel.grid.minor.x = element_line(color = 'black'),
+              axis.line = element_line(),
+              axis.ticks = element_line())
+    
+    
+    
+    
+    
+    
+    
     
     ## by order ---------------------------------------------------------
     
@@ -2660,6 +2862,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         }
         
     }
+    
     # last few items
     p$order_alleleratio <- p$order_alleleratio +
         scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
@@ -2698,6 +2901,51 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         scale_color_manual(values = c('snv'='darkred','ins'='red','del'='red','other'='darkred'))
     
     if (!is.na(rough_fraction)) p$depth_alleleratio <- p$depth_alleleratio +
+        geom_hline(yintercept = rough_fraction,lty=3)
+    
+    
+    ### alleleratio-logR (only snps) ---------------------------------------------------------
+    
+    # allele ratio vs depth/log2
+    p$depth_alleleratio_snps <- ggplot(targets) + xlab('Corrected depth') + ylab('Allele ratio') +
+        geom_point(data=targets,
+                   mapping = aes(x=2^log2,y=allele_ratio),fill='#606060',col='#202020',shape=21,size=.5,alpha=alpha) +
+        # geom_density_2d(data=targets,color='grey',
+        #                 mapping = aes(x=2^log2,y=allele_ratio)) +
+        #geom_point(data=targets[!is.na(`selected genes`)],mapping = aes(x=2^log2,y=allele_ratio,fill=`selected genes`),shape=21,col='#00000050',size=.8) +
+        #scale_fill_grey(start=1,end=0,breaks=seq(.1,1,.1)) +
+        scale_x_continuous(limits=c(.3,2),breaks=c(.5,1,1.5,2),labels=c('0.5','1','1.5','2')) +
+        scale_y_continuous(breaks = c(0,.2,.4,.6,.8,1),
+                           minor_breaks = c(.1,.3,.5,.7,.9),
+                           limits = 0:1)
+    
+    if (!is.na(rough_fraction)) p$depth_alleleratio_snps <- p$depth_alleleratio_snps +
+        geom_hline(yintercept = rough_fraction,lty=3)    
+    
+    ### alleleratio-logR (only mutations) ---------------------------------------------------------
+    
+    # allele ratio vs depth/log2
+    p$depth_alleleratio_muts <- ggplot(targets) + xlab('Corrected depth') + ylab('Allele ratio') +
+        geom_point(data=targets,
+                   mapping = aes(x=2^log2,y=allele_ratio),fill='#EEEEEE',col='#EEEEEE',shape=21,size=.5,alpha=alpha) +
+        # geom_density_2d(data=targets,color='grey',
+        #                 mapping = aes(x=2^log2,y=allele_ratio)) +
+        #geom_point(data=targets[!is.na(`selected genes`)],mapping = aes(x=2^log2,y=allele_ratio,fill=`selected genes`),shape=21,col='#00000050',size=.8) +
+        #scale_fill_grey(start=1,end=0,breaks=seq(.1,1,.1)) +
+        scale_x_continuous(limits=c(.3,2),breaks=c(.5,1,1.5,2),labels=c('0.5','1','1.5','2')) +
+        scale_y_continuous(breaks = c(0,.2,.4,.6,.8,1),
+                           minor_breaks = c(.1,.3,.5,.7,.9),
+                           limits = 0:1)
+    
+    
+    
+    if (!is.null(somatic)) if (nrow(somatic)>0) p$depth_alleleratio_muts <- p$depth_alleleratio_muts +
+        geom_point(data=somatic,mapping = aes(x=2^somatic$log2,y=AF.T,shape=`point mutation`,col=`point mutation`),
+                   fill='red',size=ifelse(wgs,.6,.9),show.legend = F) +
+        scale_shape_manual(values = c('snv'=21,'ins'=25,'del'=24,'other'=22)) +
+        scale_color_manual(values = c('snv'='darkred','ins'='red','del'='red','other'='darkred'))
+    
+    if (!is.na(rough_fraction)) p$depth_alleleratio_muts <- p$depth_alleleratio_muts +
         geom_hline(yintercept = rough_fraction,lty=3)
     
     ### depth ---------------------------------------------------------
@@ -2750,15 +2998,31 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         guides(fill=guide_legend(override.aes=list(shape=21,size=2))) +
         guides(shape=guide_legend(override.aes=list(size=2)))
     
-    stats <- paste0('Coverage: ',
-                    paste(round(quantile(snps$depth,c(.1,.9),na.rm=T)),collapse = '-'),
-                    ', Noise: ',
-                    noise(targets[gene!='Background']$log2),'%'
+    
+    
+    gc_bias <- round(targets[type=='target', median(count[gc>.4 & gc<.5],na.rm=T)/median(count[gc>.3 & gc<.4],na.rm=T),
+                             by=paste(chromosome,round(start/1e7))][,median(V1,na.rm = T)]*100-100,1)
+    
+    
+    if (!wgs) stats <- paste0('Coverage: ',
+                              paste(round(quantile(snps$depth,c(.1,.9),na.rm=T)),collapse = '-'),
+                              ', Somatic variants: ',snvs,' snvs, ',indels, ' indels. ',
+                              'GC bias: ',gc_bias,'%.'
     )
-    #stats <- paste0(stats,', SMAF: ', rough_fraction)
+    
+    if (wgs) stats <- paste0('Coverage: ',
+                             paste(round(quantile(snps$depth,c(.1,.9),na.rm=T)),collapse = '-'),
+                             '\nSomatic variants: ',snvs,' snvs + ',indels, ' indels (',
+                             coding_snvs,'+',coding_indels, ' coding; TMB≈',wgs_TMB,
+                             '). MSI ',ifelse(indels>1e4,'is','is not'),' implied. ',
+                             'GC bias: ',gc_bias,'%.'
+    )
+    
+    #if (!is.null(dpyd_result)) if (dpyd_result$genotype!='*1/*1')
+    stats <- paste0(stats,', DPYD: ', ifelse(is.null(dpyd_result),'NA',dpyd_result$genotype))
     
     if (!is.null(purecn)) try( {
-        stats <- paste0(stats,', PureCN: ',round(purecn$Ploidy,1),'N, ',100*purecn$Purity,'%')
+        stats <- paste0(stats,' PureCN: ',round(purecn$Ploidy,1),'N, ',100*purecn$Purity,'%')
     }, silent=T)
     
     date <- format(Sys.time(), "%a %b %e %Y, %H:%M")
@@ -2788,11 +3052,13 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         layout <-  "ABBBB
                 CDDDD
                 EFFFF
-                GHHHH"
+                GHHHH
+                IJJJJ"
         fig <-
             p$gc_rawdepth+p$pos_rawdepth+
             p$gc_log2+p$pos_log2+
-            p$depth_alleleratio+p$pos_alleleratio+
+            p$depth_alleleratio_snps+p$pos_alleleratio_snps+
+            p$depth_alleleratio_muts+p$pos_alleleratio_muts+
             p$nogrid+p$grid+
             plot_layout(design = layout,guides = 'collect')
     }
@@ -2800,7 +3066,13 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     
     print(fig+pa)
     
-    return(p)
+    return(list(p,pa))
+    
+    # if (!is.null(plotfile)) {
+    #     pdf(file = plotfile, width = 15, height = 11)
+    #     print(fig+pa)
+    #     dev.off()
+    # }
     
 }
 
@@ -3283,8 +3555,10 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
     
     print(fig+pa)
     
+    return(fig+pa)
     
 }
+
 
 
 
