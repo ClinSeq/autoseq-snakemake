@@ -1,10 +1,7 @@
 #!/usr/bin/env Rscript
 
-<<<<<<< Updated upstream
+
 scriptversion <- '25.10.1'
-=======
-scriptversion <- '24.12.2'
->>>>>>> Stashed changes
 
 # Dependencies and arguments ----------------------------------------------
 {
@@ -1912,9 +1909,6 @@ if (all(!is.null(purecn_files))) try( {
 #save.image('ws_.Rdata')
 
 
-
-
-<<<<<<< Updated upstream
 # Read DPYD files -------------------------------------------------------
 
 dpyd_csv_T <- NULL
@@ -1934,23 +1928,20 @@ if (!is.na(opts$dpyd_json_N)) dpyd_result <- as.data.table(t(readJSONStream(opts
 
 dpyd_table <- rbind(dpyd_csv_T,dpyd_csv_N)
 
-=======
-
-# Mutation summary ---------------------------------------------------------
-
-
-snvs <- salf[type=='snv',.N]
-indels <- salf[type %in% c('ins','del'),.N]
-
-# To compute TMB, we need the coding set of mutations
-coding <- salf[IMPACT %in% c('MODERATE','HIGH') & CANONICAL=='YES'] # canonical did no difference
-#table(coding$type)
-
-# Then we compare these with the sequenced coding footprint (WGS, 30M)
-coding_snvs <- coding[type=='snv',.N]
-coding_indels <- coding[type %in% c('ins','del'),.N]
-wgs_TMB <- round(coding[,.N]/30,1)
->>>>>>> Stashed changes
+# # Mutation summary
+# 
+# 
+# snvs <- salf[type=='snv',.N]
+# indels <- salf[type %in% c('ins','del'),.N]
+# 
+# # To compute TMB, we need the coding set of mutations
+# coding <- salf[IMPACT %in% c('MODERATE','HIGH') & CANONICAL=='YES'] # canonical did no difference
+# #table(coding$type)
+# 
+# # Then we compare these with the sequenced coding footprint (WGS, 30M)
+# coding_snvs <- coding[type=='snv',.N]
+# coding_indels <- coding[type %in% c('ins','del'),.N]
+# wgs_TMB <- round(coding[,.N]/30,1)
 
 
 # HRD metric ---------------------------------------------------------
