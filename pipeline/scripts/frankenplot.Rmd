@@ -1100,7 +1100,7 @@ if (!is.null(segments_n)) {
 
 ```{r, echo=FALSE}
 
-if (!is.null(salf)) knitr::kable(salf, "html") %>%
+if (!is.null(salf)) knitr::kable(salf[SYMBOL %in% cancergenes$gene], "html") %>%
     kable_styling(
         bootstrap_options = c("striped", "hover", "condensed"),
         full_width = TRUE  
@@ -1115,7 +1115,7 @@ if (!is.null(salf)) knitr::kable(salf, "html") %>%
 
 ```{r, echo=FALSE}
 
-if (!is.null(galf)) knitr::kable(galf, "html") %>%
+if (!is.null(galf)) knitr::kable(galf[SYMBOL %in% cancergenes$gene], "html") %>%
     kable_styling(
         bootstrap_options = c("striped", "hover", "condensed"),
         full_width = TRUE  
