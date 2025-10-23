@@ -86,14 +86,28 @@ strvs <- t_strvs
 purecn <- purecn_stat
 
 p <- genomeplot(name, targets, segments, snps, somatic, germline, strvs, purecn, dpyd_result)
-pa <- p[[2]]
-p <- p[[1]]
 
 
 
 #save.image('~/Analysis/ALASCCA/temp.Rdata')
 
-if (!is.na(opts$output_figure)) {
+if (!is.null(opts$output_figure)) if (!is.na(opts$output_figure)) {
+    
+    stats <- paste0('Coverage: ',
+                    paste(round(quantile(snps$depth,c(.1,.9),na.rm=T)),collapse = '-')
+    )
+    stats <- paste0(stats,', DPYD: ', ifelse(is.null(dpyd_result),'NA',dpyd_result$genotype))
+    
+    if (!is.null(purecn)) try( {
+        stats <- paste0(stats,', PureCN: ',round(purecn$Ploidy,1),'N, ',100*purecn$Purity,'%')
+    }, silent=T)
+    
+    date <- format(Sys.time(), "%a %b %e %Y, %H:%M")
+    
+    pa <- plot_annotation(
+        title = paste(basename(name),'  ',date,'  ',stats)
+    )
+    
     png(filename = opts$output_figure, width = 14, height = 8, units = 'in', res=150)
     
     layout <-  "ABBBB
@@ -104,8 +118,6 @@ if (!is.na(opts$output_figure)) {
         p$gc_log2+p$pos_log2+
         p$depth_alleleratio+p$pos_alleleratio+
         plot_layout(design = layout,guides = 'collect')
-    
-    pa$caption <- NULL
     
     print(fig+pa)
     dev.off()
@@ -1069,7 +1081,7 @@ if (!is.null(segments_t)) {
 
 if (!is.null(segments_n)) {
     setcolorder(segments_n, "gene", after = ncol(segments_n))
-    setcolorder(segments_t, "relevance", after = ncol(segments_t))
+    setcolorder(segments_n, "relevance", after = ncol(segments_n))
     knitr::kable(segments_n, "html") %>%
         kable_styling(
             bootstrap_options = c("striped", "hover", "condensed")

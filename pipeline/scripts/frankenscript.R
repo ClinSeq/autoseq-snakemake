@@ -2551,11 +2551,6 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         
     }
     
-    # # DPYD
-    # if (!is.null(this_dpyd_table)) if (any(this_dpyd_table[allele=='alt']$count > 2)) {
-    #     p$pos_alleleratio <- p$pos_alleleratio +
-    #         geom_label_repel(data=this_dpyd_table[allele=='alt' & count > 2], aes(x=pos,y=variant_ratio,label=paste('DPYD:',alias)))
-    # }
     
     
     # last few items
@@ -2842,7 +2837,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     
     print(fig+pa)
     
-    return(list(p,pa))
+    return(p)
     
     # if (!is.null(plotfile)) {
     #     pdf(file = plotfile, width = 15, height = 11)
