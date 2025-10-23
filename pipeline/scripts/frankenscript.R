@@ -1907,12 +1907,12 @@ dpyd_result <- NULL
 
 
 # Tumor sample
-if (!is.na(opts$dpyd_csv_T)) dpyd_csv_T <- fread(opts$dpyd_csv_T)
-if (!is.na(opts$dpyd_json_T)) dpyd_result <- as.data.table(t(readJSONStream(opts$dpyd_json_T)))
+if (!is.null(opts$dpyd_csv_T)) if (!is.na(opts$dpyd_csv_T)) dpyd_csv_T <- fread(opts$dpyd_csv_T)
+if (!is.null(opts$dpyd_json_T)) if (!is.na(opts$dpyd_json_T)) dpyd_result <- as.data.table(t(readJSONStream(opts$dpyd_json_T)))
 
 # Normal sample
-if (!is.na(opts$dpyd_csv_N)) dpyd_csv_N <- fread(opts$dpyd_csv_N)
-if (!is.na(opts$dpyd_json_N)) dpyd_result <- as.data.table(t(readJSONStream(opts$dpyd_json_N)))
+if (!is.null(opts$dpyd_csv_N)) if (!is.na(opts$dpyd_csv_N)) dpyd_csv_N <- fread(opts$dpyd_csv_N)
+if (!is.null(opts$dpyd_json_N)) if (!is.na(opts$dpyd_json_N)) dpyd_result <- as.data.table(t(readJSONStream(opts$dpyd_json_N)))
 
 dpyd_table <- rbind(dpyd_csv_T,dpyd_csv_N)
 
