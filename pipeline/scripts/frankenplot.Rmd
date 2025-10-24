@@ -1053,84 +1053,22 @@ if (!t_only) { # print normal sample chromosome
 
 ## Data {.tabset}
 
-### CNV {.tabset}
-
-#### Tumor
+### Small Somatic
 
 ```{r, echo=FALSE}
 
-
-
-if (!is.null(segments_t)) {
-    setcolorder(segments_t, "gene", after = ncol(segments_t))
-    setcolorder(segments_t, "relevance", after = ncol(segments_t))
-    knitr::kable(segments_t, "html") %>%
-        kable_styling(
-            bootstrap_options = c("striped", "hover", "condensed")
-            # full_width = TRUE  <- This line is removed
-        ) %>%
-        # column_spec is no longer needed for this issue
-        scroll_box(width = "80%", extra_css = "white-space: nowrap;")
-}
-
-```
-
-#### Normal
-
-```{r, echo=FALSE}
-
-if (!is.null(segments_n)) {
-    setcolorder(segments_n, "gene", after = ncol(segments_n))
-    setcolorder(segments_n, "relevance", after = ncol(segments_n))
-    knitr::kable(segments_n, "html") %>%
-        kable_styling(
-            bootstrap_options = c("striped", "hover", "condensed")
-            # full_width = TRUE  <- This line is removed
-        ) %>%
-        # column_spec is no longer needed for this issue
-        scroll_box(width = "80%", extra_css = "white-space: nowrap;")
-}
-
-```
-
-
-### Small {.tabset .active}
-
-#### Somatic
-
-```{r, echo=FALSE}
-
-if (!is.null(salf)) knitr::kable(salf[SYMBOL %in% cancergenes$gene], "html") %>%
+t <- salf[IMPACT %in% c('MODERATE','HIGH') | str_detect(CLIN_SIG,'athogenic') | is_hotspot==T | str_detect(Consequence,'splice')]
+if (!is.null(salf)) knitr::kable(t, "html") %>%
     kable_styling(
         bootstrap_options = c("striped", "hover", "condensed"),
-        full_width = TRUE  
+        full_width = TRUE
     ) %>%
-    column_spec(column = 1, width = "5em") %>% 
+    column_spec(column = 1, width = "5em") %>%
     scroll_box(width = "100%", extra_css = "white-space: nowrap;")
 
 ```
 
-
-#### Germline
-
-```{r, echo=FALSE}
-
-if (!is.null(galf)) knitr::kable(galf[SYMBOL %in% cancergenes$gene], "html") %>%
-    kable_styling(
-        bootstrap_options = c("striped", "hover", "condensed"),
-        full_width = TRUE  
-    ) %>%
-    column_spec(column = 1, width = "5em") %>% 
-    scroll_box(width = "100%", extra_css = "white-space: nowrap;")
-
-```
-
-
-### Structural
-
-
-
-### Files
+### Files {.active}
 
 Arguments to call:
 
