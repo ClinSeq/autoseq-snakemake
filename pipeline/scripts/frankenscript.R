@@ -1,13 +1,15 @@
 #!/usr/bin/env Rscript
 
-scriptversion <- '24.12.1'
+scriptversion <- '25.10.1'
 
 # Dependencies and arguments ----------------------------------------------
 {
     suppressPackageStartupMessages(library(getopt))
+    suppressPackageStartupMessages(library(dplyr))  # <--- new
     suppressPackageStartupMessages(library(stringr))
     suppressPackageStartupMessages(library(VariantAnnotation))
     suppressPackageStartupMessages(library(data.table))
+    suppressPackageStartupMessages(library(kableExtra))  # <--- new
     suppressPackageStartupMessages(library(GenomicRanges))
     suppressPackageStartupMessages(library(BSgenome.Hsapiens.UCSC.hg19))
     suppressPackageStartupMessages(library(BSgenome))
@@ -15,14 +17,16 @@ scriptversion <- '24.12.1'
     suppressPackageStartupMessages(library(org.Hs.eg.db))
     suppressPackageStartupMessages(library(TxDb.Hsapiens.UCSC.hg19.knownGene))
     suppressPackageStartupMessages(library(csaw))
+    suppressPackageStartupMessages(library(RJSONIO))  # <--- new
 }
 
 #long, short(NA), argmask, datatype, desc
 #argmask 0=no arg, 1=req, 2=optional
 args <- rbind(
     c("frankenplot_Rmd", NA, 1, "character", "path to frankenplot.Rmd script"),
-    c("output", NA, 1, "character", "output html file including FULL path"),   
-    c("output_hrd", NA, 2, "character", "output HRD text file including FULL path"),    # added
+    c("output", NA, 1, "character", "output html file including full path"),
+    c("output_figure", NA, 2, "character", "output figure file including full path"),  # <--- new
+    c("output_hrd", NA, 2, "character", "output HRD text file including full path"),
     c("tumor_cnr", NA, 1, "character", "tumor bin file from Jumble or CNVkit"),
     c("tumor_cns", NA, 1, "character", "tumor segment file from Jumble or CNVkit"),
     c("normal_cnr", NA, 2, "character", "normal bin file from Jumble or CNVkit"),
@@ -42,7 +46,11 @@ args <- rbind(
     c("svcaller_N_TRA", NA, 2, "character", "Normal SV caller TRA-events.gtf"),
     c("germline_mut_vcf", NA, 2, "character", "germline mutation vcf file"),
     c("somatic_mut_vcf", NA, 1, "character", "somatic mutation vcf file"),
-    c("purity_model_file", NA, 2, "character", "model file for estimating purity")
+    c("purity_model_file", NA, 2, "character", "model file for estimating purity"),
+    c("dpyd_json_T", NA, 2, "character", "json file for DPYD genotype, tumor sample"),  # <--- new
+    c("dpyd_csv_T", NA, 2, "character", "csv file for DPYD genotype, tumor sample"),  # <--- new
+    c("dpyd_json_N", NA, 2, "character", "json file for DPYD genotype, normal sample"),  # <--- new
+    c("dpyd_csv_N", NA, 2, "character", "csv file for DPYD genotype, normal sample")  # <--- new
 )
 
 
@@ -1517,7 +1525,7 @@ if (!t_only) {
         galf <- galf[ix]
         vcf <- vcf[ix]
     }
-        
+    
     if (length(vcf)>0) { # if there are still mutations...
         
         vep=info(vcf)$CSQ
@@ -1889,6 +1897,27 @@ if (all(!is.null(purecn_files))) try( {
 
 
 
+# Read DPYD files -------------------------------------------------------
+
+dpyd_csv_T <- NULL
+dpyd_json_T <- NULL
+dpyd_csv_N <- NULL
+dpyd_json_N <- NULL
+dpyd_result <- NULL
+
+
+# Tumor sample
+if (!is.null(opts$dpyd_csv_T)) if (!is.na(opts$dpyd_csv_T)) dpyd_csv_T <- fread(opts$dpyd_csv_T)
+if (!is.null(opts$dpyd_json_T)) if (!is.na(opts$dpyd_json_T)) dpyd_result <- as.data.table(t(readJSONStream(opts$dpyd_json_T)))
+
+# Normal sample
+if (!is.null(opts$dpyd_csv_N)) if (!is.na(opts$dpyd_csv_N)) dpyd_csv_N <- fread(opts$dpyd_csv_N)
+if (!is.null(opts$dpyd_json_N)) if (!is.na(opts$dpyd_json_N)) dpyd_result <- as.data.table(t(readJSONStream(opts$dpyd_json_N)))
+
+dpyd_table <- rbind(dpyd_csv_T,dpyd_csv_N)
+
+
+
 # HRD metric ---------------------------------------------------------
 
 
@@ -2174,7 +2203,7 @@ hrdplot <- function(hrdtable,p) {
 
 # Genome plot function ---------------------------------------------------------
 
-genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NULL, strvs=NULL, purecn=NULL) {
+genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NULL, strvs=NULL, purecn=NULL,dpyd_result=NULL) {
     
     # if all targets > 500, assume WGS.
     wgs <- all(targets$end-targets$start > 500)
@@ -2418,6 +2447,8 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     if (max(cancergenes_here$depth*1.1,na.rm = T)>depthlimits[2]) depthlimits[2] <- max(cancergenes_here$depth,na.rm = T)*1.1
     if (min(cancergenes_here$depth*.9,na.rm = T)<depthlimits[1]) depthlimits[1] <- min(cancergenes_here$depth,na.rm = T)*.9
     p$pos_rawdepth <- ggplot(targets) + xlab('Genomic position') + ylab('Fragments') +
+        geom_point(data=cancergenes, #  <<--- this is a dummy for colors to work out.
+                   mapping = aes(x=1,y=1,fill=`gene_factor`),shape=1,col='#FFFFFF',size=.1,show.legend = F) +
         geom_point(data=targets[is.na(`selected genes`)],mapping = aes(x=gpos,y=depth),fill='#606060',col='#202020',size=1,shape=21,alpha=alpha) +
         geom_point(data=targets[!is.na(`selected genes`)],mapping = aes(x=gpos,y=depth,fill=`selected genes`),
                    show.legend = F,shape=21,col='#00000050',size=1) +
@@ -2519,6 +2550,9 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         }
         
     }
+    
+    
+    
     # last few items
     p$pos_alleleratio <- p$pos_alleleratio +
         scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
@@ -2660,6 +2694,7 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
         }
         
     }
+    
     # last few items
     p$order_alleleratio <- p$order_alleleratio +
         scale_x_continuous(breaks = chroms$mid,minor_breaks = chroms$start[-1],
@@ -2755,7 +2790,9 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
                     ', Noise: ',
                     noise(targets[gene!='Background']$log2),'%'
     )
-    #stats <- paste0(stats,', SMAF: ', rough_fraction)
+    
+    #if (!is.null(dpyd_result)) if (dpyd_result$genotype!='*1/*1')
+    stats <- paste0(stats,', DPYD: ', ifelse(is.null(dpyd_result),'NA',dpyd_result$genotype))
     
     if (!is.null(purecn)) try( {
         stats <- paste0(stats,', PureCN: ',round(purecn$Ploidy,1),'N, ',100*purecn$Purity,'%')
@@ -2801,6 +2838,12 @@ genomeplot <- function(name, targets, segments, snps, somatic=NULL, germline=NUL
     print(fig+pa)
     
     return(p)
+    
+    # if (!is.null(plotfile)) {
+    #     pdf(file = plotfile, width = 15, height = 11)
+    #     print(fig+pa)
+    #     dev.off()
+    # }
     
 }
 
@@ -3283,8 +3326,10 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
     
     print(fig+pa)
     
+    return(fig+pa)
     
 }
+
 
 
 

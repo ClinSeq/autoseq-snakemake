@@ -85,8 +85,43 @@ germline <- galf_t
 strvs <- t_strvs
 purecn <- purecn_stat
 
-p <- genomeplot(name, targets, segments, snps, somatic, germline, strvs, purecn)
+p <- genomeplot(name, targets, segments, snps, somatic, germline, strvs, purecn, dpyd_result)
 
+
+
+#save.image('~/Analysis/ALASCCA/temp.Rdata')
+
+if (!is.null(opts$output_figure)) if (!is.na(opts$output_figure)) {
+    
+    stats <- paste0('Coverage: ',
+                    paste(round(quantile(snps$depth,c(.1,.9),na.rm=T)),collapse = '-')
+    )
+    stats <- paste0(stats,', DPYD: ', ifelse(is.null(dpyd_result),'NA',dpyd_result$genotype))
+    
+    if (!is.null(purecn)) try( {
+        stats <- paste0(stats,', PureCN: ',round(purecn$Ploidy,1),'N, ',100*purecn$Purity,'%')
+    }, silent=T)
+    
+    date <- format(Sys.time(), "%a %b %e %Y, %H:%M")
+    
+    pa <- plot_annotation(
+        title = paste(basename(name),'  ',date,'  ',stats)
+    )
+    
+    png(filename = opts$output_figure, width = 14, height = 8, units = 'in', res=150)
+    
+    layout <-  "ABBBB
+                CDDDD
+                EFFFF"
+    fig <-
+        p$gc_rawdepth+p$pos_rawdepth+
+        p$gc_log2+p$pos_log2+
+        p$depth_alleleratio+p$pos_alleleratio+
+        plot_layout(design = layout,guides = 'collect')
+    
+    print(fig+pa)
+    dev.off()
+}
 ```
 
 
@@ -106,7 +141,7 @@ if (!t_only) { # print normal sample frankenplot (without mutations)
     strvs <- NULL
     purecn <- NULL
     
-    q <- genomeplot(name, targets, segments, snps, somatic, germline, strvs, purecn)
+    q <- genomeplot(name, targets, segments, snps, somatic, germline, strvs, purecn, dpyd_result)
     
 }
 
@@ -120,12 +155,65 @@ if (!t_only) { # print normal sample frankenplot (without mutations)
 
 ```{r, echo=FALSE, fig.keep='all', message=FALSE, fig.height=5,fig.width=13}
 
+name <- basename(str_remove(opts$tumor_cnr,'.cnr'))
+
 hrdplot(hrdtable,p)
 
 print(as.data.table(gis_model(NULL)))
 
 print(hrdtable[feature=='predicted_gis',.(sample,feature,fraction,value)])
 
+
+```
+
+## DPYD
+
+### Genotyping result
+
+```{r, echo=FALSE, fig.keep='all', message=FALSE, fig.height=5,fig.width=10}
+
+if (!is.null(dpyd_result)) {
+    
+    print(paste0('DPYD genotyping result: ',dpyd_result$genotype[1],'. ',dpyd_result$text,''))
+    
+    g <- ggplot(dpyd_table) + xlab('Allele count') + ylab('Allele ratio') +
+        geom_point(aes(x=count,y=variant_ratio,fill=alias,shape=allele)) +
+        scale_shape_manual(values=c('wt'=22,'alt'=21)) +
+        facet_grid(rows = vars(allele), cols = vars(file)) +
+        guides(fill=guide_legend(override.aes=list(shape=21,size=2)))
+    print(g)
+    
+}
+
+```
+
+### Evidence
+
+```{r, echo=FALSE, fig.keep='all', message=FALSE}
+
+print(as.list(dpyd_result))
+
+#if (!is.null(dpyd_table)) 
+#knitr::kable(dpyd_table[,1:24], "html") %>%
+# kable_styling(
+#     bootstrap_options = c("striped", "hover", "condensed"),
+#     full_width = F  
+# ) %>%
+# column_spec(column = 1, width = "5em") %>% 
+# scroll_box(width = "100%", extra_css = "white-space: nowrap;")
+
+# kable(dpyd_table[,1:24], "html", booktabs = TRUE) %>%
+# kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE) %>%
+# scroll_box(width = "100%")
+if (!is.null(dpyd_table)) 
+    kable(dpyd_table[,1:24], "html", booktabs = TRUE) %>%
+    kable_styling(
+        bootstrap_options = c("striped", "hover", "condensed"),
+        full_width = FALSE
+    ) %>%
+    # Add this line to prevent text wrapping in all 24 columns
+    column_spec(1:24, extra_css = "white-space: nowrap;") %>%
+    scroll_box(width = "80%")
 
 ```
 
@@ -963,11 +1051,35 @@ if (!t_only) { # print normal sample chromosome
 ```
 
 
-## info {#info}
+## Data {.tabset}
+
+### Small Somatic
+
+```{r, echo=FALSE}
+
+t <- salf[IMPACT %in% c('MODERATE','HIGH') | str_detect(CLIN_SIG,'athogenic') | is_hotspot==T | str_detect(Consequence,'splice')]
+if (!is.null(salf)) knitr::kable(t, "html") %>%
+    kable_styling(
+        bootstrap_options = c("striped", "hover", "condensed"),
+        full_width = TRUE
+    ) %>%
+    column_spec(column = 1, width = "5em") %>%
+    scroll_box(width = "100%", extra_css = "white-space: nowrap;")
+
+```
+
+### Files {.active}
+
+Arguments to call:
 
 ```{r, echo=FALSE}
 
 
+cat(paste(paste0('--',names(opts[-1])),' \\ \n',opts[-1], collapse = ' \\ \n'))
+
+cat('\n')
+
+cat('opts <-')
 dput(opts)
 
 
