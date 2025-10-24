@@ -46,7 +46,6 @@ def create_project_info(project_id, CREATE_PROJECT_INFO_API):
         return {"status": "error", "message": "Failed to create project info."}
     
     return {"status": "success", "message": f"Project '{project_id}' created successfully."}
-    
 
 
 def update_sample_info(project_id, sdid, capture, status):
@@ -92,7 +91,6 @@ def update_sample_info(project_id, sdid, capture, status):
         return {"status": "error", "message": f"An error occurred: {e}"}
     except ValueError:
         return {"status": "error", "message": "Failed to decode JSON from response."}
-
 
 
 def extract_bam(sample, libdir, umi = False):

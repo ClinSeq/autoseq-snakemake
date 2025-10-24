@@ -233,8 +233,7 @@ rule all:
         directory(outdir + "/IGVsnapshots/germline/"),
         directory(outdir + "/IGVsnapshots/svs/"),
         "{}/IGVnav/igv_session_sv.xml".format(outdir),
-        "{}/IGVnav/igv_session_snps.xml".format(outdir),
-        outdir + "/variants/{sample}.dypd.typeDPYD.csv"
+        "{}/IGVnav/igv_session_snps.xml".format(outdir)
     output:
         outdir + "/analysis_finished"
     params:

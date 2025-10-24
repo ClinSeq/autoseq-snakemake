@@ -7,8 +7,8 @@ rule call_typeDPYD:
         csv = outdir + "/variants/{sample}.typeDPYD.csv",
         json = outdir + "/variants/{sample}.typeDPYD.json",
     params:
-        extra = params['dypd']['typeDPYD']['extra']
-    threads: params['dypd']['typeDPYD']['threads']
+        extra = params['dpyd']['extra']
+    threads: params['dpyd']['threads']
     container: containers['dpyd']
     log:
         outdir + "/logs/typeDPYD_{sample}.log"
