@@ -298,7 +298,8 @@ def annotate_curate_info(curation_ann_df, gene, type, project):
     """
     function to annotate cancer specific curation information
     """
-    curation_ann_df = curation_ann_df[(curation_ann_df['prefix'] == project) & (curation_ann_df['type'] == type)]
+    _type = "somatic" if type == "tumor" else type
+    curation_ann_df = curation_ann_df[(curation_ann_df['prefix'] == project) & (curation_ann_df['type'] == _type)]
     curation_ann_df = curation_ann_df.set_index('gene')['comment'].to_dict()
     comments = []
     if ',' in gene:
