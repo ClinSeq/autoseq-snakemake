@@ -245,6 +245,7 @@ rule generate_IGVSnapshots_sv:
         """
 
 include: "rules/qc.smk"
+include: "../autoseq/rules/dypd.smk"
 include: "rules/cnvcalling.smk"
 include: "rules/germline.smk"
 include: "rules/somatic.smk"

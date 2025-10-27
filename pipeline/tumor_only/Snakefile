@@ -269,9 +269,11 @@ include: "../autoseq/rules/split_targets.smk"
 include: "rules/pre_processing.smk"
 include: "../autoseq/rules/umi_processing.smk"
 include: "rules/qc.smk"
+include: "../autoseq/rules/dpyd.smk"
 include: "rules/cnvcalling.smk"
 include: "rules/variant_calling.smk"
 include: "rules/vep.smk"
 include: "rules/structuralvariants.smk"
+
 
 

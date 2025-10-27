@@ -125,7 +125,11 @@ rule franken_plot:
         normal_cnr = capture_to_results[NORMAL_CAPTURE].cnr,
         vcf_add_sample = "{}/variants/haplotypecaller/{}-{}.haplotypecaller-joint-calling.vcf.gz".format(
                           outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
-        gene_track = reference['gene_track']
+        gene_track = reference['gene_track'],
+        dpyd_json_T = outdir + "/variants/{}.typeDPYD.json".format(tumor_barcode),
+        dpyd_json_N = outdir + "/variants/{}.typeDPYD.json".format(normal_barcode),
+        dpyd_csv_T = outdir + "/variants/{}.typeDPYD.csv".format(tumor_barcode),
+        dpyd_csv_N = outdir + "/variants/{}.typeDPYD.csv".format(normal_barcode)
     output:
         frankenplot = "{}/qc/{}-{}-frankenplot.html".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     params:
@@ -158,5 +162,9 @@ rule franken_plot:
                     "  --svcaller_N_TRA {params.normal_tra} "
                     "  --germline_mut_vcf {input.germline_vcf} "
                     "  --somatic_mut_vcf {input.somatic_vcf} "
+                    "  --dpyd_json_T  {input.dpyd_json_T} "
+                    "  --dpyd_json_N  {input.dpyd_json_N} "
+                    "  --dpyd_csv_T {input.dpyd_csv_T} "
+                    "  --dpyd_csv_N {input.dpyd_csv_N} "
                     "  --output {output.frankenplot} || true  && "
         "touch  {output.frankenplot} "

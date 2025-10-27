@@ -258,6 +258,7 @@ if run_oncoanalyser:
     include: "rules/nf-oncoanalyser.smk"
 
 include: "rules/qc.smk"
+include: "rules/dypd.smk"
 include: "rules/cnvcalling.smk"
 include: "rules/somatic.smk"
 include: "rules/germline.smk"

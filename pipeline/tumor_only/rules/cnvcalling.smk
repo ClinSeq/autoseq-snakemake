@@ -122,7 +122,9 @@ rule franken_plot:
         purecn_csv = "{}/purecn/{}.csv".format(outdir, CANCER_CAPTURE_STR),
         purecn_genes_csv = "{}/purecn/{}_genes.csv".format(outdir, CANCER_CAPTURE_STR),
         purecn_variants_csv = "{}/purecn/{}_variants.csv".format(outdir, CANCER_CAPTURE_STR),
-        purecn_loh_csv = "{}/purecn/{}_loh.csv".format(outdir, CANCER_CAPTURE_STR)
+        purecn_loh_csv = "{}/purecn/{}_loh.csv".format(outdir, CANCER_CAPTURE_STR),
+        dpyd_json_T = outdir + "/variants/{}.typeDPYD.json".format(tumor_barcode),
+        dpyd_csv_T = outdir + "/variants/{}.typeDPYD.csv".format(tumor_barcode)
     output:
         frankenplot = "{}/qc/{}-frankenplot.html".format(outdir, CANCER_CAPTURE_STR)
     params:
@@ -148,5 +150,7 @@ rule franken_plot:
                     "  --svcaller_T_INV {params.tumor_inv} "
                     "  --svcaller_T_TRA {params.tumor_tra} "
                     "  --somatic_mut_vcf {input.somatic_vcf} "
+                    "  --dpyd_json_T  {input.dpyd_json_T} "
+                    "  --dpyd_csv_T {input.dpyd_csv_T} "
                     "  --output {output.frankenplot} || true && "
         "touch {output.frankenplot} "
