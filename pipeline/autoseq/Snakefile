@@ -220,7 +220,7 @@ include: "rules/germline.smk"
 include: "rules/somatic.smk"
 include: "rules/structuralvariants.smk"
 include: "rules/vep.smk"
-include: "rules/dypd.smk"
+include: "rules/dpyd.smk"
 
 
 
