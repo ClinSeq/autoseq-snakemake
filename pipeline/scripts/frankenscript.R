@@ -3326,7 +3326,7 @@ chromplot <- function(chr, name, targets, segments, snps, somatic=NULL, germline
     
     print(fig+pa)
     
-    return(fig+pa)
+    #return(fig+pa)
     
 }
 
