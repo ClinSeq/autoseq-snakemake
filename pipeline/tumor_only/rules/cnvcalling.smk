@@ -19,7 +19,6 @@ rule jumblerun_cnv:
     log:
         outdir + "/logs/variants/{sample}-jumblerun-cnv.log"
     shell:
-        "source activate jumble-env && "
         "jumble-run.R -r {input.reference} "
         " -b {input.bam} " 
         " -o {params.outdir} 2> {log} "
@@ -136,7 +135,6 @@ rule franken_plot:
     container: containers['jumble']
     threads: params['liqbiocna']['threads']
     shell:
-        "source activate jumble-env && " 
         "frankenscript.R  --tumor_cnr {input.cnr} "
                     "  --tumor_cns {input.cns} "
                     "  --frankenplot_Rmd {params.frankenplot_rmd} "

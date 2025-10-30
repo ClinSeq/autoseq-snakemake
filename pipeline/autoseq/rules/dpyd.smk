@@ -15,7 +15,6 @@ rule call_typeDPYD:
     shell:
         """
         type_DPYD.R -b {input.bam} \\
-            {params.extra}    \\ 
             -c {output.csv}   \\
             -j {output.json}  2> {log}
 
