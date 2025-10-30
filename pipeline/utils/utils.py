@@ -2,6 +2,8 @@ import os, re
 import glob
 import sys
 import requests
+import urllib3
+from urllib3.exceptions import InsecureRequestWarning
 from pipeline.settings import PROJECTS_CODE_TO_NAME
 from pipeline.utils.clinseq_barcodes import parse_prep_id, compose_sample_str, \
     extract_unique_capture, find_fastqs, compose_lib_capture_str
@@ -10,8 +12,9 @@ from pipeline.utils.clinseq_barcodes import parse_prep_id, compose_sample_str, \
 
 def check_project_exists(project_id, GET_PROJECT_LIST_API):
     """
+    Check if the project exists in the project list.
     """
-    
+    urllib3.disable_warnings(InsecureRequestWarning)
     response = requests.get(GET_PROJECT_LIST_API, verify = False)
     response.raise_for_status()
     all_projects = response.json()
@@ -39,6 +42,7 @@ def create_project_info(project_id, CREATE_PROJECT_INFO_API):
         "sort_order": 1 
     }
 
+    urllib3.disable_warnings(InsecureRequestWarning)
     response = requests.post(CREATE_PROJECT_INFO_API, params = params, verify=False)
     response.raise_for_status()
     
@@ -73,6 +77,7 @@ def update_sample_info(project_id, sdid, capture, status):
             "sample_status": status
         }
 
+        urllib3.disable_warnings(InsecureRequestWarning)
         response = requests.post(CREATE_SAMPLE_INFO, params=params, verify=False)
         response.raise_for_status()
 

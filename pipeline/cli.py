@@ -7,6 +7,7 @@ from rich.table import Column, Table
 import click
 import subprocess
 
+
 from loguru import logger as Log
 import pipeline
 from pipeline.settings import SNAKEFILE
@@ -246,6 +247,8 @@ def launch(context, ref, samples, outdir, libdir,
             Log.info(f"Sample information updated successfully for {sdid} in project {project_id}.")
     except Exception as e:
         Log.error(f"Failed to update sample information: {e}")
+    
+    Log.info(f"Autoseq {pipeline} pipeline -  job submission completed.")
 
 
 if __name__ == "__main__":
