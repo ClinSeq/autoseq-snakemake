@@ -181,7 +181,7 @@ rule all:
     params:
         sdid = samples["sdid"],
         project_id = config['project_id'],
-        capture_id = "_".join(tumor_barcode + normal_barcode)
+        capture_id = "_".join([tumor_barcode, normal_barcode])
     run:
         try:
             response = update_sample_info(
