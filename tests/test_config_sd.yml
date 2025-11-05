@@ -21,6 +21,7 @@ container:
     ensemblvep_v112: False
     somaticseq: False
     svcaller: False
+    dpyd: False
 
 outdir: tests
 
@@ -152,3 +153,6 @@ params:
         threads: 1
     sage:
         threads: 8
+    dpyd:
+        extra: ""
+        threads: 4

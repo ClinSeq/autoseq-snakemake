@@ -8,3 +8,18 @@ SNAKEFILE = {
 }
 
 
+PROJECTS_CODE_TO_NAME = {
+    "PB": "PROBIO",
+    "PSFF": "PSFF",
+    "GMCK": "GMCK",
+    "UM": "UVMEL",
+    "COV": "COV",
+    "iPCM": "iPCM",
+    "CPC": "CPC",
+    "SARC": "SARC",
+    "CRCR": "CRCR",
+    "CEC": "CEC",
+    "TEST": "TEST"
+}
+
+# "PB", "PSFF", "UL", "iPCM", "CRCR", "SARC", "CPC", "BM", "KA", "UM", "COV", "GMCK", "CEC"

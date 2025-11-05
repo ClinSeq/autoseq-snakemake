@@ -156,8 +156,12 @@ rule hmftools_redux:
     log: outdir + "/logs/hmftools_markdups_{sample}.log"
     shell:
         """
+        java_mem="-Xmx64g"
+        if [[ "{params.sample_id}" == *-N-* ]]; then
+            java_mem="-Xmx32g"
+        fi
         redux \\
-            -Xmx64g \\
+            $java_mem \\
             -bamtool $(type -p sambamba) \\
             -sample {params.sample_id} \\
             -input_bam {input.bam} \\

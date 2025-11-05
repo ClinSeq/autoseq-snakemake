@@ -12,6 +12,7 @@ rna_barcode: LB-P-NA12877-RNA-03098850-TD1-C31
 nf_reference: tests/dummy_genome/nf_reference.config
 rerun: False
 fq_split: False
+project_id: 'TEST'
 
 container: 
     base: False
@@ -30,6 +31,7 @@ container:
     hmftools-redux: False
     autoseq-rnastar: False
     igv: False
+    dpyd: False
 
 outdir: tests
 
@@ -165,3 +167,6 @@ params:
         threads: 1
     sage:
         threads: 8
+    dpyd:
+        extra: ""
+        threads: 4

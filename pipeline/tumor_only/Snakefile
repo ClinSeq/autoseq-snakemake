@@ -157,6 +157,18 @@ container: config['container']['base']
 
 containers = config['container']
 
+
+include: "../autoseq/rules/split_targets.smk"
+include: "rules/pre_processing.smk"
+include: "../autoseq/rules/umi_processing.smk"
+include: "rules/qc.smk"
+include: "../autoseq/rules/dpyd.smk"
+include: "rules/cnvcalling.smk"
+include: "rules/variant_calling.smk"
+include: "rules/vep.smk"
+include: "rules/structuralvariants.smk"
+
+
 rule all:
     input:
         "{}/IGVnav/igv_session_sv.xml".format(outdir),
@@ -166,8 +178,26 @@ rule all:
         directory(outdir + "/IGVsnapshots/svs/")
     output:
         outdir + "/analysis_finished"
-    shell:
-        "date +'%Y-%m-%d T%T %:z' > {output}"
+    params:
+        sdid = samples["sdid"],
+        project_id = config['project_id'],
+        capture_id = "_".join([tumor_barcode, normal_barcode])
+    run:
+        try:
+            response = update_sample_info(
+                project_id=params.project_id,
+                sdid=params.sdid,
+                capture=params.capture_id,
+                status=1 
+            )
+
+            if response.get("status") == "error":
+                print(response.get("message", "Failed to update sample info."))
+
+        except Exception as e:
+            print(f"Error updating sample info: {e}")
+        
+        shell("date +'%Y-%m-%d T%T %:z' > {output}")
 
 
 rule generate_symlinks:
@@ -262,16 +292,3 @@ rule remove_bamfiles:
         shell("rm {bamfiles} ")
         shell("rm -rf {params.split_targets} 2>> {log} ")
         shell("touch {output} ")
-
-
-
-include: "../autoseq/rules/split_targets.smk"
-include: "rules/pre_processing.smk"
-include: "../autoseq/rules/umi_processing.smk"
-include: "rules/qc.smk"
-include: "rules/cnvcalling.smk"
-include: "rules/variant_calling.smk"
-include: "rules/vep.smk"
-include: "rules/structuralvariants.smk"
-
-

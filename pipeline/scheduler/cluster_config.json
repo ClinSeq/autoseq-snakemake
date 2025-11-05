@@ -3,31 +3,58 @@
         "time": "100:00:00",
         "output": "logs/cluster/{rule}-%j.out",
         "error": "logs/cluster/{rule}-%j.err",
-        "partition": "core",
-        "mem": 0
+        "partition": "core"
     },
     "gatk3_indelrealigner_umi_1": {
-        "time": "100:00:00"
+        "time": "100:00:00",
+        "mem": "12000"
     },
     "gatk3_indelrealigner_umi_2": {
-        "time": "100:00:00"
+        "time": "100:00:00",
+        "mem": "12000"
     },
     "gatk4_mutect2": {
-        "time": "72:00:00"
+        "time": "60:00:00",
+        "mem": "12000"
     },
-    "somaticseq_merge": {
-    	"time": "100:00:00"
+    "fastqc": {
+        "time": "60:00:00",
+        "mem": "9000"
     },
-    "gatk3_indelrealigner": {
-        "time": "100:00:00"
+    "fgbio_clipbam": {
+        "time": "48:00:00",
+        "mem": "12000"
     },
-    "vcf_add_sample": {
-        "time": "60:00:00"
+    "gridss_svcalling_normal": {
+        "mem": "30000"
     },
-    "vardict_somatic": {
-        "time": "100:00:00"
+    "gridss_svcalling_somatic": {
+        "mem": "32000"
     },
-    "svcaller_run": {
-        "time": "100:00:00"
+    "gridss_svcalling_tumor": {
+        "mem": "32000"
+    },
+    "sage_somatic": {
+        "time": "100:00:00",
+        "mem": "64000"
+    },
+    "bwa_mem2_alignment_normal": {
+        "mem": "32000"
+    },
+    "bwa_mem2_alignment_tumor": {
+        "mem": "32000"
+    },
+    "sambamba_merge_tumor": {
+        "mem": "32000"
+    },
+    "hmftools_redux": {
+        "mem": "65000"
+    },
+    "picard_collectoxog": {
+        "mem": "32000"
+    },
+    "run_oncoanalyser": {
+        "time": "120:00:00",
+        "mem": "180000"
     }
 }

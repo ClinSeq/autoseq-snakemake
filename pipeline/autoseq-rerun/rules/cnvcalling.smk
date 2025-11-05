@@ -17,7 +17,6 @@ rule jumblerun_cnv:
     log:
         outdir + "/logs/variants/{sample}-jumblerun-cnv.log"
     shell:
-        "source activate jumble-env && "
         "jumble-run.R -r {input.reference} "
         " -b {input.bam} " 
         " -o {params.outdir} 2> {log} "
@@ -130,7 +129,11 @@ rule franken_plot:
         purecn_genes_csv = "{}/purecn/{}_genes.csv".format(outdir, CANCER_CAPTURE_STR),
         purecn_variants_csv = "{}/purecn/{}_variants.csv".format(outdir, CANCER_CAPTURE_STR),
         purecn_loh_csv = "{}/purecn/{}_loh.csv".format(outdir, CANCER_CAPTURE_STR),
-        gene_track = reference['gene_track']
+        gene_track = reference['gene_track'],
+        dpyd_json_T = outdir + "/variants/{}.typeDPYD.json".format(tumor_barcode),
+        dpyd_json_N = outdir + "/variants/{}.typeDPYD.json".format(normal_barcode),
+        dpyd_csv_T = outdir + "/variants/{}.typeDPYD.csv".format(tumor_barcode),
+        dpyd_csv_N = outdir + "/variants/{}.typeDPYD.csv".format(normal_barcode)
     output:
         frankenplot = "{}/qc/{}-{}-frankenplot.html".format(outdir, NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
@@ -146,7 +149,6 @@ rule franken_plot:
     threads: params['liqbiocna']['threads']
     container: containers['jumble']
     shell:
-        "source activate jumble-env && " 
         "frankenscript.R  --tumor_cnr {input.tumor_cnr} "
                     "  --tumor_cns {input.tumor_cns} "
                     "  --normal_cnr {input.normal_cnr} "
@@ -167,5 +169,9 @@ rule franken_plot:
                     "  --svcaller_N_TRA {params.normal_tra} "
                     "  --germline_mut_vcf {input.germline_vcf} "
                     "  --somatic_mut_vcf {input.somatic_vcf} "
+                    "  --dpyd_json_T  {input.dpyd_json_T} "
+                    "  --dpyd_json_N  {input.dpyd_json_N} "
+                    "  --dpyd_csv_T {input.dpyd_csv_T} "
+                    "  --dpyd_csv_N {input.dpyd_csv_N} "
                     "  --output {output.frankenplot} || true && "
         "touch  {output.frankenplot} "

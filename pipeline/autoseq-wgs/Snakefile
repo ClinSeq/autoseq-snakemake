@@ -168,8 +168,26 @@ rule all:
         directory(outdir + "/IGVsnapshots/svs/")
     output:
         outdir + "/analysis_finished"
-    shell:
-        "date +'%Y-%m-%d T%T %:z' > {output}"
+    params:
+        sdid = samples["sdid"],
+        project_id = config['project_id'],
+        capture_id = "_".join([tumor_barcode, normal_barcode])
+    run:
+        try:
+            response = update_sample_info(
+                project_id=params.project_id,
+                sdid=params.sdid,
+                capture=params.capture_id,
+                status=1 
+            )
+
+            if response.get("status") == "error":
+                print(response.get("message", "Failed to update sample info."))
+
+        except Exception as e:
+            print(f"Error updating sample info: {e}")
+        
+        shell("date +'%Y-%m-%d T%T %:z' > {output}")
                                     
 
 rule generate_symlinks:
@@ -258,6 +276,7 @@ if run_oncoanalyser:
     include: "rules/nf-oncoanalyser.smk"
 
 include: "rules/qc.smk"
+include: "rules/dpyd.smk"
 include: "rules/cnvcalling.smk"
 include: "rules/somatic.smk"
 include: "rules/germline.smk"
