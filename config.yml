@@ -24,6 +24,7 @@ container:
     hmftools-markdups: False
     hmftools-redux: False
     igv: False
+    dpyd: False
 
 
 outdir: tests
@@ -63,8 +64,8 @@ params:
         merge_bam:
             java_options: " -Xmx10g "
         collectinsertsize:
-            java_options: " -XX:ParallelGCThreads=8 "
-            threads: 1
+            java_options: "-Xmx8g  -XX:ParallelGCThreads=8 "
+            threads: 4
         collectoxog:
             java_options: " -XX:ParallelGCThreads=8  -Xmx4g"
             threads: 1
@@ -162,3 +163,6 @@ params:
         threads: 8
     jumble:
         threads: 1
+    dpyd:
+        extra: ""
+        threads: 4

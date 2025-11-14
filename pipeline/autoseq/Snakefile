@@ -146,6 +146,23 @@ container: config['container']['base']
 
 containers = config['container']
 
+
+include: "rules/pre_processing.smk"
+if umi:
+    include: "rules/split_targets.smk"
+    include: "rules/umi_processing.smk"
+else:
+    include: "rules/alignment.smk"
+include: "rules/qc.smk"
+include: "rules/cnvcalling.smk"
+include: "rules/germline.smk"
+include: "rules/somatic.smk"
+include: "rules/structuralvariants.smk"
+include: "rules/vep.smk"
+include: "rules/dpyd.smk"
+
+
+
 rule all:
     input: 
         OUTPUT,
@@ -158,9 +175,27 @@ rule all:
         "{}/IGVnav/igv_session_snps.xml".format(outdir)
     output:
         outdir + "/analysis_finished"
-    shell:
-        "date +'%Y-%m-%d T%T %:z' > {output}"
-                                    
+    params:
+        sdid = samples["sdid"],
+        project_id = config['project_id'],
+        capture_id = "_".join([tumor_barcode, normal_barcode])
+    run:
+        try:
+            response = update_sample_info(
+                project_id=params.project_id,
+                sdid=params.sdid,
+                capture=params.capture_id,
+                status=1 
+            )
+
+            if response.get("status") == "error":
+                print(response.get("message", "Failed to update sample info."))
+
+        except Exception as e:
+            print(f"Error updating sample info: {e}")
+        
+        shell("date +'%Y-%m-%d T%T %:z' > {output}")
+
 
 rule generate_symlinks:
     input:
@@ -221,17 +256,3 @@ rule generate_IGVSnapshots_sv:
             --input  {input.svs} \
             --output {output} 2> {log} 
         """
-
-
-include: "rules/pre_processing.smk"
-if umi:
-    include: "rules/split_targets.smk"
-    include: "rules/umi_processing.smk"
-else:
-    include: "rules/alignment.smk"
-include: "rules/qc.smk"
-include: "rules/cnvcalling.smk"
-include: "rules/germline.smk"
-include: "rules/somatic.smk"
-include: "rules/structuralvariants.smk"
-include: "rules/vep.smk"

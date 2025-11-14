@@ -21,6 +21,7 @@ container:
     somaticseq: False
     svcaller: False
     igv: False
+    dpyd: False
 
 outdir: tests
 
@@ -146,3 +147,6 @@ params:
         threads: 8
     multiqc:
         threads: 1
+    dpyd:
+        extra: ""
+        threads: 4
