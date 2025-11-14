@@ -1916,6 +1916,7 @@ if (!is.null(opts$dpyd_json_N)) if (!is.na(opts$dpyd_json_N)) dpyd_result <- as.
 
 dpyd_table <- rbind(dpyd_csv_T,dpyd_csv_N)
 
+dpyd_table[,file:=basename(file)]
 
 
 # HRD metric ---------------------------------------------------------
