@@ -82,7 +82,7 @@ rule bwa_mem2_alignment_tumor:
                 --nthreads {threads} \\
                 /dev/stdin | \\
             sambamba sort \\
-                -m 1G  \\
+                -m 2G  \\
                 --nthreads {threads} \\
                 --out {output.bamfile} \\
                 /dev/stdin 2> {log}
