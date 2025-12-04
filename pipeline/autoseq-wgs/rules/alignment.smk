@@ -158,7 +158,7 @@ rule hmftools_redux:
         """
         java_mem="-Xmx120g"
         if [[ "{params.sample_id}" == *-N-* ]]; then
-            java_mem="-Xmx32g"
+            java_mem="-Xmx64g"
         fi
         redux \\
             $java_mem \\
