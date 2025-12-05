@@ -48,7 +48,7 @@
         "mem": "32000"
     },
     "hmftools_redux": {
-        "mem": "130000"
+        "mem": "160000"
     },
     "picard_collectoxog": {
         "mem": "32000"
