@@ -75,3 +75,4 @@ Autoseq knows about the following capture kits:
 * `PS` = `probio_snvindel`
 * `P3` = `probio_biomarkersignature2`
 * `N3` = `pancancer3`
+* `UG` = `ghent_GMCK`
