@@ -130,7 +130,8 @@ rule franken_plot:
         dpyd_csv_T = outdir + "/variants/{}.typeDPYD.csv".format(tumor_barcode),
         dpyd_csv_N = outdir + "/variants/{}.typeDPYD.csv".format(normal_barcode)
     output:
-        frankenplot = "{}/qc/{}-{}-frankenplot.html".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
+        frankenplot = "{}/qc/{}-{}-frankenplot.html".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR),
+        frankenplot_png = "{}/qc/{}-{}-frankenplot.png".format(outdir, CANCER_CAPTURE_STR, NORMAL_CAPTURE_STR)
     params:
         normal_del = capture_to_results[NORMAL_CAPTURE].svs['DEL'],
         normal_dup = capture_to_results[NORMAL_CAPTURE].svs['DUP'],
@@ -164,5 +165,6 @@ rule franken_plot:
                     "  --dpyd_json_N  {input.dpyd_json_N} "
                     "  --dpyd_csv_T {input.dpyd_csv_T} "
                     "  --dpyd_csv_N {input.dpyd_csv_N} "
+                    "  --output_figure {output.frankenplot_png} "
                     "  --output {output.frankenplot} || true  && "
         "touch  {output.frankenplot} "

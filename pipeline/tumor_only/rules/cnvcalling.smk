@@ -125,7 +125,8 @@ rule franken_plot:
         dpyd_json_T = outdir + "/variants/{}.typeDPYD.json".format(tumor_barcode),
         dpyd_csv_T = outdir + "/variants/{}.typeDPYD.csv".format(tumor_barcode)
     output:
-        frankenplot = "{}/qc/{}-frankenplot.html".format(outdir, CANCER_CAPTURE_STR)
+        frankenplot = "{}/qc/{}-frankenplot.html".format(outdir, CANCER_CAPTURE_STR),
+        frankenplot_png = "{}/qc/{}-frankenplot.png".format(outdir, CANCER_CAPTURE_STR)
     params:
         tumor_del = capture_to_results[CANCER_CAPTURE].svs['DEL'],
         tumor_dup = capture_to_results[CANCER_CAPTURE].svs['DUP'],
@@ -150,5 +151,6 @@ rule franken_plot:
                     "  --somatic_mut_vcf {input.somatic_vcf} "
                     "  --dpyd_json_T  {input.dpyd_json_T} "
                     "  --dpyd_csv_T {input.dpyd_csv_T} "
+                    " --output_figure {output.frankenplot_png} "
                     "  --output {output.frankenplot} || true && "
         "touch {output.frankenplot} "
