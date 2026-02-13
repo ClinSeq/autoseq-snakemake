@@ -64,14 +64,15 @@ def update_sample_info(project_id, sdid, capture, status, pipeline):
     if project_id not in PROJECTS_CODE_TO_NAME:
         return {"status": "error", "message": f"Project ID '{project_id}' is not recognized."}
 
+    proj_name = PROJECTS_CODE_TO_NAME[project_id]
     try:
-        if not check_project_exists(project_id, GET_PROJECT_LIST):
+        if not check_project_exists(proj_name, GET_PROJECT_LIST):
             create_response = create_project_info(project_id, CREATE_PROJECT_INFO)
             if create_response['status'] == 'error':
                 return create_response
         
         params = {
-            "project_name": PROJECTS_CODE_TO_NAME[project_id],
+            "project_name": proj_name,
             "sample_id": sdid,
             "capture_id": capture,
             "sample_status": status,
@@ -497,7 +498,8 @@ def get_capture_name(capture_kit_code):
                             "PS": "probio_snvindel",
                             "S3": "probio_biomarkersignature2", # S3 pointed to S2 capture files
                             "P3": "probio_biomarkersignature2",
-                            "N3": "pancancer3"
+                            "N3": "pancancer3",
+                            "UG": "ghent_GMCK"
                             }
 
     if capture_kit_code == 'WG':

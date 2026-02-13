@@ -1057,14 +1057,16 @@ if (!t_only) { # print normal sample chromosome
 
 ```{r, echo=FALSE}
 
-t <- salf[IMPACT %in% c('MODERATE','HIGH') | str_detect(CLIN_SIG,'athogenic') | is_hotspot==T | str_detect(Consequence,'splice')]
-if (!is.null(salf)) knitr::kable(t, "html") %>%
-    kable_styling(
-        bootstrap_options = c("striped", "hover", "condensed"),
-        full_width = TRUE
-    ) %>%
-    column_spec(column = 1, width = "5em") %>%
-    scroll_box(width = "100%", extra_css = "white-space: nowrap;")
+if (!is.null(salf)) if (nrow(salf)>1) {
+    t <- salf[IMPACT %in% c('MODERATE','HIGH') | str_detect(CLIN_SIG,'athogenic') | is_hotspot==T | str_detect(Consequence,'splice')]
+    if (nrow(t)>0) knitr::kable(t, "html") %>%
+        kable_styling(
+            bootstrap_options = c("striped", "hover", "condensed"),
+            full_width = TRUE
+        ) %>%
+        column_spec(column = 1, width = "5em") %>%
+        scroll_box(width = "100%", extra_css = "white-space: nowrap;")
+}
 
 ```
 

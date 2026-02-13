@@ -19,7 +19,11 @@ PROJECTS_CODE_TO_NAME = {
     "SARC": "SARC",
     "CRCR": "CRCR",
     "CEC": "CEC",
-    "TEST": "TEST"
+    "TEST": "TEST",
+    "CCR": "CCR",
+    "PWGS": "PWGS",
+    "CBC": "CBC",
+    "HPB": "HPB"
 }
 
 # "PB", "PSFF", "UL", "iPCM", "CRCR", "SARC", "CPC", "BM", "KA", "UM", "COV", "GMCK", "CEC"

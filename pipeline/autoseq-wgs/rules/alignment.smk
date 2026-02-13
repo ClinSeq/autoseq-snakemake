@@ -82,7 +82,7 @@ rule bwa_mem2_alignment_tumor:
                 --nthreads {threads} \\
                 /dev/stdin | \\
             sambamba sort \\
-                -m 1G  \\
+                -m 2G  \\
                 --nthreads {threads} \\
                 --out {output.bamfile} \\
                 /dev/stdin 2> {log}
@@ -156,9 +156,9 @@ rule hmftools_redux:
     log: outdir + "/logs/hmftools_markdups_{sample}.log"
     shell:
         """
-        java_mem="-Xmx64g"
+        java_mem="-Xmx150g"
         if [[ "{params.sample_id}" == *-N-* ]]; then
-            java_mem="-Xmx32g"
+            java_mem="-Xmx64g"
         fi
         redux \\
             $java_mem \\

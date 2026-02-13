@@ -64,8 +64,8 @@ params:
         merge_bam:
             java_options: " -Xmx10g "
         collectinsertsize:
-            java_options: " -XX:ParallelGCThreads=8 "
-            threads: 1
+            java_options: "-Xmx8g  -XX:ParallelGCThreads=8 "
+            threads: 4
         collectoxog:
             java_options: " -XX:ParallelGCThreads=8  -Xmx4g"
             threads: 1
