@@ -52,7 +52,7 @@ def create_project_info(project_id, CREATE_PROJECT_INFO_API):
     return {"status": "success", "message": f"Project '{project_id}' created successfully."}
 
 
-def update_sample_info(project_id, sdid, capture, status):
+def update_sample_info(project_id, sdid, capture, status, pipeline):
     """
     Validate the project ID by checking if it exists in the project list.
     """
@@ -74,7 +74,8 @@ def update_sample_info(project_id, sdid, capture, status):
             "project_name": PROJECTS_CODE_TO_NAME[project_id],
             "sample_id": sdid,
             "capture_id": capture,
-            "sample_status": status
+            "sample_status": status,
+            "pipeline_type": 1 if pipeline == "tumor_only" else 0
         }
 
         urllib3.disable_warnings(InsecureRequestWarning)

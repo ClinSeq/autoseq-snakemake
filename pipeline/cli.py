@@ -240,7 +240,7 @@ def launch(context, ref, samples, outdir, libdir,
     capture_id = sample_str
     status = 0 # 0 - jobs are submitted and running
     try:
-        response = update_sample_info(project_id, sdid, capture_id, status)
+        response = update_sample_info(project_id, sdid, capture_id, status, pipeline)
         if response.get("status") == "error":
             Log.error(f"Error updating sample information: {response.get('message')}")
         else:
