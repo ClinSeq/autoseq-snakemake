@@ -51,7 +51,7 @@ rule sveffect_predict:
         "sveffect predict --ts-regions {input.ts_regions} "
         " --ar-regions {input.ar_regions} "
         " --fusion-regions {input.fusion_regions} "
-        " --effects-filename {output.effects_json} {output.combined_bed} 2>> {log}&& "
+        " --effects-filename {output.effects_json} {output.combined_bed} 2>> {log} && "
         "source deactivate"
 
 
