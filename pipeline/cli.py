@@ -71,17 +71,19 @@ def config(context, barcodes_file, outdir):
 
 
 @cli.command()
-@click.option("--ref", '-r', help="json file with reference files to use", 
+@click.option("--ref", '-r', help="json file with reference files to use",
             type=click.Path(exists=True))
 @click.option("--samples", help="json file contains list of samples")
 @click.option("--outdir", default=os.getcwd() ,help="output directory")
 @click.option("--libdir", help="directory to search libraries")
 @click.option("--configfile", help="configuration file for params")
-@click.option("--cluster-config", help="configuration file for different HPC")
+@click.option("--cluster-config", help="[DEPRECATED] no-op since Phase 2; resources live in --profile YAMLs")
 @click.option("--scratch", default="/tmp", help="path to /tmp/scratch")
 @click.option("--dryrun/--run", default=False, help=" --dryrun for testing snakemake workflow")
 @click.option("--umi", is_flag=True, help="To process the data with UMI- Unique Molecular Identifier")
-@click.option("--profile", default='shell', help="job schedulers eg. SLURM")
+@click.option("--profile", default='shell',
+              help="Snakemake profile. 'shell' = local; 'slurm'/'anchorage' resolve "
+                   "to pipeline/scheduler/<name>/; any other value is passed through as a path.")
 @click.option("--pipeline", default='autoseq', help="Pipeline to be launched")
 @click.option("-n", "--normal-bam", default=None, help="Normal bam files dir, Applicable only to tumor only pipeline")
 @click.option("--fq-split", is_flag=True, help="To split large fastqs into smaller, only applicable in WGS")
@@ -91,12 +93,14 @@ def config(context, barcodes_file, outdir):
 @click.option("--use-singularity", is_flag=True, help="To use singularity")
 @click.option("--singularity", help="Path to singularity image")
 @click.option("--smk-opt", help="snakemake option")
-@click.option("--cores", help="max number of cores")
+@click.option("--cores", help="max number of cores for local execution")
+@click.option("--jobs", '-j', default=500, type=int,
+              help="Concurrent SLURM submission cap when --profile resolves to a cluster profile")
 @click.pass_context
-def launch(context, ref, samples, outdir, libdir, 
-            configfile, cluster_config, scratch, dryrun, umi, 
+def launch(context, ref, samples, outdir, libdir,
+            configfile, cluster_config, scratch, dryrun, umi,
             profile, pipeline, normal_bam, fq_split, run_oncoanalyser,
-            onco_rna, nf_reference, use_singularity, singularity, smk_opt, cores):
+            onco_rna, nf_reference, use_singularity, singularity, smk_opt, cores, jobs):
     """
     launch the respective pipeline with samples json 
     """
@@ -153,11 +157,11 @@ def launch(context, ref, samples, outdir, libdir,
     config_dict['project_id'] = project_id
 
     ### Oncoanalyser pipeline for WGS
+    config_dict['oncoanalyser'] = bool(run_oncoanalyser)
+    config_dict['rna_barcode'] = onco_rna if onco_rna else ""
     if run_oncoanalyser:
-        config_dict['oncoanalyser'] = True
-        config_dict['rna_barcode'] = onco_rna if onco_rna else ""
-        config_dict['nf_reference'] = nf_reference 
-        config_dict['rerun'] = True if "rerun-incomplete" in smk_opt else False
+        config_dict['nf_reference'] = nf_reference
+        config_dict['rerun'] = True if smk_opt and "rerun-incomplete" in smk_opt else False
 
     if use_singularity:
         config_dict['container'] = get_containers(singularity)
@@ -165,9 +169,13 @@ def launch(context, ref, samples, outdir, libdir,
         config_dict['container'] = {
                                     "base": '', "franken": '',
                                     "gatk3": '', "gridss": '',
-                                    "jumble": ' ', "purecn": '',
+                                    "jumble": '', "purecn": '',
                                     "ensemblvep": '', "somaticseq": '',
-                                    "svcaller": ''
+                                    "svcaller": '', "mulled-v2": '',
+                                    "hmftools-markdups": '',
+                                    "hmftools-redux": '',
+                                    "autoseq-rnastar": '',
+                                    "igv": '', "dpyd": '',
                                 }
 
     # update scratch dir 
@@ -212,14 +220,35 @@ def launch(context, ref, samples, outdir, libdir,
         Log.error(f"{pipeline} does not exist")
         raise click.Abort()
 
-    autoseq = Pipeline(snakefile = snakefile, 
-                      config = out_configpath, 
+    # Resolve --profile. Named profiles ('slurm', 'anchorage') map to the
+    # workflow profile dirs under pipeline/scheduler/. 'shell' = local
+    # execution (no profile). Any other value is treated as a user-supplied
+    # path and passed through to snakemake --profile verbatim.
+    SLURM_PROFILES = ('slurm', 'anchorage')
+    profile_path = ''
+    if profile in SLURM_PROFILES:
+        profile_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), 'scheduler', profile)
+    elif profile and profile != 'shell':
+        profile_path = profile
+
+    if cluster_config:
+        Log.warning(
+            "--cluster-config is deprecated and ignored since Phase 2 of the Snakemake 9 "
+            "migration. Resources live in the --profile YAML "
+            "(pipeline/scheduler/{slurm,anchorage}/config.yaml)."
+        )
+
+    autoseq = Pipeline(snakefile = snakefile,
+                      config = out_configpath,
                       cluster_config = cluster_config,
                       sdid = sdid,
                       project_id = project_id,
-                      workdir = outdir, 
-                      dryrun = dryrun, 
+                      workdir = outdir,
+                      dryrun = dryrun,
                       profile = profile,
+                      profile_path = profile_path,
+                      jobs = jobs,
                       jobdb = jobdb,
                       smk_option = smk_opt,
                       use_singularity = use_singularity,

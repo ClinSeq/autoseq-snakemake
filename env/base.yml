@@ -22,9 +22,8 @@ dependencies:
   - bioconductor-dnacopy
   - pip:
     - pysam
-    - pyvcf==0.6.8
+    - PyVCF3
     - cnvkit==0.9.8
     - multiqc==1.10
     - wheel
     - pulp==2.7.0
-    - setuptools<58

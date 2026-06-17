@@ -71,10 +71,10 @@ rule svcaller_merge:
     log:
         outdir + "/logs/svs/svcaller-merge-{sample}.log"
     shell:
-        "sed -i -r '/^\s*$/!s/$/color=#3574C7;/' {input.DEL} && "
-        "sed -i -r '/^\s*$/!s/$/color=#EF853E;/' {input.TRA} && "
-        "sed -i -r '/^\s*$/!s/$/color=#CC3730;/' {input.DUP} && "
-        "sed -i -r '/^\s*$/!s/$/color=#458833;/' {input.DEL} && "
+        r"sed -i -r '/^\s*$/!s/$/color=#3574C7;/' {input.DEL} && "
+        r"sed -i -r '/^\s*$/!s/$/color=#EF853E;/' {input.TRA} && "
+        r"sed -i -r '/^\s*$/!s/$/color=#CC3730;/' {input.DUP} && "
+        r"sed -i -r '/^\s*$/!s/$/color=#458833;/' {input.DEL} && "
         "samtools merge -c -p {output.svs_bam} {input.DEL_bam} "
         " {input.DUP_bam} {input.INV_bam} {input.TRA_bam} && "
         "samtools index {output.svs_bam} && "

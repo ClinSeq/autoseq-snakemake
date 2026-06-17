@@ -5,13 +5,16 @@ version = '3.11.3'
 setup(name='autoseq',
       version=version,
       packages=find_packages(exclude=('tests*', 'docs', 'examples')),
+      python_requires=">=3.11",
       install_requires=[
-          "snakemake==6.2.1",
+          "snakemake==9.23.0",
+          "snakemake-executor-plugin-slurm==2.7.1",
           "click",
           "pyyaml",
           "pandas",
           "rich",
-          "loguru"
+          "loguru",
+          "pytest",
       ],
       entry_points={
           'console_scripts': [

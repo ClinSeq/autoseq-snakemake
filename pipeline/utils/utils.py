@@ -205,8 +205,9 @@ class Pipeline:
     Class pipeline to build snakmake command based on given args.
 
     """
-    def __init__(self, snakefile, config, cluster_config, sdid, project_id, workdir, dryrun, 
-                profile, jobdb, smk_option, use_singularity, bind_paths, cores='4'):
+    def __init__(self, snakefile, config, cluster_config, sdid, project_id, workdir, dryrun,
+                profile, profile_path, jobs, jobdb, smk_option, use_singularity, bind_paths,
+                cores='4'):
         self.snakefile = snakefile
         self.cores = cores
         self.configfile = config
@@ -215,61 +216,59 @@ class Pipeline:
         self.project_id = project_id
         self.workdir = workdir
         self.profile = profile
+        self.profile_path = profile_path
+        self.jobs = jobs
         self.jobdb = jobdb
         self.dryrun = dryrun
         self.smk_option = smk_option
         self.use_singularity = use_singularity
         self.bind_paths = bind_paths
-    
+
     def build_cmd(self):
         dryrun = ''
         profile_cmd = ''
-        slurm_cmd = ''
+        cores_cmd = ''
+        jobs_cmd = ''
         smk_opt = ''
         singularity_cmd = ''
-        
+
         if self.dryrun:
             dryrun = "-n"
 
         if self.smk_option:
             smk_opt = self.smk_option
 
-        if self.profile == 'slurm':
-            if self.cluster_config:
-                cluster_config = self.cluster_config
-            else:
-                cluster_config = get_scheduler(self.profile, 'config')
-            
-            slurm_submit = get_scheduler(self.profile, 'pyscript')
-            slurm_cmd = " --notemp --immediate-submit -j 500 "
-            slurm_cmd += " --jobname smk.{{rulename}}.{}-{}.{{jobid}}.sh ".format(self.project_id, self.sdid)
-            slurm_cmd += " --cluster-config {} ".format(cluster_config)
-            slurm_cmd += (" --cluster '{} "
-                          " --jobdb {} "
-                          " {{dependencies}} '".format(slurm_submit, self.jobdb))
+        if self.profile_path:
+            # Cluster execution via Snakemake 9 workflow profile (SLURM plugin).
+            # --jobs controls concurrent submissions; per-job CPU comes from
+            # the rule's threads: directive and the profile's set-resources.
+            profile_cmd = f" --profile {self.profile_path} "
+            jobs_cmd = f" --jobs {self.jobs} "
+        else:
+            # Local execution.
+            cores_cmd = f" --cores {self.cores} "
 
         if self.use_singularity:
-            singularity_cmd = " --use-singularity "
-            singularity_cmd += " --singularity-args ' "
+            singularity_cmd = " --software-deployment-method apptainer "
+            singularity_cmd += " --apptainer-args ' "
 
             for path in self.bind_paths:
                 singularity_cmd += f" --bind {path}:{path} "
-            
+
             singularity_cmd += "'"
 
 
         cmd = ("snakemake -p --snakefile {} "
-               " --cores {} "
                " --directory {} "
                " --configfile {} "
-               " {} {} {} {} {} ").format(self.snakefile,
-                              self.cores,
+               " {} {} {} {} {} {} ").format(self.snakefile,
                               self.workdir,
                               self.configfile,
                               dryrun,
+                              cores_cmd,
                               profile_cmd,
+                              jobs_cmd,
                               singularity_cmd,
-                              slurm_cmd,
                               smk_opt)
         return cmd
 

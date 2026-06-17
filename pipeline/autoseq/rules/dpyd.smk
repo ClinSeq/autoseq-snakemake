@@ -2,7 +2,7 @@
 
 rule call_typeDPYD:
     input:
-        bam = outdir + "/bams/{sample}_clipoverlap.bam"
+        bam = outdir + "/bams/{sample}_clipoverlap.bam" if umi else outdir + "/bams/{sample}_nodups.bam"
     output:
         csv = outdir + "/variants/{sample}.typeDPYD.csv",
         json = outdir + "/variants/{sample}.typeDPYD.json",

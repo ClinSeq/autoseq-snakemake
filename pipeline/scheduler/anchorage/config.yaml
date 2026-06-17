@@ -1,0 +1,57 @@
+# Snakemake 9 workflow profile — Anchorage HPC variant.
+# Resolved by `autoseq launch --profile anchorage`. Replaces the legacy
+# cluster_config.anchorage.json overrides.
+#
+# Differs from the base slurm profile in default runtime (24h vs 100h) and
+# a small set of rule-specific runtime/mem overrides that Anchorage requires.
+
+executor: slurm
+jobs: 500
+software-deployment-method:
+  - apptainer
+
+jobname: "smk.{rule}.{jobid}"
+
+default-resources:
+  slurm_partition: core
+  runtime: 1440      # 24:00:00 — Anchorage default
+  mem_mb: 4000
+  slurm_extra: "'--output=logs/cluster/{rule}.out --error=logs/cluster/{rule}.err'"
+
+set-resources:
+  gatk3_indelrealigner_umi_1:
+    runtime: 6000    # 100:00:00 — long realignment override
+  gatk3_indelrealigner_umi_2:
+    runtime: 6000    # 100:00:00
+  gatk4_mutect2:
+    runtime: 3600    # 60:00:00 (Anchorage tightens from 100h)
+    mem_mb: 12000
+  fastqc:
+    runtime: 3600    # 60:00:00
+    mem_mb: 9000
+  fgbio_clipbam:
+    runtime: 2880    # 48:00:00
+    mem_mb: 12000
+  # Memory overrides shared with base slurm profile — keep in sync.
+  gridss_svcalling_normal:
+    mem_mb: 30000
+  gridss_svcalling_somatic:
+    mem_mb: 32000
+  gridss_svcalling_tumor:
+    mem_mb: 32000
+  sage_somatic:
+    runtime: 6000
+    mem_mb: 64000
+  bwa_mem2_alignment_normal:
+    mem_mb: 32000
+  bwa_mem2_alignment_tumor:
+    mem_mb: 32000
+  sambamba_merge_tumor:
+    mem_mb: 32000
+  hmftools_redux:
+    mem_mb: 160000
+  picard_collectoxog:
+    mem_mb: 32000
+  run_oncoanalyser:
+    runtime: 7200    # 120:00:00
+    mem_mb: 180000
