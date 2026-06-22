@@ -138,7 +138,7 @@ def extract_bam(sample, libdir, umi = False):
         raise ValueError(" ".join(["Invalid bam : ", sample, nodups_bam]))
 
 
-def get_fastqs(wildcards):
+def get_fastqs(wildcards, libdir):
     """
     helper function to get all fq files 
     """

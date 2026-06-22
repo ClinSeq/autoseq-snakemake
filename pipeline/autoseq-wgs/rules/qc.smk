@@ -1,18 +1,10 @@
-def get_fastqs(wildcards):
-    """
-    helper function to get all fq files 
-    """
-    r1, r2 = find_fastqs(wildcards.sample, libdir)
-    return r1 + r2
-
-
 rule fastqc:
     input:
         libdir + "/{sample}/"
     output:
         directory(outdir + "/qc/fastqc/{sample}")
     params:
-        fq_files = lambda wildcards: get_fastqs(wildcards)
+        fq_files = lambda wildcards: get_fastqs(wildcards, libdir)
     threads: params['fastqc']['threads']
     log:
         outdir + "/logs/fastqc/fastqc_{sample}.log"

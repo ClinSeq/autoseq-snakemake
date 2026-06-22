@@ -10,7 +10,7 @@ rule fastqc:
     output:
         directory(outdir + "/qc/fastqc/{sample}")
     params:
-        fq_files = lambda wildcards: get_fastqs(wildcards)
+        fq_files = lambda wildcards: get_fastqs(wildcards, libdir)
     threads: params['fastqc']['threads']
     log:
         outdir + "/logs/fastqc/fastqc_{sample}.log"
