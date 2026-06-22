@@ -14,7 +14,6 @@ container:
     franken: False
     gridss: False
     gatk3: False
-    gridss: False
     jumble: False
     purecn: False
     ensemblvep: False
