@@ -16,10 +16,15 @@ jobname: "smk.{rule}.{jobid}"
 default-resources:
   slurm_partition: core
   runtime: 6000      # 100h — matches the previous __default__ time
-  mem_mb: 4000
-  slurm_extra: "'--output=logs/cluster/{rule}-%j.out --error=logs/cluster/{rule}-%j.err'"
+  mem_mb: 8000
 
 set-resources:
+  bwa_umialignment:
+    runtime: 6000    # 100:00:00
+    mem_mb: 32000
+  bwa_umialignment_2:
+    runtime: 6000    # 100:00:00
+    mem_mb: 32000
   gatk3_indelrealigner_umi_1:
     runtime: 6000    # 100:00:00
     mem_mb: 12000
@@ -32,6 +37,15 @@ set-resources:
   fastqc:
     runtime: 3600    # 60:00:00
     mem_mb: 9000
+  fgbio_groupreadsbyumi:
+    runtime: 6000    # 100:00:00
+    mem_mb: 24000
+  fgbio_callduplexconsensus:
+    runtime: 6000    # 100:00:00
+    mem_mb: 24000
+  fgbio_filterconsensus:
+    runtime: 6000    # 100:00:00
+    mem_mb: 24000
   fgbio_clipbam:
     runtime: 2880    # 48:00:00
     mem_mb: 12000

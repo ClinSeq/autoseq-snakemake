@@ -19,12 +19,12 @@ from pipeline.utils.clinseq_barcodes import data_available_for_clinseq_barcode, 
 
 def console_autoseq():
     console = Console()
-    console.print("[magenta]     _         _       ____             ")
-    console.print("[magenta]    / \  _   _| |_ ___/ ___|  ___  __ _ ")
-    console.print("[magenta]   / _ \| | | | __/ _ \___ \ / _ \/ _` |")
-    console.print("[magenta]  / ___ \ |_| | || (_) |__) |  __/ (_| |")
-    console.print("[magenta] /_/   \_\__,_|\__\___/____/ \___|\__, |")
-    console.print("[magenta]                                     |_| :snake:")
+    console.print(r"[magenta]     _         _       ____             ")
+    console.print(r"[magenta]    / \  _   _| |_ ___/ ___|  ___  __ _ ")
+    console.print(r"[magenta]   / _ \| | | | __/ _ \___ \ / _ \/ _` |")
+    console.print(r"[magenta]  / ___ \ |_| | || (_) |__) |  __/ (_| |")
+    console.print(r"[magenta] /_/   \_\__,_|\__\___/____/ \___|\__, |")
+    console.print(r"[magenta]                                     |_| :snake:")
     console.print("                         version: {}".format(pipeline.__version__))
     
     console.print("\n")
