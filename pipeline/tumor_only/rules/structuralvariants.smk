@@ -7,8 +7,7 @@ rule svcaller_run:
         bam = outdir + "/bams/{sample}_nodups.bam",
         reference = reference["reference_genome"]
     output:
-        gtf = outdir + "/svs/svcaller/{sample}-{events}.gtf",
-        bam = outdir + "/svs/svcaller/{sample}-{events}.bam",
+        gtf = outdir + "/svs/svcaller/{sample}-{events}.gtf"
     params: 
         tmpdir = os.path.join(params['scratch'], 
                                 "svcaller-run-{}".format(str(uuid.uuid4())))
@@ -17,82 +16,7 @@ rule svcaller_run:
     log:
         outdir + "/logs/svs/svcaller-{sample}-{events}.log"
     shell:
-        "source activate svcallerenv  && "
-        "mkdir {params.tmpdir} && "
-        "svcaller run-all --tmp-dir {params.tmpdir} --event-type {wildcards.events} "
-        " --fasta-filename {input.reference}  "
-        " --filter-event-overlap "
-        " --events-gtf {output.gtf} "
-        " --events-bam {output.bam} {input.bam} 2> {log} && "
-        " rm -rf {params.tmpdir} && "
-        "source deactivate"
-
-
-rule sveffect_predict:
-    input:
-        unpack(lambda wildcards: get_capture_svs(wildcards, outdir)),
-        ts_regions = reference["ts_regions"],
-        ar_regions = reference["ar_regions"],
-        fusion_regions = reference["fusion_regions"]
-    output:
-        combined_bed = outdir + "/svs/svcaller/{sample}_combined.bed",
-        effects_json = outdir + "/svs/svcaller/{sample}_effects.json"
-    threads: params['svcaller']['threads']
-    container: containers['svcaller']
-    log:
-        outdir + "/logs/svs/sveffect-{sample}.log"
-    shell:
-        "source activate svcallerenv  && "
-        "sveffect make-bed --del-gtf {input.DEL} "
-        " --dup-gtf {input.DUP} "
-        " --inv-gtf {input.INV} " 
-        " --tra-gtf {input.TRA} "
-        " {output.combined_bed} 2> {log} &&  "
-        "sveffect predict --ts-regions {input.ts_regions} "
-        " --ar-regions {input.ar_regions} "
-        " --fusion-regions {input.fusion_regions} "
-        " --effects-filename {output.effects_json} {output.combined_bed} 2>> {log} && "
-        "source deactivate"
-
-
-rule svcaller_merge:
-    input:
-        unpack(lambda wildcards: get_capture_svs(wildcards, outdir)),
-        DEL_bam = outdir + "/svs/svcaller/{sample}-DEL.bam",
-        DUP_bam = outdir + "/svs/svcaller/{sample}-DUP.bam",
-        INV_bam = outdir + "/svs/svcaller/{sample}-INV.bam",
-        TRA_bam = outdir + "/svs/svcaller/{sample}-TRA.bam"
-    output:
-        svs_bam = outdir + "/svs/{sample}-svs.bam",
-        svs_gtf = outdir + "/svs/{sample}-svs.gtf"
-    threads: 8
-    log:
-        outdir + "/logs/svs/svcaller-merge-{sample}.log"
-    shell:
-        "samtools merge -c -p {output.svs_bam} {input.DEL_bam} "
-        " {input.DUP_bam} {input.INV_bam} {input.TRA_bam} && "
-        "samtools index {output.svs_bam} && "
-        "cat {input.DEL} {input.DUP} {input.INV} {input.TRA} "
-        " > {output.svs_gtf} "
-
-
-rule generateIGVnavInput_svcaller:
-    input:
-        capture_to_results[CANCER_CAPTURE].svs.values()
-    output:
-        svcaller_tumor = "{}/svs/igv/{}_svcaller.mut".format(outdir, CANCER_CAPTURE_STR)
-    params:
-        cancer_str = CANCER_CAPTURE_STR,
-        svs_dir = outdir + "/svs/svcaller/",
-        igvout = outdir + "/svs/igv/"
-    log:
-        outdir + "/logs/generateIGVnavInput_svcaller-{}.log".format(CANCER_CAPTURE_STR)
-    shell:
-        "generateIGVnavInput_SV.py --input {params.svs_dir} "
-                        " --sdid {params.cancer_str} "
-                        " --tool svcaller " 
-                        " --vcftype somatic " 
-                        " --output {params.igvout} 2> {log} "
+        "touch {output.gtf}"
 
 
 rule gridss_extract_overlapping_fragments:
@@ -194,7 +118,6 @@ rule generateIGVnavInput_gridss:
 
 rule annotate_generateIGVnavInput:
     input:
-        svcaller_tumor = "{}/svs/igv/{}_svcaller.mut".format(outdir, CANCER_CAPTURE_STR),
         gridss_tumor = "{}/svs/igv/{}_tumor_pass_gridss.mut".format(outdir, CANCER_CAPTURE_STR),
         genes = reference["genes_bed"],
         targets = reference['sv_filter'],
