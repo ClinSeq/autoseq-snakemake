@@ -7,7 +7,11 @@
 #   mem_mb : MB       (was `mem` string)
 
 executor: slurm
-jobs: 500
+jobs: 1000
+local-cores: 1
+max-status-checks-per-second: 1
+max-jobs-per-second: 1
+#restart-times: 2
 software-deployment-method:
   - apptainer
 
@@ -71,3 +75,9 @@ set-resources:
   run_oncoanalyser:
     runtime: 7200    # 120:00:00
     mem_mb: 180000
+  vep_annotation_germline:
+    runtime: 6000    # 100:00:00
+    mem_mb: 32000
+  vep_annotation_somatic:
+    runtime: 6000    # 100:00:00
+    mem_mb: 32000
