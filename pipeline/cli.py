@@ -96,11 +96,16 @@ def config(context, barcodes_file, outdir):
 @click.option("--cores", help="max number of cores for local execution")
 @click.option("--jobs", '-j', default=500, type=int,
               help="Concurrent SLURM submission cap when --profile resolves to a cluster profile")
+@click.option("--account", default=None, help="SLURM account for the snakemake head job (cluster execution)")
+@click.option("--qos", default=None, help="SLURM QOS for the snakemake head job (cluster execution)")
+@click.option("--max-run-hours", default=168, type=int,
+              help="Walltime in hours for the snakemake head job (cluster execution)")
 @click.pass_context
 def launch(context, ref, samples, outdir, libdir,
             configfile, cluster_config, scratch, dryrun, umi,
             profile, pipeline, normal_bam, fq_split, run_oncoanalyser,
-            onco_rna, nf_reference, use_singularity, singularity, smk_opt, cores, jobs):
+            onco_rna, nf_reference, use_singularity, singularity, smk_opt, cores, jobs,
+            account, qos, max_run_hours):
     """
     launch the respective pipeline with samples json 
     """
@@ -253,21 +258,27 @@ def launch(context, ref, samples, outdir, libdir,
                       smk_option = smk_opt,
                       use_singularity = use_singularity,
                       bind_paths = bind_paths,
-                      cores = cores)
-    
-    cmd = autoseq.build_cmd()
+                      cores = cores,
+                      account = account,
+                      qos = qos,
+                      max_run_hours = max_run_hours)
 
     Log.info(f"Launching autoseq - {pipeline} pipeline ...")
-    # print(cmd) 
     try:
-        subprocess.run(cmd, shell=True)
+        if profile_path and not dryrun:
+            # Cluster execution: submit the snakemake orchestrator as a SLURM
+            # head job instead of running it on the login node.
+            jobid = autoseq.submit_job()
+            Log.info(f"Submitted snakemake head job to SLURM (job id: {jobid})")
+        else:
+            subprocess.run(autoseq.build_cmd(), shell=True)
     except Exception as err:
         Log.error(err)
     
     ## update sample info into curator database
     Log.info("Updating sample information into curator database ...")
     capture_id = sample_str
-    status = 0 # 0 - jobs are submitted and running
+    status = 0 
     try:
         response = update_sample_info(project_id, sdid, capture_id, status, pipeline)
         if response.get("status") == "error":
@@ -277,7 +288,6 @@ def launch(context, ref, samples, outdir, libdir,
     except Exception as e:
         Log.error(f"Failed to update sample information: {e}")
     
-    Log.info(f"Autoseq {pipeline} pipeline -  job submission completed.")
 
 
 if __name__ == "__main__":

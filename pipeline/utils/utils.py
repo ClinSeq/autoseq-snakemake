@@ -1,6 +1,7 @@
 import os, re
 import glob
 import sys
+import subprocess
 import requests
 import urllib3
 from urllib3.exceptions import InsecureRequestWarning
@@ -207,7 +208,7 @@ class Pipeline:
     """
     def __init__(self, snakefile, config, cluster_config, sdid, project_id, workdir, dryrun,
                 profile, profile_path, jobs, jobdb, smk_option, use_singularity, bind_paths,
-                cores='4'):
+                cores='4', account=None, qos=None, max_run_hours=168):
         self.snakefile = snakefile
         self.cores = cores
         self.configfile = config
@@ -223,14 +224,17 @@ class Pipeline:
         self.smk_option = smk_option
         self.use_singularity = use_singularity
         self.bind_paths = bind_paths
+        self.account = account
+        self.qos = qos
+        self.max_run_hours = max_run_hours
 
     def build_cmd(self):
         dryrun = ''
-        profile_cmd = ''
         cores_cmd = ''
         jobs_cmd = ''
         smk_opt = ''
         singularity_cmd = ''
+        slurm_options = ''
 
         if self.dryrun:
             dryrun = "-n"
@@ -239,11 +243,9 @@ class Pipeline:
             smk_opt = self.smk_option
 
         if self.profile_path:
-            # Cluster execution via Snakemake 9 workflow profile (SLURM plugin).
-            # --jobs controls concurrent submissions; per-job CPU comes from
-            # the rule's threads: directive and the profile's set-resources.
-            profile_cmd = f" --profile {self.profile_path} "
             jobs_cmd = f" --jobs {self.jobs} "
+            slurm_options = (f" --slurm-jobname-prefix {self.project_id}-{self.sdid} "
+                             f" --profile {self.profile_path} ")
         else:
             # Local execution.
             cores_cmd = f" --cores {self.cores} "
@@ -258,19 +260,65 @@ class Pipeline:
             singularity_cmd += "'"
 
 
-        cmd = ("snakemake -p --snakefile {} "
-               " --directory {} "
-               " --configfile {} "
-               " {} {} {} {} {} {} ").format(self.snakefile,
-                              self.workdir,
-                              self.configfile,
-                              dryrun,
-                              cores_cmd,
-                              profile_cmd,
-                              jobs_cmd,
-                              singularity_cmd,
-                              smk_opt)
+        cmd = ("snakemake --notemp -p --rerun-triggers mtime "
+               f"--snakefile {self.snakefile} "
+               f" --directory {self.workdir} "
+               f" --configfile {self.configfile} "
+               f" {dryrun} {cores_cmd} "
+               f" {jobs_cmd} {singularity_cmd} "
+               f" {slurm_options} "
+               f" {smk_opt}")
+        
         return cmd
+
+    def _build_sbatch_head_job(self):
+        """
+        Build the sbatch "head job" script that runs the snakemake orchestrator
+        on a compute node (instead of the login node). Snakemake itself keeps
+        submitting the per-rule child jobs to SLURM via the workflow profile.
+
+        return: sbatch script as a string
+        """
+        lines = [
+            "#!/bin/bash",
+            f"#SBATCH --job-name=autoseq.head_job.{self.sdid}.%j",
+            f"#SBATCH --output={self.workdir}/autoseq.head_job.{self.sdid}.%j.out",
+            f"#SBATCH --error={self.workdir}/autoseq.head_job.{self.sdid}.%j.err",
+            "#SBATCH --ntasks=1",
+            "#SBATCH --mem=500M",
+            f"#SBATCH --time={self.max_run_hours}:00:00",
+            "#SBATCH --cpus-per-task=1",
+        ]
+
+        if self.account:
+            lines.append(f"#SBATCH --account={self.account}")
+        if self.qos:
+            lines.append(f"#SBATCH --qos={self.qos}")
+
+        lines.append("")
+        lines.append("set -eo pipefail")
+        lines.append("")
+        lines.append(self.build_cmd())
+        lines.append("")
+
+        return "\n".join(lines)
+
+    def submit_job(self):
+        """
+        Write the head-job sbatch script into the workdir and submit it to SLURM.
+
+        return: the submitted SLURM job id
+        """
+        script_path = os.path.join(self.workdir, f"autoseq_smk_head_job_{self.sdid}.sh")
+
+        with open(script_path, 'w') as sf:
+            sf.write(self._build_sbatch_head_job())
+
+        result = subprocess.run(
+            ["sbatch", "--parsable", script_path],
+            check=True, capture_output=True, text=True)
+
+        return result.stdout.strip()
 
 
 class SinglePanelResults():
