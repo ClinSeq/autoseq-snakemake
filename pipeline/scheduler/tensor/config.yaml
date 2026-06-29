@@ -77,7 +77,7 @@ set-resources:
     mem_mb: 180000
   vep_annotation_germline:
     runtime: 6000    # 100:00:00
-    mem_mb: 32000
+    mem_mb: 64000
   vep_annotation_somatic:
     runtime: 6000    # 100:00:00
-    mem_mb: 32000
+    mem_mb: 64000

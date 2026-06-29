@@ -82,17 +82,17 @@ def config(context, barcodes_file, outdir):
 @click.option("--dryrun/--run", default=False, help=" --dryrun for testing snakemake workflow")
 @click.option("--umi", is_flag=True, help="To process the data with UMI- Unique Molecular Identifier")
 @click.option("--profile", default='shell',
-              help="Snakemake profile. 'shell' = local; 'slurm'/'anchorage' resolve "
+              help="Snakemake profile. 'shell' = local; 'slurm'/'tensor' resolve "
                    "to pipeline/scheduler/<name>/; any other value is passed through as a path.")
 @click.option("--pipeline", default='autoseq', help="Pipeline to be launched")
 @click.option("-n", "--normal-bam", default=None, help="Normal bam files dir, Applicable only to tumor only pipeline")
 @click.option("--fq-split", is_flag=True, help="To split large fastqs into smaller, only applicable in WGS")
 @click.option("--run-oncoanalyser", is_flag=True, help="To run nfcore oncoanalyser pipeline, with WGS")
-@click.option("--onco-rna", help="RNA clinseq barcode for RNA pipeline")
-@click.option("--nf-reference", help="Nextflow reference config file from HMF")
+@click.option("--onco-rna", help="RNA clinseq barcode for RNA pipeline, WGS")
+@click.option("--nf-reference", help="Nextflow reference config file from HMF, WGS")
 @click.option("--use-singularity", is_flag=True, help="To use singularity")
 @click.option("--singularity", help="Path to singularity image")
-@click.option("--smk-opt", help="snakemake option")
+@click.option("--smk-opt", help="snakemake options")
 @click.option("--cores", help="max number of cores for local execution")
 @click.option("--jobs", '-j', default=500, type=int,
               help="Concurrent SLURM submission cap when --profile resolves to a cluster profile")
@@ -229,7 +229,7 @@ def launch(context, ref, samples, outdir, libdir,
     # workflow profile dirs under pipeline/scheduler/. 'shell' = local
     # execution (no profile). Any other value is treated as a user-supplied
     # path and passed through to snakemake --profile verbatim.
-    SLURM_PROFILES = ('slurm', 'anchorage')
+    SLURM_PROFILES = ('slurm', 'tensor')
     profile_path = ''
     if profile in SLURM_PROFILES:
         profile_path = os.path.join(

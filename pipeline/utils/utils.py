@@ -243,9 +243,12 @@ class Pipeline:
             smk_opt = self.smk_option
 
         if self.profile_path:
+            
             jobs_cmd = f" --jobs {self.jobs} "
             slurm_options = (f" --slurm-jobname-prefix {self.project_id}-{self.sdid} "
                              f" --profile {self.profile_path} ")
+            if self.qos and self.account:
+                slurm_options += f' --default-resources slurm_extra="--qos={self.qos}" slurm_account={self.account} '
         else:
             # Local execution.
             cores_cmd = f" --cores {self.cores} "
@@ -261,7 +264,7 @@ class Pipeline:
 
 
         cmd = ("snakemake --notemp -p --rerun-triggers mtime "
-               f"--snakefile {self.snakefile} "
+               f" --snakefile {self.snakefile} "
                f" --directory {self.workdir} "
                f" --configfile {self.configfile} "
                f" {dryrun} {cores_cmd} "
@@ -281,9 +284,9 @@ class Pipeline:
         """
         lines = [
             "#!/bin/bash",
-            f"#SBATCH --job-name=autoseq.head_job.{self.sdid}.%j",
-            f"#SBATCH --output={self.workdir}/autoseq.head_job.{self.sdid}.%j.out",
-            f"#SBATCH --error={self.workdir}/autoseq.head_job.{self.sdid}.%j.err",
+            f"#SBATCH --job-name=autoseq.head_job.{self.sdid}",
+            f"#SBATCH --output={self.workdir}/.autoseq.head_job.{self.sdid}.%j.out",
+            f"#SBATCH --error={self.workdir}/.autoseq.head_job.{self.sdid}.%j.err",
             "#SBATCH --ntasks=1",
             "#SBATCH --mem=500M",
             f"#SBATCH --time={self.max_run_hours}:00:00",
@@ -309,7 +312,7 @@ class Pipeline:
 
         return: the submitted SLURM job id
         """
-        script_path = os.path.join(self.workdir, f"autoseq_smk_head_job_{self.sdid}.sh")
+        script_path = os.path.join(self.workdir, f".autoseq_smk_head_job_{self.sdid}.sh")
 
         with open(script_path, 'w') as sf:
             sf.write(self._build_sbatch_head_job())
