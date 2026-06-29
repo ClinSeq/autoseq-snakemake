@@ -113,15 +113,6 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(output_dict["some_key3"], "a_terminal_filename")
         self.assertEqual(output_dict["nested_dict"]["some_key4"], "filename2")
     
-    def test_get_scheduler(self):
-        script_path = get_scheduler('slurm', 'pyscript')
-        config_path = get_scheduler('slurm', 'config')
-        self.assertTrue(script_path.endswith("slurm_submit.py"))
-        self.assertTrue(config_path.endswith("cluster_config.json"))
-    
-    def test_get_scheduler_invalid(self):
-        self.assertRaises(FileNotFoundError, lambda: get_scheduler('not_valid', 'pyscript'))
-    
     def test_get_capture_bam(self):
         self.assertEqual(get_capture_bam(self.test_capture, self.bamfiles), 
                         "LB-P-NA12877-N-03098850-TD1-C31_nodups.bam")
@@ -136,12 +127,6 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(isinstance(get_capture_svs(wildcards, outdir), dict))
         self.assertTrue(get_capture_svs(wildcards, outdir)['DEL'].endswith(".gtf"))
     
-    def test_get_svcaller_mut(self):
-        wildcards = Wildcards("LB-P-NA12877-CFDNA-03098850-TD1-C31")
-        outdir = "/dummy"
-        self.assertTrue(get_svcaller_mut(wildcards, outdir).endswith("_svcaller.mut"))
-        self.assertTrue(get_svcaller_mut(wildcards, outdir).startswith("/dummy"))
-
     def test_get_readgroup(self):
         wildcards = Wildcards("LB-P-NA12877-CFDNA-03098850-TD1-C31")
         readgp = '"@RG\\tID:LB-P-NA12877-CFDNA-03098850-TD1-C31\\tSM:LB-P-NA12877-CFDNA-03098850\\tLB:TD1\\tPL:ILLUMINA"'

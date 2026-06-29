@@ -77,7 +77,6 @@ def config(context, barcodes_file, outdir):
 @click.option("--outdir", default=os.getcwd() ,help="output directory")
 @click.option("--libdir", help="directory to search libraries")
 @click.option("--configfile", help="configuration file for params")
-@click.option("--cluster-config", help="[DEPRECATED] no-op since Phase 2; resources live in --profile YAMLs")
 @click.option("--scratch", default="/tmp", help="path to /tmp/scratch")
 @click.option("--dryrun/--run", default=False, help=" --dryrun for testing snakemake workflow")
 @click.option("--umi", is_flag=True, help="To process the data with UMI- Unique Molecular Identifier")
@@ -102,7 +101,7 @@ def config(context, barcodes_file, outdir):
               help="Walltime in hours for the snakemake head job (cluster execution)")
 @click.pass_context
 def launch(context, ref, samples, outdir, libdir,
-            configfile, cluster_config, scratch, dryrun, umi,
+            configfile, scratch, dryrun, umi,
             profile, pipeline, normal_bam, fq_split, run_oncoanalyser,
             onco_rna, nf_reference, use_singularity, singularity, smk_opt, cores, jobs,
             account, qos, max_run_hours):
@@ -237,16 +236,8 @@ def launch(context, ref, samples, outdir, libdir,
     elif profile and profile != 'shell':
         profile_path = profile
 
-    if cluster_config:
-        Log.warning(
-            "--cluster-config is deprecated and ignored since Phase 2 of the Snakemake 9 "
-            "migration. Resources live in the --profile YAML "
-            "(pipeline/scheduler/{slurm,anchorage}/config.yaml)."
-        )
-
     autoseq = Pipeline(snakefile = snakefile,
                       config = out_configpath,
-                      cluster_config = cluster_config,
                       sdid = sdid,
                       project_id = project_id,
                       workdir = outdir,

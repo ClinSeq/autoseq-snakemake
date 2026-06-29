@@ -1,6 +1,5 @@
 import os, re
 import glob
-import sys
 import subprocess
 import requests
 import urllib3
@@ -177,42 +176,17 @@ def get_containers(_path):
     return containers
 
 
-def get_scheduler(scheduler, filetype):
-    """
-    In cluster environment, to get sheduler script and config file
-
-    params: scheduler type, filetype
-    return: file (script or config) path
-    """
-    tool_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    submit_fp = ""
-
-    if scheduler == 'slurm' and filetype == 'pyscript':
-        submit_fp = "scheduler/slurm_submit.py"
-    
-    if scheduler == 'slurm' and filetype == 'config':
-        submit_fp = "scheduler/cluster_config.json"
-
-    script  = os.path.join(tool_dir, submit_fp)
-
-    if not os.path.isfile(script):
-        raise FileNotFoundError(script)
-    
-    return script
-
-
 class Pipeline:
     """
     Class pipeline to build snakmake command based on given args.
 
     """
-    def __init__(self, snakefile, config, cluster_config, sdid, project_id, workdir, dryrun,
+    def __init__(self, snakefile, config, sdid, project_id, workdir, dryrun,
                 profile, profile_path, jobs, jobdb, smk_option, use_singularity, bind_paths,
                 cores='4', account=None, qos=None, max_run_hours=168):
         self.snakefile = snakefile
         self.cores = cores
         self.configfile = config
-        self.cluster_config = cluster_config
         self.sdid = sdid
         self.project_id = project_id
         self.workdir = workdir
@@ -389,27 +363,6 @@ def get_capture_bam(unique_capture, bamfiles):
     return False
 
 
-def get_cnvkitref(wildcards, reference):
-    """
-    return cnvkit reference file
-    """
-    unique_capture = extract_unique_capture(wildcards.sample)
-    capture_name = get_capture_name(unique_capture.capture_kit_id)
-    library_name = get_prep_kit_name(unique_capture.library_kit_id)
-    sample_type = unique_capture.sample_type
-
-    cnvkit_ref = None
-    if 'cnvkit-ref' in reference['targets'][capture_name]:
-        cnvkit_ref = list(list(reference['targets'][capture_name]['cnvkit-ref'].values())[0].values())[0]
-    
-    try:
-        cnvkit_ref = reference['targets'][capture_name]['cnvkit-ref'][library_name][sample_type]
-    except KeyError:
-        pass
-
-    return cnvkit_ref
-
-
 def get_jumbleref(wildcards, reference):
     """
     return jumble reference file
@@ -434,15 +387,6 @@ def get_capture_svs(wildcards, outdir):
         gtfs[event] = outdir + "/svs/svcaller/{}-{}.gtf".format(wildcards.sample, event)
 
     return gtfs
-
-
-def get_svcaller_mut(wildcards, outdir):
-    """
-    return svcaller mut file name
-    """
-    sample_str = compose_sample_str(extract_unique_capture(wildcards.sample))
-    
-    return "{}/svs/igv/{}_svcaller.mut".format(outdir, sample_str)
 
 
 def get_readgroup(wildcards):
@@ -498,21 +442,6 @@ def get_chromosomes(targets):
     return chromos
             
 
-def get_target_region(wildcards, chrsizes):
-    """
-    utility function to pass target region param to indelrealigner
-    
-    return: target_region eg: 1:1-122121212
-    """
-    
-    chromo = wildcards.chr
-
-    if chromo in chrsizes:
-        return ":".join([chromo, chrsizes[chromo]])
-
-    raise KeyError(chromo)
-
-
 def get_capture_name(capture_kit_code):
     """
     Convert a two-letter capture kit code to the corresponding capture kit name.
@@ -557,27 +486,6 @@ def get_capture_name(capture_kit_code):
 
     else:
         return capture_kit_loopkup[capture_kit_code]
-
-
-def get_prep_kit_name(prep_kit_code):
-    """
-    Convert a two-letter library kit code to the corresponding library kit name.
-
-    :param prep_kit_code: Two-letter library prep code. 
-    :return: The library prep kit name.
-    """
-
-    # FIXME: Move this information to a config JSON file.
-    prep_kit_lookup = {"BN": "BIOO_NEXTFLEX",
-                        "KH": "KAPA_HYPERPREP",
-                        "TD": "THRUPLEX_DNASEQ",
-                        "TP": "THRUPLEX_PLASMASEQ",
-                        "TF": "THRUPLEX_FD",
-                        "TS": "TRUSEQ_RNA",
-                        "NN": "NEBNEXT_RNA",
-                        "VI": "VILO_RNA"}
-
-    return prep_kit_lookup[prep_kit_code]
 
 
 def make_paths_absolute(input_dict, base_path):

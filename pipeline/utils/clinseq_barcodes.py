@@ -108,31 +108,6 @@ def data_available_for_clinseq_barcode(libdir, clinseq_barcode):
     return True
 
 
-def convert_to_libdict(clinseq_barcode):
-    """
-    Converts a clinseq_barcode into a dictionary - introduced to maintain compatibility
-    with the mongoDB "libraries" collection, when parse_orderform is used in autoseq-api.
-
-    :param clinseq_barcode: A clinseq barcode string 
-    :return: A dictionary containing the field types and values present in the barcode
-    """
-
-    library_id = clinseq_barcode
-
-    if not clinseq_barcode_is_valid(clinseq_barcode):
-        raise ValueError("Invalid clinseq barcode: " + clinseq_barcode)
-
-    capture_id = parse_capture_id(clinseq_barcode)
-    type = parse_sample_type(clinseq_barcode)
-    sample_id = parse_sample_id(clinseq_barcode)
-    project_id = parse_project(clinseq_barcode)
-    sdid = parse_sdid(clinseq_barcode)
-    prep_id = parse_prep_id(clinseq_barcode)
-
-    return {"library_id": library_id, "capture_id": capture_id, "type": type, "sample_id": sample_id,
-            "project_id": project_id, "sdid": sdid, "prep_id": prep_id}
-
-
 def extract_unique_capture(clinseq_barcode, validation = True):
     """
     Parses the specified clinseq barcode and produces a corresponding
