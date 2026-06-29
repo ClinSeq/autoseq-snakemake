@@ -267,17 +267,20 @@ def launch(context, ref, samples, outdir, libdir,
         Log.error(err)
     
     ## update sample info into curator database
-    Log.info("Updating sample information into curator database ...")
-    capture_id = sample_str
-    status = 0 
-    try:
-        response = update_sample_info(project_id, sdid, capture_id, status, pipeline)
-        if response.get("status") == "error":
-            Log.error(f"Error updating sample information: {response.get('message')}")
-        else:
-            Log.info(f"Sample information updated successfully for {sdid} in project {project_id}.")
-    except Exception as e:
-        Log.error(f"Failed to update sample information: {e}")
+    if os.environ.get("CURATOR_BASE_URL"):
+        Log.info("Updating sample information into curator database ...")
+        capture_id = sample_str
+        status = 0 
+        try:
+            response = update_sample_info(project_id, sdid, capture_id, status, pipeline)
+            if response.get("status") == "error":
+                Log.error(f"Error updating sample information: {response.get('message')}")
+            else:
+                Log.info(f"Sample information updated successfully for {sdid} in project {project_id}.")
+        except Exception as e:
+            Log.error(f"Failed to update sample information: {e}")
+    else:
+        Log.info("CURATOR_BASE_URL not set. Skipping curator database update.")
     
 
 
