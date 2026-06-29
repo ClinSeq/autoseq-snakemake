@@ -193,8 +193,6 @@ rule generateIGVnavInput_gridss:
 
 rule annotate_generateIGVnavInput:
     input:
-        # svcaller_normal = "{}/svs/igv/{}_svcaller.mut".format(outdir, NORMAL_CAPTURE_STR),
-        # svcaller_tumor = "{}/svs/igv/{}_svcaller.mut".format(outdir, CANCER_CAPTURE_STR),
         genes = reference["genes_bed"],
         targets = reference['sv_filter'],
         cgcann = reference['cgcann'],

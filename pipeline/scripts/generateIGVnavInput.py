@@ -220,7 +220,8 @@ def annotate_hotspot(query, vartype, conseq, hotspot_lookup, gpos = ''):
     return ann
 
 
-def annoate_curate_tag(prefix, gene, vartype, curation_lookup):
+
+def annotate_curate_tag(prefix, gene, vartype, curation_lookup):
     """
     """
     res = curation_lookup.query('prefix == @prefix and \
@@ -299,13 +300,13 @@ if __name__ == "__main__":
     if vcftype == "somatic":
         output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG',          \
                                      'NOTES', 'GENE',  'ENSEMBLID', 'IMPACT', 'CONSEQUENCE',     \
-                                     'TRANSCRIPT', 'HGVSc', 'HGVSp', 'HOTSPOT', 'T_DP', 'T_ALT',  \
-                                     'T_VAF', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID',       \
+                                     'TRANSCRIPT', 'HGVSc', 'HGVSp', 'AMINO_ACID', 'HOTSPOT', 'T_DP', 'T_ALT',  \
+                                     'T_VAF', 'N_DP', 'N_ALT', 'N_VAF', 'CLIN_SIG', 'RSID',   \
                                      'gnomAD', 'BRCAEx', 'OncoKB', 'CGC_ANN', 'CURATE', 'NUM_TOOLS']) + "\n")
     elif vcftype == "germline":
         output_file.write('\t'.join(['CHROM','START','END','REF','ALT', 'CALL', 'TAG', 'NOTES', \
                                      'GENE', 'ENSEMBLID', 'IMPACT', 'CONSEQUENCE', 'TRANSCRIPT', \
-                                     'HGVSc','HGVSp',  'HOTSPOT', 'N_DP', 'N_ALT', 'N_VAF', \
+                                     'HGVSc','HGVSp',  'AMINO_ACID', 'HOTSPOT', 'N_DP', 'N_ALT', 'N_VAF', \
                                      'T_VAF', 'CLIN_SIG', 'RSID', 'gnomAD', 'BRCAEx', 'OncoKB', \
                                      'CGC_ANN', 'CURATE']) + "\n")
 
@@ -315,7 +316,7 @@ if __name__ == "__main__":
         # Extract header keys (typically found in the description as 'Allele|Consequence|...|SIFT|PolyPhen')
         csq_headers = csq_description.split(": ")[1].split("|")
 
-    
+
     hotspot_snv = load_hotspot(args.hotspot_snv, "snv") if args.hotspot_snv else None
     hotspot_indel = load_hotspot(args.hotspot_indel, "indel") if args.hotspot_indel else None
 
@@ -378,7 +379,9 @@ if __name__ == "__main__":
         
         curation_tag = ''
         if args.curation_ann:
-            curation_tag = annoate_curate_tag(project, gene, vcftype, curation_ann)
+            curation_tag = annotate_curate_tag(project, gene, vcftype, curation_ann)
+        
+        aa_change = tri_to_single_aa(hgvsp.split('p.')[1]) if hgvsp else ''
 
         # processing somatic vcf file
         if vcftype == "somatic":
@@ -414,8 +417,8 @@ if __name__ == "__main__":
                 output_file.write('\t'.join(map(str, [record.CHROM, record.POS-1, record.POS,
                                                     record.REF, record.ALT, '', '', '', gene, ensembl_id,
                                                     impact, canonical_trans['Consequence'], canonical_trans['Feature'],
-                                                    canonical_trans['HGVSc'], canonical_trans['HGVSp'], ann_hotspot, tumor_dp, tumor_alt, 
-                                                    tumor_vaf, normal_dp, normal_alt, normal_vaf, 
+                                                    canonical_trans['HGVSc'], canonical_trans['HGVSp'], aa_change, ann_hotspot,
+                                                    tumor_dp, tumor_alt, tumor_vaf, normal_dp, normal_alt, normal_vaf, 
                                                     clinsig, rsid, gnomAD, brcaEx, oncogenicity, cgcann, curation_tag, num_tools])) + "\n")
 
             # filter for WGS samples
@@ -424,8 +427,8 @@ if __name__ == "__main__":
                 output_file.write('\t'.join(map(str, [record.CHROM, record.POS-1, record.POS,
                                                     record.REF, record.ALT, '', '', '', gene, ensembl_id,
                                                     impact, canonical_trans['Consequence'], canonical_trans['Feature'],
-                                                    canonical_trans['HGVSc'], canonical_trans['HGVSp'], ann_hotspot, tumor_dp, tumor_alt, 
-                                                    tumor_vaf, normal_dp, normal_alt, normal_vaf, 
+                                                    canonical_trans['HGVSc'], canonical_trans['HGVSp'], aa_change, ann_hotspot, 
+                                                    tumor_dp, tumor_alt, tumor_vaf, normal_dp, normal_alt, normal_vaf, 
                                                     clinsig, rsid, gnomAD, brcaEx, oncogenicity, cgcann, curation_tag, num_tools])) + "\n")
         
         elif vcftype == "germline":
@@ -456,7 +459,7 @@ if __name__ == "__main__":
                                                             record.REF, record.ALT, '', '', '', gene, ensembl_id, 
                                                             impact, canonical_trans['Consequence'], 
                                                             canonical_trans['Feature'], canonical_trans['HGVSc'],
-                                                            canonical_trans['HGVSp'], ann_hotspot, normal_dp , normal_alt,
+                                                            canonical_trans['HGVSp'], aa_change, ann_hotspot, normal_dp , normal_alt,
                                                             round(normal_vaf, 2), round(tumor_vaf, 2), clinsig, 
                                                             record.ID, gnomAD, brcaEx, oncogenicity, cgcann, curation_tag])) + "\n")
             
@@ -476,7 +479,7 @@ if __name__ == "__main__":
                                                             record.REF, record.ALT, '', '', '', gene, ensembl_id,
                                                             impact, canonical_trans['Consequence'], 
                                                             canonical_trans['Feature'], canonical_trans['HGVSc'],
-                                                            canonical_trans['HGVSp'], ann_hotspot, normal_dp , normal_alt,
+                                                            canonical_trans['HGVSp'], aa_change, ann_hotspot, normal_dp , normal_alt,
                                                             round(normal_vaf, 2), round(tumor_vaf, 2), clinsig, record.ID, 
                                                             gnomAD, brcaEx, oncogenicity, cgcann, curation_tag])) + "\n")
 

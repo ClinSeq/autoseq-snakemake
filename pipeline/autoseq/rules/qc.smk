@@ -146,6 +146,7 @@ rule gatk3_contest_cancer:
         outdir + "/logs/contamination/contest-{}.log".format(CANCER_CAPTURE_STR)
     shell:
         "source activate gatk_3 && "
+        "[ -f {input.popvcf}.idx ] && rm -f {input.popvcf}.idx ; "
         "gatk3 -Xmx15g -Djava.io.tmpdir={params.tmpdir} -T ContEst  "
             "-R {input.reference_genome}  "
             "-I:eval {input.cancer_bam}  "
@@ -174,6 +175,7 @@ rule gatk3_contest_normal:
         outdir + "/logs/contamination/contest-{}.log".format(NORMAL_CAPTURE_STR)
     shell:
         "source activate gatk_3 && "
+        "[ -f {input.popvcf}.idx ] && rm -f {input.popvcf}.idx ; "
         "gatk3 -Xmx15g -Djava.io.tmpdir={params.tmpdir} -T ContEst  "
             "-R {input.reference_genome}  "
             "-I:eval  {input.normal_bam} "
