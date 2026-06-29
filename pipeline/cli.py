@@ -81,8 +81,8 @@ def config(context, barcodes_file, outdir):
 @click.option("--dryrun/--run", default=False, help=" --dryrun for testing snakemake workflow")
 @click.option("--umi", is_flag=True, help="To process the data with UMI- Unique Molecular Identifier")
 @click.option("--profile", default='shell',
-              help="Snakemake profile. 'shell' = local; 'slurm'/'tensor' resolve "
-                   "to pipeline/scheduler/<name>/; any other value is passed through as a path.")
+              help="Snakemake profile. 'shell' = local; 'ravenclaw'/'tensor' resolve "
+                   "to pipeline/profiles/<name>/; any other value is passed through as a path.")
 @click.option("--pipeline", default='autoseq', help="Pipeline to be launched")
 @click.option("-n", "--normal-bam", default=None, help="Normal bam files dir, Applicable only to tumor only pipeline")
 @click.option("--fq-split", is_flag=True, help="To split large fastqs into smaller, only applicable in WGS")
@@ -225,14 +225,14 @@ def launch(context, ref, samples, outdir, libdir,
         raise click.Abort()
 
     # Resolve --profile. Named profiles ('slurm', 'anchorage') map to the
-    # workflow profile dirs under pipeline/scheduler/. 'shell' = local
+    # workflow profile dirs under pipeline/profiles/. 'shell' = local
     # execution (no profile). Any other value is treated as a user-supplied
     # path and passed through to snakemake --profile verbatim.
-    SLURM_PROFILES = ('slurm', 'tensor')
+    SLURM_PROFILES = ('ravenclaw', 'tensor')
     profile_path = ''
     if profile in SLURM_PROFILES:
         profile_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), 'scheduler', profile)
+            os.path.dirname(os.path.abspath(__file__)), 'profiles', profile)
     elif profile and profile != 'shell':
         profile_path = profile
 
