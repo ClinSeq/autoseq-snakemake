@@ -221,8 +221,11 @@ class Pipeline:
             jobs_cmd = f" --jobs {self.jobs} "
             slurm_options = (f" --slurm-jobname-prefix {self.project_id}-{self.sdid} "
                              f" --profile {self.profile_path} ")
-            if self.qos and self.account:
-                slurm_options += f' --default-resources slurm_extra="--qos={self.qos}" slurm_account={self.account} '
+            if self.account:
+                slurm_options += f' --default-resources slurm_account={self.account} '
+            
+            if self.qos:
+                slurm_options += f' --slurm_qos {self.qos} '
         else:
             # Local execution.
             cores_cmd = f" --cores {self.cores} "
