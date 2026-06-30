@@ -222,7 +222,8 @@ class Pipeline:
             slurm_options = (f" --slurm-jobname-prefix {self.project_id}-{self.sdid} "
                              f" --profile {self.profile_path} ")
             if self.account:
-                slurm_options += f' --default-resources slurm_account={self.account} '
+                slurm_options += (f' --default-resources slurm_account={self.account} '
+                                  f' runtime=6000 mem_mb=4000 ')
             
             if self.qos:
                 slurm_options += f' --slurm-qos {self.qos} '
