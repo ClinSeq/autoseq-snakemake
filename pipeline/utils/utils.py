@@ -223,7 +223,7 @@ class Pipeline:
                              f" --profile {self.profile_path} ")
             if self.account:
                 slurm_options += (f' --default-resources slurm_account={self.account} '
-                                  f' runtime=6000 mem_mb=4000 ')
+                                  f' runtime=6000 mem_mb=8000 ')
             
             if self.qos:
                 slurm_options += f' --slurm-qos {self.qos} '
