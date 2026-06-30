@@ -280,7 +280,7 @@ def launch(context, ref, samples, outdir, libdir,
         except Exception as e:
             Log.error(f"Failed to update sample information: {e}")
     else:
-        Log.info("CURATOR_BASE_URL not set. Skipping curator database update.")
+        Log.warning("CURATOR_BASE_URL not set. Skipping curator database update.")
     
 
 
