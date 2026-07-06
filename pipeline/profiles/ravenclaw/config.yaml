@@ -37,7 +37,7 @@ set-resources:
     mem_mb: 12000
   gatk4_mutect2:
     runtime: 6000    # 100:00:00
-    mem_mb: 12000
+    mem_mb: 34000
   fastqc:
     runtime: 3600    # 60:00:00
     mem_mb: 9000
