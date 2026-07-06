@@ -35,6 +35,7 @@ rule gatk4_mutect2:
         " -tumor {params.tumorid}  " 
         " -normal {params.normalid} " 
         " -L {input.interval_list} " 
+        " --native-pair-hmm-threads {threads} "
         " --disable-read-filter MateOnSameContigOrNoMappedMateReadFilter "
         " -bamout {output.bam} -O {output.vcf} 2> {log} && "
         " gatk --java-options '-Xmx10g -Djava.io.tmpdir={params.tmpdir}' "

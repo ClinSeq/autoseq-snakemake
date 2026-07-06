@@ -182,7 +182,8 @@ rule create_popvcf:
         normal_target = reference['targets'][normal_capture_name]['targets-bed-slopped20'],
         cancer_target = reference['targets'][cancer_capture_name]['targets-bed-slopped20']
     output:
-        outdir + "/contamination/pop_vcf_{}-{}.vcf".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+        vcf = outdir + "/contamination/pop_vcf_{}-{}.vcf".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        idx = outdir + "/contamination/pop_vcf_{}-{}.vcf.idx".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     params:
         tmpdir = params['scratch']
     threads: params['create_popvcf']['threads']
@@ -190,10 +191,11 @@ rule create_popvcf:
         outdir + "/logs/contamination/pop_vcf_{}-{}.log".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     shell:
         "create_contest_vcfs.py {input.normal_target} "
-            " {input.cancer_target} "
-            " {input.popvcf}  "
-            " --tmpdir {params.tmpdir}  "
-            " --output-filename {output} 2> {log} "
+        " {input.cancer_target} "
+        " {input.popvcf}  "
+        " --tmpdir {params.tmpdir}  "
+        " --output-filename {output} 2> {log} && "
+        " gatk IndexFeatureFile -F {output} 2>> {log} "
 
 
 rule gatk3_contest_cancer:
@@ -201,7 +203,8 @@ rule gatk3_contest_cancer:
         reference_genome = reference['reference_genome'],
         normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
         cancer_bam = capture_to_results[CANCER_CAPTURE].bamfile,
-        popvcf = outdir + "/contamination/pop_vcf_{}-{}.vcf".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+        popvcf = outdir + "/contamination/pop_vcf_{}-{}.vcf".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        popidx = outdir + "/contamination/pop_vcf_{}-{}.vcf.idx".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     output:
         "{}/contamination/{}.contest.txt".format(outdir, CANCER_CAPTURE_STR)
     params:
@@ -213,7 +216,6 @@ rule gatk3_contest_cancer:
         outdir + "/logs/contamination/contest-{}.log".format(CANCER_CAPTURE_STR)
     shell:
         "source activate gatk_3 && "
-        "[ -f {input.popvcf}.idx ] && rm -f {input.popvcf}.idx ; "
         "gatk3 -Xmx15g -Djava.io.tmpdir={params.tmpdir} -T ContEst  "
             "-R {input.reference_genome}  "
             "-I:eval {input.cancer_bam}  "
@@ -221,6 +223,7 @@ rule gatk3_contest_cancer:
             "--popfile {input.popvcf}  "
             "--min_genotype_ratio {params.min_genotype_ratio}  "
             " -o {output} 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule gatk3_contest_normal:
@@ -228,7 +231,8 @@ rule gatk3_contest_normal:
         reference_genome = reference['reference_genome'],
         normal_bam = capture_to_results[NORMAL_CAPTURE].bamfile,
         cancer_bam = capture_to_results[CANCER_CAPTURE].bamfile,
-        popvcf = outdir + "/contamination/pop_vcf_{}-{}.vcf".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
+        popvcf = outdir + "/contamination/pop_vcf_{}-{}.vcf".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR),
+        popidx = outdir + "/contamination/pop_vcf_{}-{}.vcf.idx".format(NORMAL_CAPTURE_STR, CANCER_CAPTURE_STR)
     output:
         "{}/contamination/{}.contest.txt".format(outdir, NORMAL_CAPTURE_STR)
     params:
@@ -240,7 +244,6 @@ rule gatk3_contest_normal:
         outdir + "/logs/contamination/contest-{}.log".format(NORMAL_CAPTURE_STR)
     shell:
         "source activate gatk_3 && "
-        "[ -f {input.popvcf}.idx ] && rm -f {input.popvcf}.idx ; "
         "gatk3 -Xmx15g -Djava.io.tmpdir={params.tmpdir} -T ContEst  "
             "-R {input.reference_genome}  "
             "-I:eval  {input.normal_bam} "
@@ -248,6 +251,7 @@ rule gatk3_contest_normal:
             "--popfile {input.popvcf}  "
             "--min_genotype_ratio {params.min_genotype_ratio}  "
             " -o {output} 2> {log} "
+            " && rm -rf {params.tmpdir} "
 
 
 rule contam_caveat:

@@ -115,11 +115,11 @@ params:
     cnv_tracks:
         threads: 1
     gatk4:
-        threads: 1
+        threads: 8
         haplotypecaller:
             java_options: " -Xmx10g "
         mutect2:
-            java_options: " -Xmx10g "
+            java_options: " -Xmx32g "
     strelka:
         threads: 8
     vardict:
