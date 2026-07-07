@@ -194,8 +194,8 @@ rule create_popvcf:
         " {input.cancer_target} "
         " {input.popvcf}  "
         " --tmpdir {params.tmpdir}  "
-        " --output-filename {output} 2> {log} && "
-        " gatk IndexFeatureFile -F {output} 2>> {log} "
+        " --output-filename {output.vcf} 2> {log} && "
+        " gatk IndexFeatureFile -F {output.vcf} 2>> {log} "
 
 
 rule gatk3_contest_cancer:
