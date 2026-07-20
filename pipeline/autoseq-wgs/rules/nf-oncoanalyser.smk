@@ -22,6 +22,7 @@ rule prepare_samplesheet:
         normal_id = normal_barcode,
         tumor_id = tumor_barcode,
         rna_id = rna_barcode,
+    container: None
     log:
         outdir + "/logs/prepare_samplesheet_{}.log".format(sdid)
     run:
@@ -47,6 +48,7 @@ rule run_oncoanalyser:
         genome_gtf = reference['gencode_gtf'],
         nf_reference = config['nf_reference'],
         rerun = config['rerun'],
+    container: None
     threads: 22
     log:
         outdir + "/logs/run_oncoanalyser_{}.log".format(sdid)
