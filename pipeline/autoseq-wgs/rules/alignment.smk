@@ -156,7 +156,7 @@ rule hmftools_redux:
     log: outdir + "/logs/hmftools_markdups_{sample}.log"
     shell:
         """
-        java_mem="-Xmx150g"
+        java_mem="-Xmx{resources.mem_mb}m"
         if [[ "{params.sample_id}" == *-N-* ]]; then
             java_mem="-Xmx64g"
         fi
