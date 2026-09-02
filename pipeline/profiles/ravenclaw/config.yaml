@@ -69,7 +69,7 @@ set-resources:
   sambamba_merge_tumor:
     mem_mb: 32000
   hmftools_redux:
-    mem_mb: 220000
+    mem_mb: 280000
   picard_collectoxog:
     mem_mb: 32000
   run_oncoanalyser:
