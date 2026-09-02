@@ -12,7 +12,7 @@ local-cores: 1
 max-status-checks-per-second: 1
 max-jobs-per-second: 1
 #restart-times: 2
-latency-wait: 80
+latency-wait: 120
 software-deployment-method:
   - apptainer
 
