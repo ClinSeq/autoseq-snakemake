@@ -152,6 +152,8 @@ rule hmftools_redux:
         ref_genome_ver = "37",
         extra = ""
     threads: 8
+    resources:
+        mem_mb = 280000
     container: containers['hmftools-redux']
     log: outdir + "/logs/hmftools_markdups_{sample}.log"
     shell:
