@@ -1356,25 +1356,18 @@ hotspots_splice <- c("17:7578370", "17:7578290", "17:7578291", "17:7578369", "17
             salf$AF.T <- as.numeric(g$VAF[,2])
             salf$AF.N <- as.numeric(g$VAF[,1])
             dp4 <- as.data.table(g[,1]$DP4)
-            if (nrow(salf)>1) {
-                salf$AO.T <- as.numeric(apply(g$DP4[,2,3:4],1,sum))  # sum alt forward and alt reverse
-                salf$DP.T <- as.numeric(apply(g$DP4[,2,],1,sum))  # sum ref forward, ref reverse, alt forward and alt reverse
-                salf$AO.N <- as.numeric(apply(g$DP4[,1,3:4],1,sum))  # sum alt forward and alt reverse
-                salf$DP.N <- as.numeric(apply(g$DP4[,1,],1,sum))  # sum ref forward, ref reverse, alt forward and alt reverse
-            } else {
-                # tab <- as.data.table(g$DP4)
-                # salf$AO.T <- tab[V2!='NORMAL'&V3 %in% 3:4,sum(value)]  # sum alt forward and alt reverse
-                # salf$DP.T <- tab[V2!='NORMAL',sum(value)]  # sum ref forward, ref reverse, alt forward and alt reverse
-            }
-            
+            # drop=FALSE keeps the variant dimension when there is only one variant
+            salf$AO.T <- as.numeric(apply(g$DP4[,2,3:4,drop=FALSE],1,sum))  # sum alt forward and alt reverse
+            salf$DP.T <- as.numeric(apply(g$DP4[,2,,drop=FALSE],1,sum))  # sum ref forward, ref reverse, alt forward and alt reverse
+            salf$AO.N <- as.numeric(apply(g$DP4[,1,3:4,drop=FALSE],1,sum))  # sum alt forward and alt reverse
+            salf$DP.N <- as.numeric(apply(g$DP4[,1,,drop=FALSE],1,sum))  # sum ref forward, ref reverse, alt forward and alt reverse
+
         } else if (!is.null(g$AF)) {
             salf$AF.T <- as.numeric(g$AF[,2])
-            if (nrow(salf)>1) {
-                salf$AO.T <- as.numeric(t(as.data.table(g$AD[,2]))[,2])
-                salf$DP.T <- as.numeric(t(as.data.table(g$DP[,2])))
-                salf$AO.N <- as.numeric(t(as.data.table(g$AD[,1]))[,2])
-                salf$DP.N <- as.numeric(t(as.data.table(g$DP[,1])))
-            }
+            salf$AO.T <- as.numeric(t(as.data.table(g$AD[,2]))[,2])
+            salf$DP.T <- as.numeric(t(as.data.table(g$DP[,2])))
+            salf$AO.N <- as.numeric(t(as.data.table(g$AD[,1]))[,2])
+            salf$DP.N <- as.numeric(t(as.data.table(g$DP[,1])))
         }
         
         salf$type='other'
@@ -1916,7 +1909,7 @@ if (!is.null(opts$dpyd_json_N)) if (!is.na(opts$dpyd_json_N)) dpyd_result <- as.
 
 dpyd_table <- rbind(dpyd_csv_T,dpyd_csv_N)
 
-dpyd_table[,file:=basename(file)]
+if (!is.null(dpyd_table)) dpyd_table[,file:=basename(file)]
 
 
 # HRD metric ---------------------------------------------------------
