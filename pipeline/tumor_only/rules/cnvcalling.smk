@@ -153,4 +153,4 @@ rule franken_plot:
                     "  --dpyd_csv_T {input.dpyd_csv_T} "
                     " --output_figure {output.frankenplot_png} "
                     "  --output {output.frankenplot} || true && "
-        "touch {output.frankenplot} "
+        "touch {output.frankenplot} {output.frankenplot_png} "
