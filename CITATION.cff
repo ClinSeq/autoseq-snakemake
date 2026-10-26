@@ -1,0 +1,46 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+type: software
+title: "Autoseq: a Snakemake pipeline for deep targeted sequencing of liquid biopsies"
+abstract: >-
+  Autoseq is an NGS data-analysis pipeline for very deep targeted
+  resequencing of liquid biopsies, which also supports tissue,
+  targeted-panel, whole-exome and whole-genome data. It covers QC,
+  trimming, alignment, realignment, UMI processing, somatic and germline
+  variant calling, copy-number and structural-variant calling, annotation
+  with VEP and reporting. It is built on the Snakemake workflow framework
+  with Singularity containers and SLURM support.
+authors:
+  - given-names: Sarath Kumar
+    family-names: Murugan
+    affiliation: Karolinska Institutet
+    orcid: "https://orcid.org/0000-0001-7378-7869"
+  - given-names: Venkatesh
+    family-names: Chellappa
+    affiliation: Karolinska Institutet
+    orcid: "https://orcid.org/0000-0003-1431-6949"
+  - given-names: Rebecka
+    family-names: Bergström
+    affiliation: Karolinska Institutet
+    orcid: "https://orcid.org/0000-0001-7609-0733"
+  - given-names: Markus
+    family-names: Mayrhofer
+    affiliation: Karolinska Institutet
+    orcid: "https://orcid.org/0000-0003-3403-0083"
+  - given-names: Johan
+    family-names: Lindberg
+    affiliation: Karolinska Institutet
+    orcid: "https://orcid.org/0000-0003-3610-6774"
+repository-code: "https://github.com/ClinSeq/autoseq-snakemake"
+license: GPL-3.0-or-later
+version: 4.1.3
+keywords:
+  - bioinformatics
+  - next-generation sequencing
+  - liquid biopsy
+  - cfDNA
+  - targeted sequencing
+  - variant calling
+  - UMI
+  - snakemake
+  - pipeline

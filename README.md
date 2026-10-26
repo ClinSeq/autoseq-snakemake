@@ -23,10 +23,21 @@ The repo is organized into four essential compartments -
 
 ## Authors
 
-- [Sarath Kumar Murugan](https://github.com/imsarath)
-- [Venkatesh Chellappa](https://github.com/drvenki)
-- [Rebecka Bergström](https://github.com/rebber)
-- [Karthick Maniram](https://github.com/karman-ki)
+- [Sarath Kumar Murugan](https://github.com/imsarath) ([ORCID](https://orcid.org/0000-0001-7378-7869))
+- [Venkatesh Chellappa](https://github.com/drvenki) ([ORCID](https://orcid.org/0000-0003-1431-6949))
+- [Rebecka Bergström](https://github.com/rebber) ([ORCID](https://orcid.org/0000-0001-7609-0733))
+- Markus Mayrhofer ([ORCID](https://orcid.org/0000-0003-3403-0083))
+- Johan Lindberg ([ORCID](https://orcid.org/0000-0003-3610-6774))
+
+All authors are affiliated with Karolinska Institutet, Stockholm, Sweden.
+
+## Citation
+
+If you use Autoseq, please cite it using the metadata in [`CITATION.cff`](CITATION.cff) (GitHub's "Cite this repository" button generates APA and BibTeX from it).
+
+## License
+
+Autoseq is licensed under the [GNU General Public License v3.0 or later](LICENSE).
 
 
 # Pipeline 
