@@ -2,7 +2,7 @@
 
 # Autoseq framework
 
-![Pytest](https://github.com/ClinSeq/autoseq-snakemake/actions/workflows/pytests.yml/badge.svg)  [![PyPI license](https://img.shields.io/pypi/l/ansicolortags.svg)](https://pypi.python.org/pypi/ansicolortags/)  
+![Pytest](https://github.com/ClinSeq/autoseq-snakemake/actions/workflows/pytests.yml/badge.svg)  [![License: GPL v3+](https://img.shields.io/badge/License-GPLv3+-blue.svg)](LICENSE)  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23667137.svg)](https://doi.org/10.5281/zenodo.23667137)  
 
 > **Note:** The documentation for this repository is not currently up to date. We are actively working on updating it and will provide more information soon.
 
